@@ -23,7 +23,7 @@ You will also need the [Okta Java SDK](https://github.com/okta/oktasdk-java) but
 
 ###Opening the project with IntelliJ Idea
 
-- Open the IntelliJ Idea IDE and browse to the ```okta-aws-cli``` folder you have cloned from GitHub inside the ```Projects``` folder.
+- Open the IntelliJ Idea IDE and browse to the ```okta-aws-cli-assume-role``` folder you have cloned from GitHub inside the ```Projects``` folder.
 - Go to ```File => Project Structure``` and in the Libraries menu, fix the Java references that don't match your local setup.
 - Go to ```Build => Make Project``` in order to compile the project.
 - The project also builds the JAR artifact, so if you browse to the ```out``` sub-folder, you will see the ```oktaawscli.jar``` JAR artifact.
