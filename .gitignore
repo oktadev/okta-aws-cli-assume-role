@@ -1,0 +1,8 @@
+*.class
+
+# Package Files #
+*.war
+*.ear
+
+# jar folder
+META-INF
