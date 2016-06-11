@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="okta-sdk">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/okta-sdk.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
