@@ -1,5 +1,7 @@
 #Okta AWS-CLI Tool
 
+This readme file is an excerpt of the [Okta-AWS Integration Guide](https://support.okta.com/help/articles/Knowledge_Article/Amazon-Web-Services-and-Okta-Integration-Guide). We highly recommend that you first read it to understand how Okta and AWS integrate with each other.
+
 Important Note: This tool has been verified to work on Mac OS X El Capitan and Windows Server 2012 R2 and is expected to work on Linux and Unix as well.
 
 The Okta AWS-CLI Tool allows Okta customers to take advantage of [Okta](www.okta.com) to use the [AWS Command Line Interface](https://aws.amazon.com/cli) without relying on permanent AWS keys. More specifically, it allows them to generate temporary 60-minute keys
@@ -33,14 +35,7 @@ You will also need the [Okta Java SDK](https://github.com/okta/oktasdk-java) but
 
   Because this tool aims at facilitating your interaction with the AWS CLI, it must be able to look into the role you select to assume in order to figure out whether it's a role with direct permissions on the account, or a cross-account role that allows you to assume a role (with real permissions) in another account. To perform this introspection into the AWS roles, the tool must be granted AIM Read Only Access in AWS so that it can automatically add the proper role_arn and source_profile entries into the AWS config file.
 
-In order to generate the key and secret to be configured in the ```config.properties``` file, log in to your AWS identity account with the root admin account. Navigate to the ```Identity & Access Management``` section of your dashboard and go the ```Users``` menu.
-
-- Create a new user and click on ```Close``` (do not download the security credentials).
-- Select the user you just created and navigate to the ```Permissions``` tab
-- Under ```Managed Policies```, click on the ```Attach Policy``` button, select the ```IAMReadOnlyAccess``` policy and click on the ```Attach Policy``` button.
-- Navigate to the ```Security Credentials``` tab, and click the ```Create Access Key``` button
-- Click on the ```Show User Security Credentials``` link and copy/paste the ```Access Key ID``` and ```Secret Access Key``` values into a safe location. You will need them below.
-
+In order to generate the key and secret to be configured in the ```config.properties``` file, please follow the steps highlighted in ```Appendix A: How to create a IAM user for role introspection``` in the [Okta-AWS Integration Guide](https://support.okta.com/help/articles/Knowledge_Article/Amazon-Web-Services-and-Okta-Integration-Guide) 
 
 ##Configuring the application
   It is essential that ```config.properties``` be in the same directory as the ```oktaawscli.jar``` file (i.e. in the ```out``` directory). The ```config.properties``` config file holds information specific to each Okta organization (or "tenant") and needs to be configured on an org to org basis. Please copy it from the ```src/com/okta/tools``` folder to the ```out``` folder.
