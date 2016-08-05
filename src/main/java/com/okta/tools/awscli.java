@@ -13,6 +13,7 @@
 package com.okta.tools;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
@@ -49,13 +50,22 @@ import com.okta.sdk.models.users.User;
 import com.okta.sdk.models.factors.Factor;
 import com.okta.sdk.models.users.User;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.NTCredentials;
+import org.apache.http.client.AuthCache;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.http.protocol.HTTP;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -87,6 +97,12 @@ public class awscli {
     private static String crossAccountRoleName = null;
     private static String roleToAssume; //the ARN of the role the user wants to eventually assume (not the cross-account role, the "real" role in the target account)
 
+    //proxy detail
+  	private static String proxyUserName;
+  	private static String proxyPassword;
+  	private static String proxyProtocol = "http";
+  	private static String proxyHost = "*******************";
+  	private static int proxyPort = ****;
 
     public static void main(String[] args) throws Exception {
         awsSetup();
@@ -99,9 +115,13 @@ public class awscli {
 
 
             String strOktaSessionToken = oktaAuthntication();
-            if (!strOktaSessionToken.equalsIgnoreCase(""))
-                //Part 2 get saml assertion
+
+
+            //Part 2 get saml assertion
+            if (!strOktaSessionToken.equalsIgnoreCase("")) {
                 resultSAML = awsSamlHandler(strOktaSessionToken);
+            }
+
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (UnknownHostException e) {
@@ -148,18 +168,15 @@ public class awscli {
             Scanner scanner = new Scanner(System.in);
 
             String oktaUsername = scanner.next();
+            proxyUserName = oktaUsername;
 
             Console console = System.console();
-            String oktaPassword = null;
-            if (console != null) {
-                oktaPassword = new String(console.readPassword("Password: "));
-            } else { // hack to be able to debug in an IDE
-                System.out.print("Password: ");
-                oktaPassword = scanner.next();
-            }
+	 		String oktaPassword = new String(console.readPassword("Password: "));
+	 		proxyPassword = oktaPassword;
 
             responseAuthenticate = authnticateCredentials(oktaUsername, oktaPassword);
             requestStatus = responseAuthenticate.getStatusLine().getStatusCode();
+
             authnFailHandler(requestStatus, responseAuthenticate);
         }
 
@@ -168,6 +185,7 @@ public class awscli {
                 (responseAuthenticate.getEntity().getContent())));
 
         String outputAuthenticate = br.readLine();
+
         JSONObject jsonObjResponse = new JSONObject(outputAuthenticate);
 
         responseAuthenticate.close();
@@ -182,8 +200,20 @@ public class awscli {
     /*Uses user's credentials to obtain Okta session Token */
     private static CloseableHttpResponse authnticateCredentials(String username, String password) throws JSONException, ClientProtocolException, IOException{
         HttpPost httpost = null;
-        CloseableHttpClient httpClient = HttpClients.createDefault();
+        //CloseableHttpClient httpClient = HttpClients.createDefault();
 
+        /*proxy setup - start*/
+		HttpHost proxy = new HttpHost(proxyHost, proxyPort, proxyProtocol);
+		DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+		AuthCache authCache = new BasicAuthCache();
+		CredentialsProvider credsProvider = new BasicCredentialsProvider();
+		credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort, AuthScope.ANY_HOST, "ntlm"), new NTCredentials(proxyUserName, proxyPassword, "", ""));
+		HttpClientContext context = HttpClientContext.create();
+		context.setCredentialsProvider(credsProvider);
+		context.setAuthCache(authCache);
+
+		CloseableHttpClient httpclient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).setRoutePlanner(routePlanner).build();
+		/*proxy setup - end*/
 
         //HTTP Post request to Okta API for session token
         httpost = new HttpPost("https://" + oktaOrg + "/api/v1/authn");
@@ -200,7 +230,7 @@ public class awscli {
         entity.setContentType("application/json");
         httpost.setEntity(entity);
 
-        return httpClient.execute(httpost);
+        return httpclient.execute(httpost, context);
     }
 
     /* creates required AWS credential file if necessary" */
@@ -257,7 +287,7 @@ public class awscli {
 				oktaAWSAppURL = line.substring(line.indexOf("=")+1).trim();
 			}
 			line = oktaBr.readLine();
-		}	
+		}
 		oktaBr.close();*/
     }
 
@@ -339,14 +369,26 @@ public class awscli {
     private static String awsSamlHandler(String oktaSessionToken) throws ClientProtocolException, IOException {
         HttpGet httpget = null;
         CloseableHttpResponse responseSAML = null;
-        CloseableHttpClient httpClient = HttpClients.createDefault();
+        //CloseableHttpClient httpClient = HttpClients.createDefault(); //change
         String resultSAML = "";
         String outputSAML = "";
+
+        /*proxy setup - start*/
+		HttpHost proxy = new HttpHost(proxyHost, proxyPort, proxyProtocol);
+		DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+		AuthCache authCache = new BasicAuthCache();
+		CredentialsProvider credsProvider = new BasicCredentialsProvider();
+		credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort, AuthScope.ANY_HOST, "ntlm"), new NTCredentials(proxyUserName, proxyPassword, "", ""));
+		HttpClientContext context = HttpClientContext.create();
+		context.setCredentialsProvider(credsProvider);
+		context.setAuthCache(authCache);
+		CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).setRoutePlanner(routePlanner).build();
+		/*proxy setup - end*/
 
         // Part 2: Get the Identity Provider and Role ARNs.
         // Request for AWS SAML response containing roles
         httpget = new HttpGet(oktaAWSAppURL + "?onetimetoken=" + oktaSessionToken);
-        responseSAML = httpClient.execute(httpget);
+        responseSAML = httpClient.execute(httpget, context);
         samlFailHandler(responseSAML.getStatusLine().getStatusCode(), responseSAML);
 
         //Parse SAML response
@@ -416,9 +458,18 @@ public class awscli {
         BasicAWSCredentials awsCreds = new BasicAWSCredentials("", "");
 
         //use user credentials to assume AWS role
-        AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(awsCreds);
+        //AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(awsCreds); //change
 
 
+        //proxy setup - start
+		ClientConfiguration clientConfig = new ClientConfiguration();
+		//clientConfig.setProtocol(Protocol.HTTP);
+		clientConfig.setProxyHost(proxyHost);
+		clientConfig.setProxyPort(proxyPort);
+		clientConfig.setProxyUsername(proxyUserName);
+		clientConfig.setProxyPassword(proxyPassword);
+		AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(clientConfig);
+		//proxy setup - end
 
         AssumeRoleWithSAMLRequest assumeRequest = new AssumeRoleWithSAMLRequest()
                 .withPrincipalArn(principalArn)
@@ -933,7 +984,19 @@ public class awscli {
 
             //create post request
             CloseableHttpResponse responseAuthenticate = null;
-            CloseableHttpClient httpClient = HttpClients.createDefault();
+            //CloseableHttpClient httpClient = HttpClients.createDefault();
+
+            /*proxy setup - start*/
+    		HttpHost proxy = new HttpHost(proxyHost, proxyPort, proxyProtocol);
+    		DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+    		AuthCache authCache = new BasicAuthCache();
+    		CredentialsProvider credsProvider = new BasicCredentialsProvider();
+    		credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort, AuthScope.ANY_HOST, "ntlm"), new NTCredentials(proxyUserName, proxyPassword, "", ""));
+    		HttpClientContext context = HttpClientContext.create();
+    		context.setCredentialsProvider(credsProvider);
+    		context.setAuthCache(authCache);
+    		CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).setRoutePlanner(routePlanner).build();
+    		/*proxy setup - end*/
 
             HttpPost httpost = new HttpPost(verifyPoint);
             httpost.addHeader("Accept", "application/json");
@@ -943,7 +1006,7 @@ public class awscli {
             StringEntity entity = new StringEntity(profile.toString(), HTTP.UTF_8);
             entity.setContentType("application/json");
             httpost.setEntity(entity);
-            responseAuthenticate = httpClient.execute(httpost);
+            responseAuthenticate = httpClient.execute(httpost, context);
 
             BufferedReader br = new BufferedReader(new InputStreamReader((responseAuthenticate.getEntity().getContent())));
 
@@ -990,7 +1053,7 @@ public class awscli {
                     while (pushResult == null || pushResult.equals("WAITING")) {
                         pushResult = null;
                         CloseableHttpResponse responsePush = null;
-                        httpClient = HttpClients.createDefault();
+                        //httpClient = HttpClients.createDefault(); //change
 
                         HttpPost pollReq = new HttpPost(pollUrl);
                         pollReq.addHeader("Accept", "application/json");
@@ -1001,7 +1064,7 @@ public class awscli {
                         entity.setContentType("application/json");
                         pollReq.setEntity(entity);
 
-                        responsePush = httpClient.execute(pollReq);
+                        responsePush = httpClient.execute(pollReq, context);
 
                         br = new BufferedReader(new InputStreamReader((responsePush.getEntity().getContent())));
 
@@ -1393,12 +1456,10 @@ public class awscli {
             //else {
             //    return jsonObjResponse.getString("sessionToken");
             //}
-        
+
         if (authResult != null)
             strSessionToken = authResult.getSessionToken();
         return strSessionToken;
     }
-
-
 
 }
