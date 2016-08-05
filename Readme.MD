@@ -8,6 +8,8 @@ The Okta AWS-CLI Tool allows Okta customers to take advantage of [Okta](www.okta
 that are stored for each profile in the ```~/.aws/credentials``` file. Additionally, if the AWS environment is leveraging cross-account roles and the AssumeRole AWS function, the tool will be able to detect that you choose
 to assume a cross-account role and will be able to extract the actual role in the target account as well as add an additional profile line the ```~/.aws/config``` file.
 
+__Important note__: please note that this tool only supports Okta MFA set up at the organization level (i.e. not at the sign-on policy level).
+
 ##Setup
 
 - Use ```git clone https://github.com/oktadeveloper/okta-aws-cli-assume-role.git``` to clone the repository locally.
