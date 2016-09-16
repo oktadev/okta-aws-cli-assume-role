@@ -68,6 +68,7 @@ import java.net.UnknownHostException;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.nio.charset.*;
 
 //Amazon SDK namespaces
 //Okta SDK namespaces
@@ -124,7 +125,7 @@ public class awscli {
         // Part 4: Write the credentials to ~/.aws/credentials
         String profileName = setAWSCredentials(assumeResult, arn);
 
-        // Part 5: Get the final role to assume an update the config file to add it to the user's profile
+        // Part 5: Get the final role to assume and update the config file to add it to the user's profile
         GetRoleToAssume(crossAccountRoleName);
 
         UpdateConfigFile(profileName, roleToAssume);
@@ -196,7 +197,7 @@ public class awscli {
         jsonObjRequest.put("username", username);
         jsonObjRequest.put("password", password);
 
-        StringEntity entity = new StringEntity(jsonObjRequest.toString(), HTTP.UTF_8);
+        StringEntity entity = new StringEntity(jsonObjRequest.toString(), StandardCharsets.UTF_8);
         entity.setContentType("application/json");
         httpost.setEntity(entity);
 
@@ -423,7 +424,8 @@ public class awscli {
         AssumeRoleWithSAMLRequest assumeRequest = new AssumeRoleWithSAMLRequest()
                 .withPrincipalArn(principalArn)
                 .withRoleArn(roleArn)
-                .withSAMLAssertion(resultSAML);
+                .withSAMLAssertion(resultSAML)
+                .withDurationSeconds(3600); //default token duration to 12 hours
 
         return stsClient.assumeRoleWithSAML(assumeRequest);
     }
@@ -431,33 +433,45 @@ public class awscli {
     private static void GetRoleToAssume(String roleName) {
 
         if(roleName!=null && !roleName.equals("") && awsIamKey!=null && awsIamSecret!=null && !awsIamKey.equals("") && !awsIamSecret.equals("")) {
+
+            System.out.println("Creating the AWS Identity Management client");
             AmazonIdentityManagementClient identityManagementClient
                     = new AmazonIdentityManagementClient(new BasicAWSCredentials(awsIamKey, awsIamSecret));
 
             System.out.println("Getting role: " + roleName);
             GetRoleResult roleresult = identityManagementClient.getRole(new GetRoleRequest().withRoleName(roleName));
+            System.out.println("GetRoleResult: " + roleresult.toString());
             Role role = roleresult.getRole();
+            System.out.println("getRole: " + role.toString());
             ListAttachedRolePoliciesResult arpr = identityManagementClient.listAttachedRolePolicies(new ListAttachedRolePoliciesRequest().withRoleName(roleName));
+            System.out.println("ListAttachedRolePoliciesResult: " + arpr.toString());
             ListRolePoliciesResult lrpr = identityManagementClient.listRolePolicies(new ListRolePoliciesRequest().withRoleName(roleName));
+            System.out.println("ListRolePoliciesResult: " + lrpr.toString());
             List<String> policyNames = lrpr.getPolicyNames();
+            System.out.println("Policy Names " + policyNames.toString());
             List<AttachedPolicy> managedPolicyNames = arpr.getAttachedPolicies();
+            System.out.println("Attached Policies: " + managedPolicyNames.toString());
             if (managedPolicyNames.size() >= 1) //we prioritize managed policies over inline policies
             {
                 //TODO: handle more than 1 policy (ask the user to choose it?)
                 AttachedPolicy attachedPolicy = managedPolicyNames.get(0);
-
+                System.out.println("First Attached Policy " + attachedPolicy.toString());
                 GetPolicyRequest gpr = new GetPolicyRequest().withPolicyArn(attachedPolicy.getPolicyArn());
 
                 GetPolicyResult rpr = identityManagementClient.getPolicy(gpr);
+                System.out.println("GetPolicyResult: " + attachedPolicy.toString());
                 Policy policy = rpr.getPolicy();
 
                 GetPolicyVersionResult pvr = identityManagementClient.getPolicyVersion(new GetPolicyVersionRequest().withPolicyArn(policy.getArn()).withVersionId(policy.getDefaultVersionId()));
-
+                System.out.println("GetPolicyVersionResult: " + pvr.toString());
 
                 String policyDoc = pvr.getPolicyVersion().getDocument();
 
+                System.out.println("Policy Document: " + policyDoc);
+
                 try {
                     String policyDocClean = URLDecoder.decode(policyDoc, "UTF-8");
+                    System.out.println("Clean Policy Document: " + policyDocClean);
                     ObjectMapper objectMapper = new ObjectMapper();
 
                     try {
@@ -940,7 +954,7 @@ public class awscli {
             httpost.addHeader("Content-Type", "application/json");
             httpost.addHeader("Cache-Control", "no-cache");
 
-            StringEntity entity = new StringEntity(profile.toString(), HTTP.UTF_8);
+            StringEntity entity = new StringEntity(profile.toString(), StandardCharsets.UTF_8);
             entity.setContentType("application/json");
             httpost.setEntity(entity);
             responseAuthenticate = httpClient.execute(httpost);
@@ -997,7 +1011,7 @@ public class awscli {
                         pollReq.addHeader("Content-Type", "application/json");
                         pollReq.addHeader("Cache-Control", "no-cache");
 
-                        entity = new StringEntity(profile.toString(), HTTP.UTF_8);
+                        entity = new StringEntity(profile.toString(), StandardCharsets.UTF_8);
                         entity.setContentType("application/json");
                         pollReq.setEntity(entity);
 

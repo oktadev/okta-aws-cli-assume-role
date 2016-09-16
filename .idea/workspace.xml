@@ -8,6 +8,7 @@
   <component name="ChangeListManager">
     <list default="true" id="ccd32673-9623-4500-b0a4-2909a585662f" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/com/okta/tools/awscli.java" afterPath="$PROJECT_DIR$/src/main/java/com/okta/tools/awscli.java" />
     </list>
     <ignored path="okta-aws-cli.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -60,20 +61,19 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="awscli.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="awscli.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/com/okta/tools/awscli.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="707" column="19" selection-start-line="707" selection-start-column="19" selection-end-line="707" selection-end-column="19" />
+            <state vertical-scroll-proportion="-1.0454545">
+              <caret line="432" column="39" selection-start-line="432" selection-start-column="24" selection-end-line="432" selection-end-column="39" />
               <folding>
+                <element signature="imports" expanded="true" />
                 <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
                 <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
                 <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
-                <element signature="method#PopulateCredentialsFile#0;class#awscli#0" expanded="false" />
                 <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
                 <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
                 <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
-                <element signature="method#verifyAnswer#1;class#awscli#0" expanded="false" />
                 <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
               </folding>
             </state>
@@ -100,7 +100,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="awscli.bat" pinned="false" current-in-tab="true">
+      <file leaf-file-name="awscli.bat" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/out/awscli.bat">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
@@ -181,9 +181,9 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scratches" />
       <pane id="PackagesPane" />
       <pane id="Scope" />
+      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -279,6 +279,10 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="java" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="tools" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -617,8 +621,9 @@
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32941177" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25695366" sideWeight="0.47424892" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette&#9;" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2741722" sideWeight="0.5200286" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25695366" sideWeight="0.52575105" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3283582" sideWeight="0.48569384" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3283582" sideWeight="0.49713877" order="7" side_tool="false" content_ui="tabs" />
@@ -629,7 +634,6 @@
       <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25746268" sideWeight="0.47997138" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -680,31 +684,31 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/com/okta/tools/awscli.java</url>
-          <line>626</line>
+          <line>640</line>
           <properties />
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/com/okta/tools/awscli.java</url>
-          <line>731</line>
+          <line>745</line>
           <properties />
           <option name="timeStamp" value="20" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/com/okta/tools/awscli.java</url>
-          <line>721</line>
+          <line>735</line>
           <properties />
           <option name="timeStamp" value="22" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/com/okta/tools/awscli.java</url>
-          <line>712</line>
+          <line>726</line>
           <properties />
           <option name="timeStamp" value="24" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/main/java/com/okta/tools/awscli.java</url>
-          <line>127</line>
+          <line>128</line>
           <properties />
           <option name="timeStamp" value="26" />
         </line-breakpoint>
@@ -747,14 +751,13 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
+            <element signature="imports" expanded="true" />
             <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
             <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
             <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
-            <element signature="method#PopulateCredentialsFile#0;class#awscli#0" expanded="false" />
             <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
             <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
             <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
-            <element signature="method#verifyAnswer#1;class#awscli#0" expanded="false" />
             <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
           </folding>
         </state>
@@ -789,14 +792,13 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="680" column="58" selection-start-line="680" selection-start-column="58" selection-end-line="680" selection-end-column="58" />
           <folding>
+            <element signature="imports" expanded="true" />
             <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
             <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
             <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
-            <element signature="method#PopulateCredentialsFile#0;class#awscli#0" expanded="false" />
             <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
             <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
             <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
-            <element signature="method#verifyAnswer#1;class#awscli#0" expanded="false" />
             <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
           </folding>
         </state>
@@ -823,14 +825,13 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="117" column="12" selection-start-line="117" selection-start-column="12" selection-end-line="117" selection-end-column="12" />
           <folding>
+            <element signature="imports" expanded="true" />
             <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
             <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
             <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
-            <element signature="method#PopulateCredentialsFile#0;class#awscli#0" expanded="false" />
             <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
             <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
             <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
-            <element signature="method#verifyAnswer#1;class#awscli#0" expanded="false" />
             <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
           </folding>
         </state>
@@ -849,14 +850,13 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
+            <element signature="imports" expanded="true" />
             <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
             <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
             <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
-            <element signature="method#PopulateCredentialsFile#0;class#awscli#0" expanded="false" />
             <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
             <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
             <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
-            <element signature="method#verifyAnswer#1;class#awscli#0" expanded="false" />
             <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
           </folding>
         </state>
@@ -875,14 +875,13 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
+            <element signature="imports" expanded="true" />
             <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
             <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
             <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
-            <element signature="method#PopulateCredentialsFile#0;class#awscli#0" expanded="false" />
             <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
             <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
             <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
-            <element signature="method#verifyAnswer#1;class#awscli#0" expanded="false" />
             <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
           </folding>
         </state>
@@ -901,14 +900,13 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
+            <element signature="imports" expanded="true" />
             <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
             <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
             <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
-            <element signature="method#PopulateCredentialsFile#0;class#awscli#0" expanded="false" />
             <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
             <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
             <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
-            <element signature="method#verifyAnswer#1;class#awscli#0" expanded="false" />
             <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
           </folding>
         </state>
@@ -948,14 +946,13 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
+            <element signature="imports" expanded="true" />
             <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
             <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
             <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
-            <element signature="method#PopulateCredentialsFile#0;class#awscli#0" expanded="false" />
             <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
             <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
             <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
-            <element signature="method#verifyAnswer#1;class#awscli#0" expanded="false" />
             <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
           </folding>
         </state>
@@ -1029,14 +1026,13 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="129" column="0" selection-start-line="129" selection-start-column="0" selection-end-line="130" selection-end-column="0" />
           <folding>
+            <element signature="imports" expanded="true" />
             <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
             <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
             <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
-            <element signature="method#PopulateCredentialsFile#0;class#awscli#0" expanded="false" />
             <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
             <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
             <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
-            <element signature="method#verifyAnswer#1;class#awscli#0" expanded="false" />
             <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
           </folding>
         </state>
@@ -1139,7 +1135,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.059840426">
           <caret line="3" column="30" selection-start-line="3" selection-start-column="30" selection-end-line="3" selection-end-column="30" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1148,24 +1143,6 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="2" column="12" selection-start-line="2" selection-start-column="12" selection-end-line="2" selection-end-column="12" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/com/okta/tools/awscli.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="707" column="19" selection-start-line="707" selection-start-column="19" selection-end-line="707" selection-end-column="19" />
-          <folding>
-            <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
-            <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
-            <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
-            <element signature="method#PopulateCredentialsFile#0;class#awscli#0" expanded="false" />
-            <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
-            <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
-            <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
-            <element signature="method#verifyAnswer#1;class#awscli#0" expanded="false" />
-            <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -1190,6 +1167,23 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/okta/tools/awscli.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-1.0454545">
+          <caret line="432" column="39" selection-start-line="432" selection-start-column="24" selection-end-line="432" selection-end-column="39" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="method#extractCredentials#0;class#awscli#0" expanded="false" />
+            <element signature="method#samlFailHandler#0;class#awscli#0" expanded="false" />
+            <element signature="method#numSelection#0;class#awscli#0" expanded="false" />
+            <element signature="method#WriteNewProfile#0;class#awscli#0" expanded="false" />
+            <element signature="method#smsFactor#0;class#awscli#0" expanded="false" />
+            <element signature="method#pushFactor#0;class#awscli#0" expanded="false" />
+            <element signature="method#selectFactor#1;class#awscli#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
