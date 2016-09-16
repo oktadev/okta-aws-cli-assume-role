@@ -127,7 +127,7 @@ public class awscli {
 
         // Part 5: Get the final role to assume and update the config file to add it to the user's profile
         GetRoleToAssume(crossAccountRoleName);
-
+        System.out.println("Role to assume ARN: " + roleToAssume);
         UpdateConfigFile(profileName, roleToAssume);
 
         // Print Final message
@@ -477,21 +477,28 @@ public class awscli {
                     try {
                         JsonNode rootNode = objectMapper.readTree(policyDocClean);
                         JsonNode statement = rootNode.path("Statement");
+                        System.out.println("Statement node: " + statement.toString());
                         JsonNode resource = null;
                         if(statement.isArray()) {
+                            System.out.println("Statement is array");
                             for (int i = 0; i < statement.size(); i++) {
                                 String action = statement.get(i).path("Action").textValue();
                                 if(action == "sts:AssumeRole") {
                                     resource = statement.get(i).path("Resource");
+                                    System.out.println("Resource node: " + resource.toString());
                                 }
                             }
                         }
                         else {
-                            if(statement.get("Action").textValue().equals("sts:AssumeRole"))
+                            System.out.println("Statement is NOT array");
+                            if(statement.get("Action").textValue().equals("sts:AssumeRole")) {
                                 resource = statement.path("Resource");
+                                System.out.println("Resource node: " + resource.toString());
+                            }
                         }
                         if(resource!=null) {
                             roleToAssume = resource.textValue();
+                            System.out.println("Role to assume: " + roleToAssume);
                         }
                     } catch (IOException ioe) { }
                 }
