@@ -1,7 +1,7 @@
 <component name="libraryTable">
-  <library name="aws-java-sdk-1.10.74">
+  <library name="aws-java-sdk-1.11.37">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/lib/aws-java-sdk-1.10.74.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/aws-java-sdk-1.11.37.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
