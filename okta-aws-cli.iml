@@ -17,6 +17,7 @@
     <orderEntry type="library" name="org.apache.httpcomponents:httpclient:4.5.2" level="project" />
     <orderEntry type="library" name="okta-sdk" level="project" />
     <orderEntry type="library" name="joda-time-2.9.3" level="project" />
-    <orderEntry type="library" name="aws-java-sdk-1.10.74" level="project" />
+    <orderEntry type="library" name="org.apache.logging.log4j:log4j-core:2.6.2" level="project" />
+    <orderEntry type="library" name="aws-java-sdk-1.11.37" level="project" />
   </component>
 </module>

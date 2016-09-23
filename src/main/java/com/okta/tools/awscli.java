@@ -70,6 +70,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.nio.charset.*;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 //Amazon SDK namespaces
 //Okta SDK namespaces
 
@@ -88,6 +91,7 @@ public class awscli {
     private static String crossAccountRoleName = null;
     private static String roleToAssume; //the ARN of the role the user wants to eventually assume (not the cross-account role, the "real" role in the target account)
 
+    private static final Logger logger = LogManager.getLogger(awscli.class);
 
     public static void main(String[] args) throws Exception {
         awsSetup();
@@ -106,10 +110,10 @@ public class awscli {
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (UnknownHostException e) {
-            System.out.println("\nUnable to establish a connection with AWS. \nPlease verify that your OKTA_AWS_APP_URL parameter is correct and try again");
+            logger.error("\nUnable to establish a connection with AWS. \nPlease verify that your OKTA_AWS_APP_URL parameter is correct and try again");
             System.exit(0);
         } catch (ClientProtocolException e) {
-            System.out.println("\nNo Org found, please specify an OKTA_ORG parameter in your config.properties file");
+            logger.error("\nNo Org found, please specify an OKTA_ORG parameter in your config.properties file");
             System.exit(0);
         } catch (IOException e) {
             e.printStackTrace();
@@ -127,7 +131,7 @@ public class awscli {
 
         // Part 5: Get the final role to assume and update the config file to add it to the user's profile
         GetRoleToAssume(crossAccountRoleName);
-        System.out.println("Role to assume ARN: " + roleToAssume);
+        logger.trace("Role to assume ARN: " + roleToAssume);
         UpdateConfigFile(profileName, roleToAssume);
 
         // Print Final message
@@ -156,7 +160,10 @@ public class awscli {
                 oktaPassword = new String(console.readPassword("Password: "));
             } else { // hack to be able to debug in an IDE
                 System.out.print("Password: ");
+                //oktaUsername  = "john";
+
                 oktaPassword = scanner.next();
+                //oktaPassword = "ctkQesDGLULiVyFPVFxuCfLzWX(7";
             }
 
             responseAuthenticate = authnticateCredentials(oktaUsername, oktaPassword);
@@ -283,10 +290,10 @@ public class awscli {
     private static void authnFailHandler(int requestStatus, CloseableHttpResponse response) {
         //invalid creds
         if (requestStatus == 400 || requestStatus == 401) {
-            System.out.println("You provided invalid credentials, please run this program again.");
+            logger.error("You provided invalid credentials, please run this program again.");
         } else if (requestStatus == 500) {
             //failed connection establishment
-            System.out.println("\nUnable to establish connection with: " +
+            logger.error("\nUnable to establish connection with: " +
                     oktaOrg + " \nPlease verify that your Okta org url is correct and try again");
             System.exit(0);
         } else if (requestStatus != 200) {
@@ -325,11 +332,11 @@ public class awscli {
                 }
             } catch (InputMismatchException e) {
                 //raised by something other than a number entered
-                System.out.println("Invalid input: Please enter a number corresponding to a role \n");
+                logger.error("Invalid input: Please enter a number corresponding to a role \n");
                 selection = -1;
             } catch (NumberFormatException e) {
                 //raised by number too high or low selected
-                System.out.println("Invalid input: Please enter in a number \n");
+                logger.error("Invalid input: Please enter in a number \n");
                 selection = -1;
             }
         }
@@ -380,7 +387,7 @@ public class awscli {
 
         //When the app is not assigned to you no assertion is returned
         if (!resultSAMLDecoded.contains("arn:aws")) {
-            System.out.println("\nYou do not have access to AWS through Okta. \nPlease contact your administrator.");
+            logger.error("\nYou do not have access to AWS through Okta. \nPlease contact your administrator.");
             System.exit(0);
         }
 
@@ -434,71 +441,71 @@ public class awscli {
 
         if(roleName!=null && !roleName.equals("") && awsIamKey!=null && awsIamSecret!=null && !awsIamKey.equals("") && !awsIamSecret.equals("")) {
 
-            System.out.println("Creating the AWS Identity Management client");
+            logger.debug("Creating the AWS Identity Management client");
             AmazonIdentityManagementClient identityManagementClient
                     = new AmazonIdentityManagementClient(new BasicAWSCredentials(awsIamKey, awsIamSecret));
 
-            System.out.println("Getting role: " + roleName);
+            logger.debug("Getting role: " + roleName);
             GetRoleResult roleresult = identityManagementClient.getRole(new GetRoleRequest().withRoleName(roleName));
-            System.out.println("GetRoleResult: " + roleresult.toString());
+            logger.debug("GetRoleResult: " + roleresult.toString());
             Role role = roleresult.getRole();
-            System.out.println("getRole: " + role.toString());
+            logger.debug("getRole: " + role.toString());
             ListAttachedRolePoliciesResult arpr = identityManagementClient.listAttachedRolePolicies(new ListAttachedRolePoliciesRequest().withRoleName(roleName));
-            System.out.println("ListAttachedRolePoliciesResult: " + arpr.toString());
+            logger.debug("ListAttachedRolePoliciesResult: " + arpr.toString());
             ListRolePoliciesResult lrpr = identityManagementClient.listRolePolicies(new ListRolePoliciesRequest().withRoleName(roleName));
-            System.out.println("ListRolePoliciesResult: " + lrpr.toString());
+            logger.debug("ListRolePoliciesResult: " + lrpr.toString());
             List<String> policyNames = lrpr.getPolicyNames();
-            System.out.println("Policy Names " + policyNames.toString());
+            logger.debug("Policy Names " + policyNames.toString());
             List<AttachedPolicy> managedPolicyNames = arpr.getAttachedPolicies();
-            System.out.println("Attached Policies: " + managedPolicyNames.toString());
+            logger.debug("Attached Policies: " + managedPolicyNames.toString());
             if (managedPolicyNames.size() >= 1) //we prioritize managed policies over inline policies
             {
                 //TODO: handle more than 1 policy (ask the user to choose it?)
                 AttachedPolicy attachedPolicy = managedPolicyNames.get(0);
-                System.out.println("First Attached Policy " + attachedPolicy.toString());
+                logger.debug("First Attached Policy " + attachedPolicy.toString());
                 GetPolicyRequest gpr = new GetPolicyRequest().withPolicyArn(attachedPolicy.getPolicyArn());
 
                 GetPolicyResult rpr = identityManagementClient.getPolicy(gpr);
-                System.out.println("GetPolicyResult: " + attachedPolicy.toString());
+                logger.debug("GetPolicyResult: " + attachedPolicy.toString());
                 Policy policy = rpr.getPolicy();
 
                 GetPolicyVersionResult pvr = identityManagementClient.getPolicyVersion(new GetPolicyVersionRequest().withPolicyArn(policy.getArn()).withVersionId(policy.getDefaultVersionId()));
-                System.out.println("GetPolicyVersionResult: " + pvr.toString());
+                logger.debug("GetPolicyVersionResult: " + pvr.toString());
 
                 String policyDoc = pvr.getPolicyVersion().getDocument();
 
-                System.out.println("Policy Document: " + policyDoc);
+                logger.debug("Policy Document: " + policyDoc);
 
                 try {
                     String policyDocClean = URLDecoder.decode(policyDoc, "UTF-8");
-                    System.out.println("Clean Policy Document: " + policyDocClean);
+                    logger.debug("Clean Policy Document: " + policyDocClean);
                     ObjectMapper objectMapper = new ObjectMapper();
 
                     try {
                         JsonNode rootNode = objectMapper.readTree(policyDocClean);
                         JsonNode statement = rootNode.path("Statement");
-                        System.out.println("Statement node: " + statement.toString());
+                        logger.debug("Statement node: " + statement.toString());
                         JsonNode resource = null;
                         if(statement.isArray()) {
-                            System.out.println("Statement is array");
+                            logger.debug("Statement is array");
                             for (int i = 0; i < statement.size(); i++) {
                                 String action = statement.get(i).path("Action").textValue();
-                                if(action == "sts:AssumeRole") {
+                                if(action.equals("sts:AssumeRole")) {
                                     resource = statement.get(i).path("Resource");
-                                    System.out.println("Resource node: " + resource.toString());
+                                    logger.debug("Resource node: " + resource.toString());
                                 }
                             }
                         }
                         else {
-                            System.out.println("Statement is NOT array");
+                            logger.debug("Statement is NOT array");
                             if(statement.get("Action").textValue().equals("sts:AssumeRole")) {
                                 resource = statement.path("Resource");
-                                System.out.println("Resource node: " + resource.toString());
+                                logger.debug("Resource node: " + resource.toString());
                             }
                         }
                         if(resource!=null) {
                             roleToAssume = resource.textValue();
-                            System.out.println("Role to assume: " + roleToAssume);
+                            logger.debug("Role to assume: " + roleToAssume);
                         }
                     } catch (IOException ioe) { }
                 }
@@ -622,8 +629,6 @@ public class awscli {
                     }
                     pw.println(line);
                 }
-
-                //System.out.println(line);
             }
         }
 
@@ -674,9 +679,8 @@ public class awscli {
                 } else {
                     if ((!line.contains(profileName) && !line.equalsIgnoreCase("\n"))) {
                         pw.println(line);
+                        logger.debug(line);
                     }
-
-                    //System.out.println(line);
                 }
 
 
@@ -786,7 +790,7 @@ public class awscli {
         JSONArray factors = authResponse.getJSONObject("_embedded").getJSONArray("factors");
         JSONObject factor;
         String factorType;
-        System.out.println("\nMulti-Factor authentication required. Please select a factor to use.");
+        System.out.println("\nMulti-Factor authentication is required. Please select a factor to use.");
         //list factor to select from to user
         System.out.println("Factors:");
         for(int i=0; i<factors.length(); i++){
@@ -826,7 +830,7 @@ public class awscli {
                 System.out.println("Incorrect answer, please try again");
             }
             System.out.println(question);
-            System.out.print("Answer: ");
+            System.out.println("Answer: ");
             answer = scanner.nextLine();
             //verify answer is correct
             if(answer.toLowerCase().equals("change factor")){
@@ -856,7 +860,7 @@ public class awscli {
                 //send initial code to user
                 sessionToken = verifyAnswer("",factor,stateToken, "sms");
             }
-            System.out.print("SMS Code: ");
+            System.out.println("SMS Code: ");
             answer = scanner.nextLine();
             //resends code
             if(answer.equals("new code")){
@@ -888,7 +892,7 @@ public class awscli {
                 System.out.println("Invalid token, please try again");
             }
 
-            System.out.print("Token: ");
+            System.out.println("Token: ");
             answer = scanner.nextLine();
             //verify auth Token
             if(answer.toLowerCase().equals("change factor")){
@@ -911,7 +915,7 @@ public class awscli {
 
         System.out.println("\nPush Factor Authentication");
         while( sessionToken == ""){
-            //System.out.print("Token: ");
+            //System.out.println("Token: ");
             //prints waiting tick marks
             //if( time.compareTo(newTime) > 4000){
             //    System.out.println("...");
@@ -1088,7 +1092,7 @@ public class awscli {
                 System.out.println("Incorrect answer, please try again");
             }
             System.out.println(question);
-            System.out.print("Answer: ");
+            System.out.println("Answer: ");
             answer = scanner.nextLine();
             //verify answer is correct
             if (answer.toLowerCase().equals("change factor")) {
@@ -1117,7 +1121,7 @@ public class awscli {
                 System.out.println("Invalid token, please try again");
             }
 
-            System.out.print("Token: ");
+            System.out.println("Token: ");
             answer = scanner.nextLine();
             //verify auth Token
             if (answer.toLowerCase().equals("change factor")) {
@@ -1349,7 +1353,7 @@ public class awscli {
                 System.out.print("Username: ");
                 //Scanner scanner = new Scanner(System.in);
 
-                String oktaUsername = "john"; //scanner.next();
+                String oktaUsername = null; //scanner.next();
 
                 Console console = System.console();
                 String oktaPassword = null;
@@ -1357,7 +1361,6 @@ public class awscli {
                     oktaPassword = new String(console.readPassword("Password: "));
                 } else { // hack to be able to debug in an IDE
                     System.out.print("Password: ");
-                    oktaPassword = "pass";//scanner.next();
                 }
                 try {
                     authResult = authenticateCredentials(oktaUsername, oktaPassword);
