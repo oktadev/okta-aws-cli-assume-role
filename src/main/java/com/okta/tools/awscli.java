@@ -508,6 +508,7 @@ public class awscli {
                         if (action !=null && action.equals("sts:AssumeRole")) {
                             resource = statement.get(i).path("Resource");
                             logger.debug("Resource node: " + resource.toString());
+                            break;
                         }
                     }
                 } else {
