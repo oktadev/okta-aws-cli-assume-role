@@ -13,12 +13,9 @@
 package com.okta.tools;
 
 import com.amazonaws.AmazonClientException;
-import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.auth.profile.ProfilesConfigFile;
-import com.amazonaws.auth.profile.internal.securitytoken.ProfileCredentialsService;
-import com.amazonaws.auth.profile.internal.securitytoken.RoleInfo;
 import com.amazonaws.services.identitymanagement.model.GetPolicyRequest;
 import com.amazonaws.services.identitymanagement.model.GetPolicyResult;
 import com.amazonaws.services.identitymanagement.model.GetPolicyVersionRequest;
@@ -26,28 +23,20 @@ import com.amazonaws.services.identitymanagement.model.GetPolicyVersionResult;
 import com.amazonaws.services.identitymanagement.model.GetRoleRequest;
 import com.amazonaws.services.identitymanagement.model.GetRoleResult;
 import com.amazonaws.services.identitymanagement.model.Policy;
-import com.amazonaws.services.iot.model.*;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.amazonaws.services.identitymanagement.*;
 import com.amazonaws.services.identitymanagement.model.*;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.okta.sdk.clients.AuthApiClient;
 import com.okta.sdk.clients.FactorsApiClient;
 import com.okta.sdk.clients.UserApiClient;
 import com.okta.sdk.exceptions.ApiException;
-import com.okta.sdk.exceptions.SdkException;
 import com.okta.sdk.framework.ApiClientConfiguration;
-import com.okta.sdk.framework.JsonApiClient;
 import com.okta.sdk.models.auth.AuthResult;
-import com.okta.sdk.models.factors.Verification;
-import com.okta.sdk.models.factors.FactorVerificationResponse;
-import com.okta.sdk.models.users.User;
 import com.okta.sdk.models.factors.Factor;
-import com.okta.sdk.models.users.User;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -56,7 +45,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.protocol.HTTP;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -160,10 +148,10 @@ public class awscli {
                 oktaPassword = new String(console.readPassword("Password: "));
             } else { // hack to be able to debug in an IDE
                 System.out.print("Password: ");
-                //oktaUsername  = "john";
+                oktaUsername  = "john";
 
                 oktaPassword = scanner.next();
-                //oktaPassword = "ctkQesDGLULiVyFPVFxuCfLzWX(7";
+                oktaPassword = "ctkQesDGLULiVyFPVFxuCfLzWX(7";
             }
 
             responseAuthenticate = authnticateCredentials(oktaUsername, oktaPassword);
@@ -454,14 +442,19 @@ public class awscli {
             logger.debug("ListAttachedRolePoliciesResult: " + arpr.toString());
             ListRolePoliciesResult lrpr = identityManagementClient.listRolePolicies(new ListRolePoliciesRequest().withRoleName(roleName));
             logger.debug("ListRolePoliciesResult: " + lrpr.toString());
-            List<String> policyNames = lrpr.getPolicyNames();
-            logger.debug("Policy Names " + policyNames.toString());
-            List<AttachedPolicy> managedPolicyNames = arpr.getAttachedPolicies();
-            logger.debug("Attached Policies: " + managedPolicyNames.toString());
-            if (managedPolicyNames.size() >= 1) //we prioritize managed policies over inline policies
+            List<String> inlinePolicies = lrpr.getPolicyNames();
+            if(inlinePolicies.size() == 0) {
+                logger.debug("There are no inlines policies");
+            }
+            List<AttachedPolicy> managedPolicies = arpr.getAttachedPolicies();
+            if(managedPolicies.size() == 0) {
+                logger.debug("There are no managed policies");
+            }
+            if (managedPolicies.size() >= 1) //we prioritize managed policies over inline policies
             {
+                logger.debug("Managed Policies: " + managedPolicies.toString());
                 //TODO: handle more than 1 policy (ask the user to choose it?)
-                AttachedPolicy attachedPolicy = managedPolicyNames.get(0);
+                AttachedPolicy attachedPolicy = managedPolicies.get(0);
                 logger.debug("First Attached Policy " + attachedPolicy.toString());
                 GetPolicyRequest gpr = new GetPolicyRequest().withPolicyArn(attachedPolicy.getPolicyArn());
 
@@ -474,72 +467,71 @@ public class awscli {
 
                 String policyDoc = pvr.getPolicyVersion().getDocument();
 
-                logger.debug("Policy Document: " + policyDoc);
-
-                try {
-                    String policyDocClean = URLDecoder.decode(policyDoc, "UTF-8");
-                    logger.debug("Clean Policy Document: " + policyDocClean);
-                    ObjectMapper objectMapper = new ObjectMapper();
-
-                    try {
-                        JsonNode rootNode = objectMapper.readTree(policyDocClean);
-                        JsonNode statement = rootNode.path("Statement");
-                        logger.debug("Statement node: " + statement.toString());
-                        JsonNode resource = null;
-                        if(statement.isArray()) {
-                            logger.debug("Statement is array");
-                            for (int i = 0; i < statement.size(); i++) {
-                                String action = statement.get(i).path("Action").textValue();
-                                if(action.equals("sts:AssumeRole")) {
-                                    resource = statement.get(i).path("Resource");
-                                    logger.debug("Resource node: " + resource.toString());
-                                }
-                            }
-                        }
-                        else {
-                            logger.debug("Statement is NOT array");
-                            if(statement.get("Action").textValue().equals("sts:AssumeRole")) {
-                                resource = statement.path("Resource");
-                                logger.debug("Resource node: " + resource.toString());
-                            }
-                        }
-                        if(resource!=null) {
-                            roleToAssume = resource.textValue();
-                            logger.debug("Role to assume: " + roleToAssume);
-                        }
-                    } catch (IOException ioe) { }
-                }
-                catch (UnsupportedEncodingException uee) {
-
-                }
-
-
-            } else if (policyNames.size() >= 1) //if we only have one policy, then use it by default
+                roleToAssume = ProcessPolicyDocument(policyDoc);
+            }
+            else if (inlinePolicies.size() >= 1) //if we only have one policy, then use it by default
             {
+                logger.debug("Inline Policies " + inlinePolicies.toString());
+
+                if(inlinePolicies.size() > 1) { //there are more than one policy
+                }
+
                 //Have to set the role name and the policy name (both are mandatory fields
-                GetRolePolicyRequest grpr = new GetRolePolicyRequest().withRoleName(roleName).withPolicyName(policyNames.get(0));
+                //TODO: handle more than 1 policy (ask the user to choose it?)
+                GetRolePolicyRequest grpr = new GetRolePolicyRequest().withRoleName(roleName).withPolicyName(inlinePolicies.get(0));
                 GetRolePolicyResult rpr = identityManagementClient.getRolePolicy(grpr);
                 String policyDoc = rpr.getPolicyDocument();
 
-                try {
-                    String policyDocClean = URLDecoder.decode(policyDoc, "UTF-8");
-                    ObjectMapper objectMapper = new ObjectMapper();
-
-                    try {
-                        JsonNode rootNode = objectMapper.readTree(policyDocClean);
-                        JsonNode statement = rootNode.path("Statement");
-                        JsonNode resource = statement.path("Resource");
-
-                        roleToAssume = resource.textValue();
-                    } catch (IOException ioe) {
-                        String s = ioe.toString();
-                    }
-                } catch (UnsupportedEncodingException uee) {
-
-                }
+                roleToAssume = ProcessPolicyDocument(policyDoc);
             }
         }
     }
+
+
+    private static String ProcessPolicyDocument(String policyDoc) {
+
+        String strRoleToAssume = null;
+        try {
+            String policyDocClean = URLDecoder.decode(policyDoc, "UTF-8");
+            logger.debug("Clean Policy Document: " + policyDocClean);
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            try {
+                JsonNode rootNode = objectMapper.readTree(policyDocClean);
+                JsonNode statement = rootNode.path("Statement");
+                logger.debug("Statement node: " + statement.toString());
+                JsonNode resource = null;
+                if (statement.isArray()) {
+                    logger.debug("Statement is array");
+                    for (int i = 0; i < statement.size(); i++) {
+                        String action = statement.get(i).path("Action").textValue();
+                        if (action !=null && action.equals("sts:AssumeRole")) {
+                            resource = statement.get(i).path("Resource");
+                            logger.debug("Resource node: " + resource.toString());
+                        }
+                    }
+                } else {
+                    logger.debug("Statement is NOT array");
+                    if (statement.get("Action").textValue().equals("sts:AssumeRole")) {
+                        resource = statement.path("Resource");
+                        logger.debug("Resource node: " + resource.toString());
+                    }
+                }
+                if (resource != null) {
+                    strRoleToAssume = resource.textValue();
+                    logger.debug("Role to assume: " + roleToAssume);
+                }
+            } catch (IOException ioe) {
+            }
+        } catch (UnsupportedEncodingException uee) {
+
+            }
+
+
+
+        return strRoleToAssume;
+    }
+
     /* Retrieves AWS credentials from AWS's assumedRoleResult and write the to aws credential file
      * Precondition :  AssumeRoleWithSAMLResult assumeResult
      */
@@ -650,7 +642,7 @@ public class awscli {
 
     private static void UpdateConfigFile(String profileName, String roleToAssume) throws IOException {
 
-        //if(roleToAssume!=null && !roleToAssume.equals("")) {
+        if(roleToAssume!=null && !roleToAssume.equals("")) {
             File inFile = new File(System.getProperty("user.home") + "/.aws/config");
 
             FileInputStream fis = new FileInputStream(inFile);
@@ -698,7 +690,7 @@ public class awscli {
                 if (!tempFile.renameTo(inFile))
                     System.out.println("Could not rename file");
             }
-        //}
+        }
     }
 
     public static void WriteNewProfile(PrintWriter pw, String profileNameLine, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
