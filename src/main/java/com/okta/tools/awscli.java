@@ -148,10 +148,8 @@ public class awscli {
                 oktaPassword = new String(console.readPassword("Password: "));
             } else { // hack to be able to debug in an IDE
                 System.out.print("Password: ");
-                oktaUsername  = "john";
 
                 oktaPassword = scanner.next();
-                oktaPassword = "ctkQesDGLULiVyFPVFxuCfLzWX(7";
             }
 
             responseAuthenticate = authnticateCredentials(oktaUsername, oktaPassword);
@@ -413,9 +411,7 @@ public class awscli {
 
         //use user credentials to assume AWS role
         AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(awsCreds);
-
-
-
+        
         AssumeRoleWithSAMLRequest assumeRequest = new AssumeRoleWithSAMLRequest()
                 .withPrincipalArn(principalArn)
                 .withRoleArn(roleArn)
@@ -452,6 +448,12 @@ public class awscli {
             }
             if (managedPolicies.size() >= 1) //we prioritize managed policies over inline policies
             {
+                List<String> lstManagedPolicies = new ArrayList<String>();
+
+                for (AttachedPolicy managedPolicy: managedPolicies) {
+                    lstManagedPolicies.add(managedPolicy.getPolicyName());
+                }
+                
                 logger.debug("Managed Policies: " + managedPolicies.toString());
                 //TODO: handle more than 1 policy (ask the user to choose it?)
                 AttachedPolicy attachedPolicy = managedPolicies.get(0);
@@ -487,6 +489,26 @@ public class awscli {
         }
     }
 
+
+    private static String SelectPolicy(List<String> lstPolicies) {
+        String strSelectedPolicy = null;
+
+        System.out.println("\nPlease select a policy: ");
+
+        //Gather list of policies for the selected role
+        int i = 1;
+        for (String strPolicyName: lstPolicies)
+        {
+            System.out.println("[ " + i + " ]: " + strPolicyName);
+            i++;
+        }
+
+
+        //Prompt user for policy selection
+        int selection = numSelection(lstPolicies.size());
+
+        return strSelectedPolicy;
+    }
 
     private static String ProcessPolicyDocument(String policyDoc) {
 
