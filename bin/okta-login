@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+base="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+java -cp $base/../lib/okta-sdk.jar:$base/../target/okta-aws-cli-1.0-SNAPSHOT-with-dependencies.jar -Dconfig.file=$base/../config/okta.conf com.okta.tools.awscli

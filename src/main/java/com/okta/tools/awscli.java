@@ -12,10 +12,8 @@
 
 package com.okta.tools;
 
-import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.auth.profile.ProfilesConfigFile;
 import com.amazonaws.services.identitymanagement.model.GetPolicyRequest;
 import com.amazonaws.services.identitymanagement.model.GetPolicyResult;
 import com.amazonaws.services.identitymanagement.model.GetPolicyVersionRequest;
@@ -37,22 +35,27 @@ import com.okta.sdk.exceptions.ApiException;
 import com.okta.sdk.framework.ApiClientConfiguration;
 import com.okta.sdk.models.auth.AuthResult;
 import com.okta.sdk.models.factors.Factor;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
+import com.typesafe.config.ConfigFactory;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.ini4j.Ini;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URLDecoder;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -66,12 +69,16 @@ import org.apache.logging.log4j.LogManager;
 
 public class awscli {
 
+    private static final String DEFAULT_AWS_ROLE = "Undefined-Role";
+
     //User specific variables
-    private static String oktaOrg = "";
-    private static String oktaAWSAppURL = "";
-    private static String awsIamKey = null;
-    private static String awsIamSecret = null;
+    private static URI oktaAWSAppURL;
+    private static String awsCredentialsProfile;
+    private static String awsRole;
+    private static String awsIamKey;
+    private static String awsIamSecret;
     private static AuthApiClient authClient;
+    private static Config config;
 
     private static FactorsApiClient factorClient;
     private static UserApiClient userClient;
@@ -82,6 +89,7 @@ public class awscli {
     private static final Logger logger = LogManager.getLogger(awscli.class);
 
     public static void main(String[] args) throws Exception {
+        config = ConfigFactory.load().resolve();
         awsSetup();
         extractCredentials();
 
@@ -89,8 +97,6 @@ public class awscli {
         CloseableHttpClient httpClient = null;
         String resultSAML = "";
         try {
-
-
             String strOktaSessionToken = oktaAuthntication();
             if (!strOktaSessionToken.equalsIgnoreCase(""))
                 //Part 2 get saml assertion
@@ -101,7 +107,7 @@ public class awscli {
             logger.error("\nUnable to establish a connection with AWS. \nPlease verify that your OKTA_AWS_APP_URL parameter is correct and try again");
             System.exit(0);
         } catch (ClientProtocolException e) {
-            logger.error("\nNo Org found, please specify an OKTA_ORG parameter in your config.properties file");
+            logger.error("\nNo Org found, please specify an OKTA_ORG parameter in your okta.conf file");
             System.exit(0);
         } catch (IOException e) {
             e.printStackTrace();
@@ -110,8 +116,7 @@ public class awscli {
         // Part 3: Assume an AWS role using the SAML Assertion from Okta
         AssumeRoleWithSAMLResult assumeResult = assumeAWSRole(resultSAML);
 
-        com.amazonaws.services.securitytoken.model.AssumedRoleUser aru = assumeResult.getAssumedRoleUser();
-        String arn = aru.getArn();
+        String arn = assumeResult.getAssumedRoleUser().getArn();
         //String roleid = aru.getAssumedRoleId();
 
         // Part 4: Write the credentials to ~/.aws/credentials
@@ -180,7 +185,7 @@ public class awscli {
 
 
         //HTTP Post request to Okta API for session token
-        httpost = new HttpPost("https://" + oktaOrg + "/api/v1/authn");
+        httpost = new HttpPost("https://" + oktaAWSAppURL.getHost() + "/api/v1/authn");
         httpost.addHeader("Accept", "application/json");
         httpost.addHeader("Content-Type", "application/json");
         httpost.addHeader("Cache-Control", "no-cache");
@@ -198,67 +203,53 @@ public class awscli {
     }
 
     /* creates required AWS credential file if necessary" */
-    private static void awsSetup() throws FileNotFoundException, UnsupportedEncodingException {
+    private static void awsSetup() throws IOException {
         //check if credentials file has been created
-        File f = new File(System.getProperty("user.home") + "/.aws/credentials");
-        //creates credentials file if it doesn't exist yet
-        if (!f.exists()) {
-            f.getParentFile().mkdirs();
-
-            PrintWriter writer = new PrintWriter(f, "UTF-8");
-            writer.println("[default]");
-            writer.println("aws_access_key_id=");
-            writer.println("aws_secret_access_key=");
-            writer.close();
+        File credentialsFile = new File(System.getProperty("user.home") + "/.aws/credentials");
+        if (!credentialsFile.exists()) {
+            credentialsFile.getParentFile().mkdirs();
+            Ini def = new Ini();
+            def.put("default", "aws_access_key_id", "");
+            def.put("default", "aws_secret_access_key", "");
+            def.store(credentialsFile);
         }
-
-        f = new File(System.getProperty("user.home") + "/.aws/config");
+        File configFile = new File(System.getProperty("user.home") + "/.aws/config");
         //creates credentials file if it doesn't exist yet
-        if (!f.exists()) {
-            f.getParentFile().mkdirs();
-
-            PrintWriter writer = new PrintWriter(f, "UTF-8");
-            writer.println("[profile default]");
-            writer.println("output = json");
-            writer.println("region = us-east-1");
-            writer.close();
+        if (!configFile.exists()) {
+            configFile.getParentFile().mkdirs();
+            Ini def = new Ini();
+            def.put("profile default", "output", "json");
+            def.put("profile default", "region", "us-east-1");
+            def.store(configFile);
         }
     }
 
     /* Parses application's config file for app URL and Okta Org */
     private static void extractCredentials() throws IOException {
-        //BufferedReader oktaBr = new BufferedReader(new FileReader(new File (System.getProperty("user.dir")) +"/oktaAWSCLI.config"));
-        //RL, 2016-02-25, moving to properties file
-        String strLocalFolder = System.getProperty("user.dir");
-        File propertiesFile = new File("config.properties");
-        FileReader reader = new FileReader(propertiesFile);
-        Properties props = new Properties();
-        props.load(reader);
-        //Properties configFile = new Properties();
-        //configFile.load(this.getClass().getClassLoader().getResourceAsStream("/config.properties"));
-
         //extract oktaOrg and oktaAWSAppURL from Okta settings file
-        oktaOrg = props.getProperty("OKTA_ORG");
-        oktaAWSAppURL = props.getProperty("OKTA_AWS_APP_URL");
-        awsIamKey  = props.getProperty("AWS_IAM_KEY");
-        awsIamSecret  = props.getProperty("AWS_IAM_SECRET");
-/*		String line = oktaBr.readLine();
-        while(line!=null){
-			if(line.contains("OKTA_ORG")){
-				oktaOrg = line.substring(line.indexOf("=")+1).trim();
-			}
-			else if( line.contains("OKTA_AWS_APP_URL")){
-				oktaAWSAppURL = line.substring(line.indexOf("=")+1).trim();
-			}
-			line = oktaBr.readLine();
-		}	
-		oktaBr.close();*/
+        try {
+            oktaAWSAppURL = new URI(config.getString("okta.app_url"));
+            awsIamKey = config.getString("aws.access_key");
+            awsIamSecret = config.getString("aws.secret_key");
+            try {
+                awsCredentialsProfile = config.getString("aws.credentials_profile");
+            } catch (ConfigException.Missing ex2) {
+                awsCredentialsProfile = null;
+            }
+            try {
+                awsRole = config.getString("aws.role");
+            } catch (ConfigException.Missing ex2) {
+                awsRole = DEFAULT_AWS_ROLE;
+            }
+        } catch (URISyntaxException ex) {
+            logger.error("okta.AWS_APP_URL is not a valid URI", ex);
+        }
     }
 
     /*Uses user's credentials to obtain Okta session Token */
     private static AuthResult authenticateCredentials(String username, String password) throws ApiException, JSONException, ClientProtocolException, IOException {
 
-        ApiClientConfiguration oktaSettings = new ApiClientConfiguration("https://" + oktaOrg, "");
+        ApiClientConfiguration oktaSettings = new ApiClientConfiguration( oktaAWSAppURL.getScheme() + "://" + oktaAWSAppURL.getHost(), "");
         AuthResult result = null;
         authClient = new AuthApiClient(oktaSettings);
         userClient = new UserApiClient(oktaSettings);
@@ -280,7 +271,7 @@ public class awscli {
         } else if (requestStatus == 500) {
             //failed connection establishment
             logger.error("\nUnable to establish connection with: " +
-                    oktaOrg + " \nPlease verify that your Okta org url is correct and try again");
+                    oktaAWSAppURL.getHost() + " \nPlease verify that your Okta org url is correct and try again");
             System.exit(0);
         } else if (requestStatus != 200) {
             //other
@@ -330,16 +321,23 @@ public class awscli {
     }
 
     /* Retrieves SAML assertion containing roles from AWS */
-    private static String awsSamlHandler(String oktaSessionToken) throws ClientProtocolException, IOException {
+    private static String awsSamlHandler(String oktaSessionToken) throws URISyntaxException, IOException {
         HttpGet httpget = null;
         CloseableHttpResponse responseSAML = null;
         CloseableHttpClient httpClient = HttpClients.createDefault();
         String resultSAML = "";
         String outputSAML = "";
-
         // Part 2: Get the Identity Provider and Role ARNs.
         // Request for AWS SAML response containing roles
-        httpget = new HttpGet(oktaAWSAppURL + "?onetimetoken=" + oktaSessionToken);
+        List<NameValuePair> parsedQs = URLEncodedUtils.parse(oktaAWSAppURL.getRawQuery(), StandardCharsets.UTF_8);
+        parsedQs.add(new BasicNameValuePair("onetimetoken", oktaSessionToken));
+        httpget = new HttpGet(new URI(oktaAWSAppURL.getScheme(),
+                oktaAWSAppURL.getUserInfo(),
+                oktaAWSAppURL.getHost(),
+                oktaAWSAppURL.getPort(),
+                oktaAWSAppURL.getPath(),
+                URLEncodedUtils.format(parsedQs, StandardCharsets.UTF_8),
+                oktaAWSAppURL.getFragment()));
         responseSAML = httpClient.execute(httpget);
         samlFailHandler(responseSAML.getStatusLine().getStatusCode(), responseSAML);
 
@@ -366,7 +364,7 @@ public class awscli {
     private static AssumeRoleWithSAMLResult assumeAWSRole(String resultSAML) {
         // Decode SAML response
         resultSAML = resultSAML.replace("&#x2b;", "+").replace("&#x3d;", "=");
-        String resultSAMLDecoded = new String(Base64.decodeBase64(resultSAML));
+        String resultSAMLDecoded = new String(Base64.decodeBase64(resultSAML.getBytes(StandardCharsets.UTF_8)));
 
         ArrayList<String> principalArns = new ArrayList<String>();
         ArrayList<String> roleArns = new ArrayList<String>();
@@ -377,9 +375,8 @@ public class awscli {
             System.exit(0);
         }
 
-        System.out.println("\nPlease choose the role you would like to assume: ");
-
         //Gather list of applicable AWS roles
+        int autoSelection = -1;
         int i = 0;
         while (resultSAMLDecoded.indexOf("arn:aws") != -1) {
             /*Trying to parse the value of the Role SAML Assertion that typically looks like this:
@@ -394,13 +391,25 @@ public class awscli {
             String[] parts = resultSAMLRole.split(",");
             principalArns.add(parts[0]);
             roleArns.add(parts[1]);
-            System.out.println("[ " + (i + 1) + " ]: " + roleArns.get(i));
+            if ( parts[1].endsWith(awsRole) && autoSelection == -1 ) {
+                autoSelection = i;
+            }
             resultSAMLDecoded = (resultSAMLDecoded.substring(resultSAMLDecoded.indexOf("</saml2:AttributeValue") + 1));
             i++;
         }
 
-        //Prompt user for role selection
-        int selection = numSelection(roleArns.size());
+        int selection = autoSelection;
+        if ( selection == -1 ) {
+            System.out.println("\nPlease choose the role you would like to assume: ");
+            int idx = 0;
+            for (String arn : roleArns) {
+                idx++;
+                System.out.println("[ " + idx + " ]: " + arn);
+            }
+            selection = numSelection(roleArns.size());
+        } else {
+            System.out.println(roleArns.get( selection ));
+        }
 
         String principalArn = principalArns.get(selection);
         String roleArn = roleArns.get(selection);
@@ -569,11 +578,6 @@ public class awscli {
         String awsSecretKey = temporaryCredentials.getAWSSecretKey();
         String awsSessionToken = temporaryCredentials.getSessionToken();
 
-        //File file = new File(System.getProperty("user.home") + "/.aws/credentials");
-        //file.getParentFile().mkdirs();
-        //try {
-
-
         if(credentialsProfileName.startsWith("arn:aws:sts::")) {
             credentialsProfileName = credentialsProfileName.substring(13);
         }
@@ -581,159 +585,33 @@ public class awscli {
             credentialsProfileName = credentialsProfileName.replaceAll(":assumed-role", "");
         }
 
-        Object[] args = {new String(credentialsProfileName)};
-        //writer.println("[aws-okta]");
         MessageFormat fmt = new MessageFormat("[{0}]");
-        String profileNameLine = fmt.format(args);
-
-        ProfilesConfigFile profilesConfigFile = null;
-        try {
-            profilesConfigFile = new ProfilesConfigFile();
-        }
-        catch(AmazonClientException ace) {
-            PopulateCredentialsFile(profileNameLine, awsAccessKey, awsSecretKey, awsSessionToken );
+        String profileNameLine = null;
+        String returnRoleName = credentialsProfileName;
+        if (awsCredentialsProfile != null) {
+            returnRoleName = awsCredentialsProfile;
         }
 
+        File credentialsFile = new File(System.getProperty("user.home") + "/.aws/credentials");
+        Ini credentialsConfig = new Ini(credentialsFile);
+        credentialsConfig.put(returnRoleName, "aws_access_key_id", awsAccessKey);
+        credentialsConfig.put(returnRoleName, "aws_secret_access_key", awsSecretKey);
+        credentialsConfig.put(returnRoleName, "aws_session_token", awsSessionToken);
+        credentialsConfig.store(credentialsFile);
 
-        try {
-            if (profilesConfigFile!= null && profilesConfigFile.getCredentials(credentialsProfileName) != null) {
-
-                //if we end up here, it means we were  able to find a matching profile
-                PopulateCredentialsFile(profileNameLine, awsAccessKey, awsSecretKey, awsSessionToken );
-            }
-        } catch (IllegalArgumentException iae) {
-
-            //if we end up here, it means we were not able to find a matching profile so we need to append one
-            FileWriter fileWriter = new FileWriter(System.getProperty("user.home") + "/.aws/credentials", true); //TODO: need to be updated to work with Windows
-            PrintWriter writer = new PrintWriter(fileWriter); // new PrintWriter(file, "UTF-8");
-            WriteNewProfile(writer, profileNameLine, awsAccessKey, awsSecretKey, awsSessionToken);
-            fileWriter.close();
-        }
-
-
-        return credentialsProfileName;
-    }
-
-    private static void PopulateCredentialsFile(String profileNameLine, String awsAccessKey, String awsSecretKey, String awsSessionToken) throws FileNotFoundException, IOException {
-
-
-        File inFile = new File(System.getProperty("user.home") + "/.aws/credentials");
-        FileInputStream fis = new FileInputStream(inFile);
-        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-        File tempFile = new File(inFile.getAbsolutePath() + ".tmp");
-        PrintWriter pw = new PrintWriter(new FileWriter(tempFile));
-
-        //first, we add our refreshed profile
-        WriteNewProfile(pw, profileNameLine, awsAccessKey, awsSecretKey, awsSessionToken);
-
-        String line = null;
-        int lineCounter = 0;
-        boolean bFileStart = true;
-
-        //second, we're copying all the other profile from the original credentials file
-        while ((line = br.readLine()) != null) {
-
-            if (line.equalsIgnoreCase(profileNameLine) || (lineCounter > 0 && lineCounter < 4)) {
-                //we found the line we must replace and we will skip 3 additional lines
-                ++lineCounter;
-            } else {
-                if((!line.equalsIgnoreCase("") && !line.equalsIgnoreCase("\n"))) {
-                    if(line.startsWith("[")) {
-                        //this is the start of a new profile, so we're adding a separator line
-                        pw.println();
-                    }
-                    pw.println(line);
-                }
-            }
-        }
-
-
-        pw.flush();
-        pw.close();
-        br.close();
-
-        //delete the original credentials file
-        if (!inFile.delete()) {
-            System.out.println("Could not delete original credentials file");
-
-        }
-
-        // Rename the new file to the filename the original file had.
-        if (!tempFile.renameTo(inFile))
-            System.out.println("Could not rename file");
+        return returnRoleName;
     }
 
     private static void UpdateConfigFile(String profileName, String roleToAssume) throws IOException {
-
         if(roleToAssume!=null && !roleToAssume.equals("")) {
             File inFile = new File(System.getProperty("user.home") + "/.aws/config");
-
-            FileInputStream fis = new FileInputStream(inFile);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-            File tempFile = new File(inFile.getAbsolutePath() + ".tmp");
-            PrintWriter pw = new PrintWriter(new FileWriter(tempFile));
-
-            //first, we add our refreshed profile
-            WriteNewRoleToAssume(pw, profileName, roleToAssume);
-
-            String line = null;
-            int lineCounter = 0;
-            boolean bFileStart = true;
-
-            //second, we're copying all the other profiles from the original config file
-            while ((line = br.readLine()) != null) {
-
-                if (line.contains(profileName)) {
-                    //we found the section we must replace but we don't necessarily know how many lines we need to skip
-                    while ((line = br.readLine()) != null) {
-                        if (line.startsWith("[")) {
-                            pw.println(line); //this is a new profile line, so we're copying it
-                            break;
-                        }
-                    }
-                } else {
-                    if ((!line.contains(profileName) && !line.equalsIgnoreCase("\n"))) {
-                        pw.println(line);
-                        logger.debug(line);
-                    }
-                }
-
-
-            }
-
-            pw.flush();
-            pw.close();
-            br.close();
-
-            //delete the original credentials file
-            if (!inFile.delete()) {
-                System.out.println("Could not delete original config file");
-            } else {
-                // Rename the new file to the filename the original file had.
-                if (!tempFile.renameTo(inFile))
-                    System.out.println("Could not rename file");
-            }
+            Ini configFile = new Ini(inFile);
+            if(roleToAssume!=null && !roleToAssume.equals(""))
+                configFile.put(profileName, "role_arn", roleToAssume);
+            configFile.put(profileName, "source_profile", profileName);
+            configFile.put(profileName, "region", "us-east-1");
+            configFile.store(inFile);
         }
-    }
-
-    public static void WriteNewProfile(PrintWriter pw, String profileNameLine, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
-        pw.println(profileNameLine);
-        //writer.println("[" + credentialsProfileName + "]");
-        pw.println("aws_access_key_id=" + awsAccessKey);
-        pw.println("aws_secret_access_key=" + awsSecretKey);
-        pw.println("aws_session_token=" + awsSessionToken);
-        //pw.flush();
-        //pw.close();
-        //return pw;
-    }
-
-    public static void WriteNewRoleToAssume(PrintWriter pw, String profileName, String roleToAssume) {
-        pw.println("[profile " + profileName +"]");
-        //writer.println("[" + credentialsProfileName + "]");
-        if(roleToAssume!=null && !roleToAssume.equals(""))
-            pw.println("role_arn=" + roleToAssume);
-        pw.println("source_profile=" + profileName);
-        pw.println("region=us-east-1");
     }
 
     private static String mfa(JSONObject authResponse) {
@@ -1403,7 +1281,7 @@ public class awscli {
                             break;
                         case 500:
                             System.out.println("\nUnable to establish connection with: " +
-                                    oktaOrg + " \nPlease verify that your Okta org url is correct and try again");
+                                    oktaAWSAppURL.getHost() + " \nPlease verify that your Okta org url is correct and try again");
                             System.exit(0);
                             break;
                         default:
