@@ -3,6 +3,7 @@
     <properties maven-id="com.fasterxml.jackson.core:jackson-core:2.0.6" />
     <CLASSES>
       <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/jackson/core/jackson-core/2.0.6/jackson-core-2.0.6.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/jackson/core/jackson-core/2.0.6/jackson-core-2.0.6.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

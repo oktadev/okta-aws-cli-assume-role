@@ -1,16 +1,4 @@
-*.class
-
-# Package Files #
-*.war
-*.ear
-
-# jar folder
-META-INF
-
-out/config.properties
-
-lib/aws-java-sdk-1.10.71.jar
-
-lib/aws-java-sdk-1.10.74.jar
-
-lib/aws-java-sdk-1.11.37.jar
+*.iml
+target
+.idea
+config/okta.conf
