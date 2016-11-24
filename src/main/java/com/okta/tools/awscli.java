@@ -73,14 +73,15 @@ public class awscli {
     private static String awsIamSecret = null;
     private static AuthApiClient authClient;
 
-     private static final String DefaultProfileName  = "default";
+    private static final String DefaultProfileName  = "default";
 
     private static FactorsApiClient factorClient;
     private static UserApiClient userClient;
     private static String userId;
     private static String crossAccountRoleName = null;
-    private static String roleToAssume; //the ARN of the role the user wants to eventually assume (not the cross-account role, the "real" role in the target account)
     private static int selectedPolicyRank; //the zero-based rank of the policy selected in the selected cross-account role (in case there is more than one policy tied to the current policy)
+    private static List<String> rolesToAssume; //the list of ARNs of the role(-s) the user wants to eventually assume (not the cross-account role, the "real" role in the target account)
+
     private static final Logger logger = LogManager.getLogger(awscli.class);
 
     public static void main(String[] args) throws Exception {
@@ -117,13 +118,27 @@ public class awscli {
 
         // Step #4: Get the final role to assume and update the config file to add it to the user's profile
         GetRoleToAssume(crossAccountRoleName);
-        logger.trace("Role to assume ARN: " + roleToAssume);
+
+        int selection;
+
+        if (rolesToAssume.size() > 1){
+            System.out.println("Select target account role:");
+            int i = 1;
+            for (String s: rolesToAssume){
+                System.out.println("[ " + i++ + " ]: " + s);
+            }
+            selection = numSelection(rolesToAssume.size());
+        } else {
+            selection = 0;
+        }
+
+        logger.trace("Role to assume ARN: " + rolesToAssume.get(selection));
 
         // Step #5: Write the credentials to ~/.aws/credentials
         String profileName = setAWSCredentials(assumeResult, arn);
 
-        UpdateConfigFile(profileName, roleToAssume);
-        UpdateConfigFile(DefaultProfileName, roleToAssume);
+        UpdateConfigFile(profileName, rolesToAssume.get(selection));
+        UpdateConfigFile(DefaultProfileName, rolesToAssume.get(selection));
 
         // Print Final message
         resultMessage(profileName);
@@ -480,8 +495,10 @@ public class awscli {
 
                 String policyDoc = pvr.getPolicyVersion().getDocument();
 
-                roleToAssume = ProcessPolicyDocument(policyDoc);
-            } else if (inlinePolicies.size() >= 1) //processing inline policies if we have no managed policies
+
+                rolesToAssume = ProcessPolicyDocument(policyDoc);
+            }
+            else if (inlinePolicies.size() >= 1) //if we only have one policy, then use it by default
             {
                 logger.debug("Inline Policies " + inlinePolicies.toString());
 
@@ -499,7 +516,7 @@ public class awscli {
                 GetRolePolicyResult rpr = identityManagementClient.getRolePolicy(grpr);
                 String policyDoc = rpr.getPolicyDocument();
 
-                roleToAssume = ProcessPolicyDocument(policyDoc);
+                rolesToAssume = ProcessPolicyDocument(policyDoc);
             }
         }
     }
@@ -522,9 +539,9 @@ public class awscli {
         return selection;
     }
 
-    private static String ProcessPolicyDocument(String policyDoc) {
+    private static List<String> ProcessPolicyDocument(String policyDoc) {
 
-        String strRoleToAssume = null;
+        List<String> listRolesToAssume = new ArrayList<>();
         try {
             String policyDocClean = URLDecoder.decode(policyDoc, "UTF-8");
             logger.debug("Clean Policy Document: " + policyDocClean);
@@ -553,17 +570,24 @@ public class awscli {
                     }
                 }
                 if (resource != null) {
-                    strRoleToAssume = resource.textValue();
-                    logger.debug("Role to assume: " + roleToAssume);
+                    if (resource.isArray()){
+                        for (int i = 0; i < resource.size(); i++) {
+                            String roleResource = resource.get(i).textValue();
+                            logger.debug("Role resource: " + roleResource);
+                            listRolesToAssume.add(roleResource);
+                        }
+                    } else {
+                        listRolesToAssume.add(resource.textValue());
+                    }
                 }
             } catch (IOException ioe) {
             }
         } catch (UnsupportedEncodingException uee) {
 
-        }
 
+            }
 
-        return strRoleToAssume;
+        return listRolesToAssume;
     }
 
     /* Retrieves AWS credentials from AWS's assumedRoleResult and write the to aws credential file
