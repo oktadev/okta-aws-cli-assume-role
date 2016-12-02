@@ -29,9 +29,13 @@ The application was built and compiled with [JetBrains' IntelliJ IDEA](https://w
 ###Prerequisites
 First of all, it goes without saying that you will need to install the [Java SE 8x](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or the [Java JDK 8x](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).
 
-Next, in order to compile the application, you will need to download and install the [AWS Java SDK](https://aws.amazon.com/sdk-for-java/) as well as the [AWS Command Line Interface](https://aws.amazon.com/cli). Once you have downloaded the ```AWS Java SDK```, make sure you copy the latest AWS JAR file (currently ```aws-java-sdk-1.10.74.jar```) into the ```lib``` folder of this tool (otherwise, you will not be able to compile or run it).
+To compile and package the application, use maven:
 
-You will also need the [Okta Java SDK](https://github.com/okta/oktasdk-java) but we provide a compiled version of it within this repository so there's nothing specific you need to do at this point. We used the following path structure to manage our IntelliJ project: ```$HOME/Projects/okta-aws-cli-assume-role``` and we recommend you do the same to avoid fixing too many references. We've also created a ```lib``` sub-folder inside the ```okta-aws-cli-assume-role``` root folder where we're storing the AWS Java SDK (```aws-java-sdk-1.10.74.jar```), the Okta Java SDK (```okta-sdk.jar```) and other dependencies. We strongly recommend that you do the same.
+```
+mvn clean package
+```
+
+This will produce a shaded jar with all the required dependencies that can be executed on its own.
 
 ###Opening the project with IntelliJ Idea
 
