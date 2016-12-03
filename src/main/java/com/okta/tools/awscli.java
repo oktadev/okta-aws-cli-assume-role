@@ -229,32 +229,11 @@ public class awscli {
 
     /* Parses application's config file for app URL and Okta Org */
     private static void extractCredentials() throws IOException {
-        //BufferedReader oktaBr = new BufferedReader(new FileReader(new File (System.getProperty("user.dir")) +"/oktaAWSCLI.config"));
-        //RL, 2016-02-25, moving to properties file
-        String strLocalFolder = System.getProperty("user.dir");
-        File propertiesFile = new File("config.properties");
-        FileReader reader = new FileReader(propertiesFile);
-        Properties props = new Properties();
-        props.load(reader);
-        //Properties configFile = new Properties();
-        //configFile.load(this.getClass().getClassLoader().getResourceAsStream("/config.properties"));
-
-        //extract oktaOrg and oktaAWSAppURL from Okta settings file
-        oktaOrg = props.getProperty("OKTA_ORG");
-        oktaAWSAppURL = props.getProperty("OKTA_AWS_APP_URL");
-        awsIamKey = props.getProperty("AWS_IAM_KEY");
-        awsIamSecret = props.getProperty("AWS_IAM_SECRET");
-/*		String line = oktaBr.readLine();
-        while(line!=null){
-			if(line.contains("OKTA_ORG")){
-				oktaOrg = line.substring(line.indexOf("=")+1).trim();
-			}
-			else if( line.contains("OKTA_AWS_APP_URL")){
-				oktaAWSAppURL = line.substring(line.indexOf("=")+1).trim();
-			}
-			line = oktaBr.readLine();
-		}	
-		oktaBr.close();*/
+        ConfigParser config = ConfigParser.getConfig();
+        oktaOrg = config.getOktaOrg();
+        oktaAWSAppURL = config.getOktaAWSAppURL();
+        awsIamKey = config.getAwsIamKey();
+        awsIamSecret = config.getAwsIamSecret();
     }
 
     /*Uses user's credentials to obtain Okta session Token */
