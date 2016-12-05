@@ -71,6 +71,7 @@ public class awscli {
     private static String oktaAWSAppURL = "";
     private static String awsIamKey = null;
     private static String awsIamSecret = null;
+    private static String awsRegion;
     private static AuthApiClient authClient;
 
      private static final String DefaultProfileName  = "default";
@@ -222,7 +223,7 @@ public class awscli {
             PrintWriter writer = new PrintWriter(f, "UTF-8");
             writer.println("[profile default]");
             writer.println("output = json");
-            writer.println("region = us-east-1");
+            writer.println("region = " + awsRegion);
             writer.close();
         }
     }
@@ -234,6 +235,7 @@ public class awscli {
         oktaAWSAppURL = config.getOktaAWSAppURL();
         awsIamKey = config.getAwsIamKey();
         awsIamSecret = config.getAwsIamSecret();
+        awsRegion = config.getAwsRegion();
     }
 
     /*Uses user's credentials to obtain Okta session Token */
@@ -731,7 +733,7 @@ public class awscli {
         if (roleToAssume != null && !roleToAssume.equals(""))
             pw.println("role_arn=" + roleToAssume);
         pw.println("source_profile=" + profileName);
-        pw.println("region=us-east-1");
+        pw.println("region=" + awsRegion);
     }
 
     private static String mfa(JSONObject authResponse) {

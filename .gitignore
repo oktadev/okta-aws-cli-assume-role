@@ -18,3 +18,4 @@ lib/aws-java-sdk-1.11.37.jar
 /.idea
 /dependency-reduced-pom.xml
 /target/
+.DS_store

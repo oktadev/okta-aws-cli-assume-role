@@ -20,6 +20,7 @@ public class ConfigParser {
     private String oktaAWSAppURL;
     private String awsIamKey;
     private String awsIamSecret;
+    private String awsRegion;
 
     public static String HOME_DIR_FILE = System.getProperty("user.home") + System.getProperty("file.separator") + ".okta-aws.properties";
     public static String WORK_DIR_FILE = System.getProperty("user.dir") + System.getProperty("file.separator") + "config.properties";
@@ -59,6 +60,14 @@ public class ConfigParser {
         this.awsIamSecret = awsIamSecret;
     }
 
+    public String getAwsRegion() {
+        return awsRegion;
+    }
+
+    public void setAwsRegion(String awsRegion) {
+        this.awsRegion = awsRegion;
+    }
+
     public static ConfigParser getConfig() throws IOException {
         FileReader reader = null;
 
@@ -80,6 +89,7 @@ public class ConfigParser {
         config.setOktaAWSAppURL(props.getProperty("OKTA_AWS_APP_URL"));
         config.setAwsIamKey(props.getProperty("AWS_IAM_KEY"));
         config.setAwsIamSecret(props.getProperty("AWS_IAM_SECRET"));
+        config.setAwsRegion(props.getProperty("AWS_DEFAULT_REGION", "us-east-1"));
 
         return config;
     }
