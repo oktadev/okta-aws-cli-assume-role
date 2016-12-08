@@ -71,6 +71,7 @@ public class awscli {
     private static String oktaAWSAppURL = "";
     private static String awsIamKey = null;
     private static String awsIamSecret = null;
+    private static String awsRegion;
     private static AuthApiClient authClient;
 
      private static final String DefaultProfileName  = "default";
@@ -222,39 +223,19 @@ public class awscli {
             PrintWriter writer = new PrintWriter(f, "UTF-8");
             writer.println("[profile default]");
             writer.println("output = json");
-            writer.println("region = us-east-1");
+            writer.println("region = " + awsRegion);
             writer.close();
         }
     }
 
     /* Parses application's config file for app URL and Okta Org */
     private static void extractCredentials() throws IOException {
-        //BufferedReader oktaBr = new BufferedReader(new FileReader(new File (System.getProperty("user.dir")) +"/oktaAWSCLI.config"));
-        //RL, 2016-02-25, moving to properties file
-        String strLocalFolder = System.getProperty("user.dir");
-        File propertiesFile = new File("config.properties");
-        FileReader reader = new FileReader(propertiesFile);
-        Properties props = new Properties();
-        props.load(reader);
-        //Properties configFile = new Properties();
-        //configFile.load(this.getClass().getClassLoader().getResourceAsStream("/config.properties"));
-
-        //extract oktaOrg and oktaAWSAppURL from Okta settings file
-        oktaOrg = props.getProperty("OKTA_ORG");
-        oktaAWSAppURL = props.getProperty("OKTA_AWS_APP_URL");
-        awsIamKey = props.getProperty("AWS_IAM_KEY");
-        awsIamSecret = props.getProperty("AWS_IAM_SECRET");
-/*		String line = oktaBr.readLine();
-        while(line!=null){
-			if(line.contains("OKTA_ORG")){
-				oktaOrg = line.substring(line.indexOf("=")+1).trim();
-			}
-			else if( line.contains("OKTA_AWS_APP_URL")){
-				oktaAWSAppURL = line.substring(line.indexOf("=")+1).trim();
-			}
-			line = oktaBr.readLine();
-		}	
-		oktaBr.close();*/
+        ConfigParser config = ConfigParser.getConfig();
+        oktaOrg = config.getOktaOrg();
+        oktaAWSAppURL = config.getOktaAWSAppURL();
+        awsIamKey = config.getAwsIamKey();
+        awsIamSecret = config.getAwsIamSecret();
+        awsRegion = config.getAwsRegion();
     }
 
     /*Uses user's credentials to obtain Okta session Token */
@@ -752,7 +733,7 @@ public class awscli {
         if (roleToAssume != null && !roleToAssume.equals(""))
             pw.println("role_arn=" + roleToAssume);
         pw.println("source_profile=" + profileName);
-        pw.println("region=us-east-1");
+        pw.println("region=" + awsRegion);
     }
 
     private static String mfa(JSONObject authResponse) {

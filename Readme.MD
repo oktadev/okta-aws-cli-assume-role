@@ -24,22 +24,26 @@ __Important note__: please note that this tool only supports Okta MFA set up at 
 - In Terminal, run ```defaults write com.apple.finder AppleShowAllFiles YES``` if you want to be able to inspect the ```~/.aws/credentials``` and ```~/.aws/config``` files.
 
 ##Compiling the application
-The application was built and compiled with [JetBrains' IntelliJ IDEA](https://www.jetbrains.com/idea/). The instructions below explain how to compile the application using IntelliJ IDEA. Note that you don't have to compile the application in order to be able to execute it, since the compiled executable (a jar file) is available on GitHub in the ```out``` sub-folder.
+The application was built and compiled with [JetBrains' IntelliJ IDEA](https://www.jetbrains.com/idea/). The instructions below explain how to compile the application using IntelliJ IDEA or directly with maven.
 
 ###Prerequisites
 First of all, it goes without saying that you will need to install the [Java SE 8x](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or the [Java JDK 8x](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).
 
-Next, in order to compile the application, you will need to download and install the [AWS Java SDK](https://aws.amazon.com/sdk-for-java/) as well as the [AWS Command Line Interface](https://aws.amazon.com/cli). Once you have downloaded the ```AWS Java SDK```, make sure you copy the latest AWS JAR file (currently ```aws-java-sdk-1.10.74.jar```) into the ```lib``` folder of this tool (otherwise, you will not be able to compile or run it).
+###Building with maven
+To compile and package the application, use maven:
 
-You will also need the [Okta Java SDK](https://github.com/okta/oktasdk-java) but we provide a compiled version of it within this repository so there's nothing specific you need to do at this point. We used the following path structure to manage our IntelliJ project: ```$HOME/Projects/okta-aws-cli-assume-role``` and we recommend you do the same to avoid fixing too many references. We've also created a ```lib``` sub-folder inside the ```okta-aws-cli-assume-role``` root folder where we're storing the AWS Java SDK (```aws-java-sdk-1.10.74.jar```), the Okta Java SDK (```okta-sdk.jar```) and other dependencies. We strongly recommend that you do the same.
+```
+mvn clean package
+```
+
+This will produce a shaded jar with all the required dependencies that can be executed on its own.
 
 ###Opening the project with IntelliJ Idea
 
 - Open the IntelliJ Idea IDE and browse to the ```okta-aws-cli-assume-role``` folder you have cloned from GitHub inside the ```Projects``` folder.
 - Go to ```File => Project Structure``` and in the Libraries menu, fix the Java references that don't match your local setup.
 - Go to ```Build => Make Project``` in order to compile the project.
-- The project also builds the JAR artifact, so if you browse to the ```out``` sub-folder, you will see the ```oktaawscli.jar``` JAR artifact.
-- Make sure the ```awscli.command``` file is in the ```out``` sub-folder.
+- The project also builds the JAR artifact, so if you browse to the ```target``` sub-folder, you will see the ```okta-aws-cli-<version>.jar``` JAR artifact.
 
 ##Configuring AWS IAM
 
@@ -48,7 +52,7 @@ You will also need the [Okta Java SDK](https://github.com/okta/oktasdk-java) but
 In order to generate the key and secret to be configured in the ```config.properties``` file, please follow the steps highlighted in ```Appendix A: How to create a IAM user for role introspection``` in the [Okta-AWS Integration Guide](https://support.okta.com/help/articles/Knowledge_Article/Amazon-Web-Services-and-Okta-Integration-Guide) 
 
 ##Configuring the application
-  It is essential that ```config.properties``` be in the same directory as the ```oktaawscli.jar``` file (i.e. in the ```out``` directory). The ```config.properties``` config file holds information specific to each Okta organization (or "tenant") and needs to be configured on an org to org basis. Please copy it from the ```src/com/okta/tools``` folder to the ```out``` folder.
+  It is essential that ```config.properties``` is in the working directory or that ```.okta-aws.properties``` is in the user home directory (either file will be read). The ```config.properties``` config file holds information specific to each Okta organization (or "tenant") and needs to be configured on an org to org basis.
   
 Here is the list of parameters that must be maintained in the ```config.properties``` file:
   
@@ -65,7 +69,6 @@ Here is the list of parameters that must be maintained in the ```config.properti
   - Replace the example values in ```config.properties``` with your values
 
 ##Running the application
-  - To run the application, you can use  the ```awscli.command``` file you will find in the ```out``` folder. You may need to edit to fix the references to the AWS Java SDK, which we remind you to put into the ```lib``` directory.
-  - Navigate to the ```out``` sub-folder with Terminal and run ```./awscli.command``` 
-  - The default command is the following: ```java -classpath oktaawscli.jar:$HOME/Projects/okta-aws-cli-assume-role/lib/aws-java-sdk-1.10.74.jar:$HOME/Projects/okta-aws-cli-assume-role/lib/okta-sdk.jar com.okta.tools.awscli```
+  - To run the application, you can use the ```awscli.bat``` file (windows) or ```awscli.sh``` file (linux / osx).
+  - The default command is the following: ```java -jar target/okta-aws-cli-<version>.jar```
   
