@@ -594,9 +594,8 @@ public class awscli {
             System.out.println("\nYou entered an invalid number. Please try again.");
             return SelectRole(lstRoles);
         }
-        else {
-            strSelectedRole = lstRoles.get(selection);
-        }
+
+        strSelectedRole = lstRoles.get(selection);
 
         return strSelectedRole;
     }
