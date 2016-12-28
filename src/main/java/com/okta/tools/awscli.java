@@ -407,6 +407,8 @@ public class awscli {
         String principalArn = principalArns.get(selection);
         String roleArn = roleArns.get(selection);
         crossAccountRoleName = roleArn.substring(roleArn.indexOf("/") + 1);
+        logger.debug("Cross-account role is " + crossAccountRoleName);
+
 
         //creates empty AWS credentials to prevent the AWSSecurityTokenServiceClient object from unintentionally loading the previous profile we just created
         BasicAWSCredentials awsCreds = new BasicAWSCredentials("", "");
