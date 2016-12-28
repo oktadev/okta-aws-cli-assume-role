@@ -553,17 +553,51 @@ public class awscli {
                     }
                 }
                 if (resource != null) {
-                    strRoleToAssume = resource.textValue();
-                    logger.debug("Role to assume: " + roleToAssume);
+                    if(resource.isArray()) { //if we're handling a policy with an array of AssumeRole attributes
+                        ArrayList<String> lstRoles = new ArrayList<String>();
+                        for(final JsonNode node: resource) {
+                            lstRoles.add(node.asText());
+                        }
+                        strRoleToAssume = SelectRole(lstRoles);
+                    }
+                    else {
+                        strRoleToAssume = resource.textValue();
+                        logger.debug("Role to assume: " + roleToAssume);
+                    }
                 }
             } catch (IOException ioe) {
             }
         } catch (UnsupportedEncodingException uee) {
 
         }
-
-
         return strRoleToAssume;
+    }
+
+    /* Prompts the user to select a role in case the role policy contains an array of roles instead of a single role
+    */
+    private static String SelectRole(List<String> lstRoles) {
+        String strSelectedRole = null;
+
+        System.out.println("\nPlease select the role you want to assume: ");
+
+        //Gather list of roles for the selected managed policy
+        int i = 1;
+        for (String strRoleName : lstRoles) {
+            System.out.println("[ " + i + " ]: " + strRoleName);
+            i++;
+        }
+
+        //Prompt user for policy selection
+        int selection = numSelection(lstRoles.size());
+
+        if(selection < 0 && lstRoles.size() > selection) {
+            System.out.println("\nYou entered an invalid number. Please try again.");
+            return SelectRole(lstRoles);
+        }
+
+        strSelectedRole = lstRoles.get(selection);
+
+        return strSelectedRole;
     }
 
     /* Retrieves AWS credentials from AWS's assumedRoleResult and write the to aws credential file
