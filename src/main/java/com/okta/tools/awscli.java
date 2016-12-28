@@ -73,7 +73,7 @@ public class awscli {
     private static String awsIamSecret = null;
     private static AuthApiClient authClient;
 
-     private static final String DefaultProfileName  = "default";
+    private static final String DefaultProfileName = "default";
 
     private static FactorsApiClient factorClient;
     private static UserApiClient userClient;
@@ -488,9 +488,9 @@ public class awscli {
                 if (inlinePolicies.size() > 1) {
                     //ask the user to select one policy if there are more than one
 
-                        logger.debug("Inline Policies: " + inlinePolicies.toString());
+                    logger.debug("Inline Policies: " + inlinePolicies.toString());
 
-                        selectedPolicyRank = SelectPolicy(inlinePolicies);
+                    selectedPolicyRank = SelectPolicy(inlinePolicies);
                 }
 
                 //Have to set the role name and the policy name (both are mandatory fields
@@ -553,14 +553,13 @@ public class awscli {
                     }
                 }
                 if (resource != null) {
-                    if(resource.isArray()) { //if we're handling a policy with an array of AssumeRole attributes
+                    if (resource.isArray()) { //if we're handling a policy with an array of AssumeRole attributes
                         ArrayList<String> lstRoles = new ArrayList<String>();
-                        for(final JsonNode node: resource) {
+                        for (final JsonNode node : resource) {
                             lstRoles.add(node.asText());
                         }
                         strRoleToAssume = SelectRole(lstRoles);
-                    }
-                    else {
+                    } else {
                         strRoleToAssume = resource.textValue();
                         logger.debug("Role to assume: " + roleToAssume);
                     }
@@ -590,7 +589,7 @@ public class awscli {
         //Prompt user for policy selection
         int selection = numSelection(lstRoles.size());
 
-        if(selection < 0 && lstRoles.size() > selection) {
+        if (selection < 0 && lstRoles.size() > selection) {
             System.out.println("\nYou entered an invalid number. Please try again.");
             return SelectRole(lstRoles);
         }
@@ -652,13 +651,11 @@ public class awscli {
                 //if we end up here, it means we were  able to find a matching profile
                 PopulateCredentialsFile(profileNameWithBrackets, awsAccessKey, awsSecretKey, awsSessionToken);
             }
-        }
-        catch(AmazonClientException ace) {
-         //this could happen if the default profile doesn't have a valid AWS Access Key ID
+        } catch (AmazonClientException ace) {
+            //this could happen if the default profile doesn't have a valid AWS Access Key ID
             //in this case, error would be "Unable to load credentials into profile [default]: AWS Access Key ID is not specified."
             PopulateCredentialsFile(profileNameWithBrackets, awsAccessKey, awsSecretKey, awsSessionToken);
-        }
-        catch (IllegalArgumentException iae) {
+        } catch (IllegalArgumentException iae) {
             //if we end up here, it means we were not able to find a matching profile so we need to append one
             PopulateCredentialsFile(profileNameWithBrackets, awsAccessKey, awsSecretKey, awsSessionToken);
             //FileWriter fileWriter = new FileWriter(System.getProperty("user.home") + "/.aws/credentials", true);
@@ -719,54 +716,52 @@ public class awscli {
 
     private static void UpdateConfigFile(String profileName, String roleToAssume) throws IOException {
 
-        if (roleToAssume != null && !roleToAssume.equals("")) {
-            File inFile = new File(System.getProperty("user.home") + "/.aws/config");
+        File inFile = new File(System.getProperty("user.home") + "/.aws/config");
 
-            FileInputStream fis = new FileInputStream(inFile);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-            File tempFile = new File(inFile.getAbsolutePath() + ".tmp");
-            PrintWriter pw = new PrintWriter(new FileWriter(tempFile));
+        FileInputStream fis = new FileInputStream(inFile);
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+        File tempFile = new File(inFile.getAbsolutePath() + ".tmp");
+        PrintWriter pw = new PrintWriter(new FileWriter(tempFile));
 
-            //first, we add our refreshed profile
-            WriteNewRoleToAssume(pw, profileName, roleToAssume);
+        //first, we add our refreshed profile
+        WriteNewRoleToAssume(pw, profileName, roleToAssume);
 
-            String line = null;
-            int lineCounter = 0;
-            boolean bFileStart = true;
+        String line = null;
+        int lineCounter = 0;
+        boolean bFileStart = true;
 
-            //second, we're copying all the other profiles from the original config file
-            while ((line = br.readLine()) != null) {
+        //second, we're copying all the other profiles from the original config file
+        while ((line = br.readLine()) != null) {
 
-                if (line.contains(profileName)) {
-                    //we found the section we must replace but we don't necessarily know how many lines we need to skip
-                    while ((line = br.readLine()) != null) {
-                        if (line.startsWith("[")) {
-                            pw.println(line); //this is a new profile line, so we're copying it
-                            break;
-                        }
-                    }
-                } else {
-                    if ((!line.contains(profileName) && !line.equalsIgnoreCase("\n"))) {
-                        pw.println(line);
-                        logger.debug(line);
+            if (line.contains(profileName)) {
+                //we found the section we must replace but we don't necessarily know how many lines we need to skip
+                while ((line = br.readLine()) != null) {
+                    if (line.startsWith("[")) {
+                        pw.println(line); //this is a new profile line, so we're copying it
+                        break;
                     }
                 }
-
-
-            }
-
-            pw.flush();
-            pw.close();
-            br.close();
-
-            //delete the original credentials file
-            if (!inFile.delete()) {
-                System.out.println("Could not delete original config file");
             } else {
-                // Rename the new file to the filename the original file had.
-                if (!tempFile.renameTo(inFile))
-                    System.out.println("Could not rename file");
+                if ((!line.contains(profileName) && !line.equalsIgnoreCase("\n"))) {
+                    pw.println(line);
+                    logger.debug(line);
+                }
             }
+
+
+        }
+
+        pw.flush();
+        pw.close();
+        br.close();
+
+        //delete the original credentials file
+        if (!inFile.delete()) {
+            System.out.println("Could not delete original config file");
+        } else {
+            // Rename the new file to the filename the original file had.
+            if (!tempFile.renameTo(inFile))
+                System.out.println("Could not rename file");
         }
     }
 
@@ -781,8 +776,8 @@ public class awscli {
     }
 
     public static void WriteNewRoleToAssume(PrintWriter pw, String profileName, String roleToAssume) {
+
         pw.println("[profile " + profileName + "]");
-        //writer.println("[" + credentialsProfileName + "]");
         if (roleToAssume != null && !roleToAssume.equals(""))
             pw.println("role_arn=" + roleToAssume);
         pw.println("source_profile=" + profileName);
