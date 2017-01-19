@@ -69,3 +69,12 @@ Here is the list of parameters that must be maintained in the ```config.properti
   - Navigate to the ```out``` sub-folder with Terminal and run ```./awscli.command``` 
   - The default command is the following: ```java -classpath oktaawscli.jar:$HOME/Projects/okta-aws-cli-assume-role/lib/aws-java-sdk-1.10.74.jar:$HOME/Projects/okta-aws-cli-assume-role/lib/okta-sdk.jar com.okta.tools.awscli```
   
+##Support 
+Have a question or see a bug? Email developers@okta.com. For feature requests, feel free to open an issue on this repo. If you find a security vulnerability, please follow our [Vulnerability Reporting Process](https://www.okta.com/vulnerability-reporting-policy/).
+
+##License
+Copyright 2017 Okta, Inc. All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
