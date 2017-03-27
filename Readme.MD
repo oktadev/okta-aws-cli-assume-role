@@ -8,7 +8,8 @@ Important Note: This tool has been verified to work on Mac OS X El Capitan and W
 #### The Okta AWS-CLI tool finally supports multi-policy cross-account roles!
 You can now use this tool with the cross-account role architecture recommended in the [Okta-AWS Integration Guide](https://support.okta.com/help/articles/Knowledge_Article/Amazon-Web-Services-and-Okta-Integration-Guide), i.e. you can assign multiple AssumeRole policies to a single cross-account role.
 
-### Important note
+##### Important note
+
 The AWS-CLI tool currently only supports single-statement policies, i.e. policies with one single AssumeRole action (pointing to a role in a separate account). Additionally, the tool only supports managed policies. Support for inline policies is planned in the near future.
 
 
@@ -23,7 +24,8 @@ __Important note__: please note that this tool only supports Okta MFA set up at 
 - Use ```git clone https://github.com/oktadeveloper/okta-aws-cli-assume-role.git``` to clone the repository locally.
 - In Terminal, run ```defaults write com.apple.finder AppleShowAllFiles YES``` if you want to be able to inspect the ```~/.aws/credentials``` and ```~/.aws/config``` files.
 
-### Compiling the application
+## Compiling the application
+
 The application was built and compiled with [JetBrains' IntelliJ IDEA](https://www.jetbrains.com/idea/). The instructions below explain how to compile the application using IntelliJ IDEA. Note that you don't have to compile the application in order to be able to execute it, since the compiled executable (a jar file) is available on GitHub in the ```out``` sub-folder.
 
 ### Prerequisites
@@ -47,7 +49,7 @@ You will also need the [Okta Java SDK](https://github.com/okta/oktasdk-java) but
 
 In order to generate the key and secret to be configured in the ```config.properties``` file, please follow the steps highlighted in ```Appendix A: How to create a IAM user for role introspection``` in the [Okta-AWS Integration Guide](https://support.okta.com/help/articles/Knowledge_Article/Amazon-Web-Services-and-Okta-Integration-Guide) 
 
-##Configuring the application
+## Configuring the application
   It is essential that ```config.properties``` be in the same directory as the ```oktaawscli.jar``` file (i.e. in the ```out``` directory). The ```config.properties``` config file holds information specific to each Okta organization (or "tenant") and needs to be configured on an org to org basis. Please copy it from the ```src/com/okta/tools``` folder to the ```out``` folder.
   
 Here is the list of parameters that must be maintained in the ```config.properties``` file:
