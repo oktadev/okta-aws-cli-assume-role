@@ -31,6 +31,21 @@ __Important note__: please note that this tool only supports Okta MFA set up at 
 - Use ```git clone https://github.com/oktadeveloper/okta-aws-cli-assume-role.git``` to clone the repository locally.
 - In Terminal, run ```defaults write com.apple.finder AppleShowAllFiles YES``` if you want to be able to inspect the ```~/.aws/credentials``` and ```~/.aws/config``` files.
 
+## Build and run
+
+Get a single JAR with all dependencies:
+
+```bash
+mvn package
+cp target/okta-aws-cli-*.jar out/oktaawscli.jar
+```
+
+Run the program:
+
+```bash
+./awscli
+```
+
 ## Compiling the application
 
 The application was built and compiled with [JetBrains' IntelliJ IDEA](https://www.jetbrains.com/idea/). The instructions below explain how to compile the application using IntelliJ IDEA. Note that you don't have to compile the application in order to be able to execute it, since the compiled executable (a jar file) is available on GitHub in the ```out``` sub-folder.
