@@ -69,6 +69,9 @@ public class awscli {
     //User specific variables
     private static String oktaOrg = "";
     private static String oktaAWSAppURL = "";
+    private static String oktaAWSUsername = "";
+    private static String oktaAWSPassword = "";
+    private static String oktaAWSRoleToAssume = "";
     private static String awsIamKey = null;
     private static String awsIamSecret = null;
     private static AuthApiClient authClient;
@@ -139,19 +142,30 @@ public class awscli {
         //Redo sequence if response from AWS doesn't return 200 Status
         while (requestStatus != 200) {
 
+            String oktaUsername = "";
+
             // Prompt for user credentials
             System.out.print("Username: ");
             Scanner scanner = new Scanner(System.in);
 
-            String oktaUsername = scanner.next();
+            if (oktaAWSUsername.isEmpty()) {
+                oktaUsername = scanner.next();
+            } else {
+                System.out.println(oktaAWSUsername);
+                oktaUsername = oktaAWSUsername;
+            }
 
-            Console console = System.console();
             String oktaPassword = null;
-            if (console != null) {
-                oktaPassword = new String(console.readPassword("Password: "));
-            } else { // hack to be able to debug in an IDE
-                System.out.print("Password: ");
-                oktaPassword = scanner.next();
+            if (oktaAWSPassword.isEmpty()) {
+                Console console = System.console();
+                if (console != null) {
+                    oktaPassword = new String(console.readPassword("Password: "));
+                } else { // hack to be able to debug in an IDE
+                    System.out.print("Password: ");
+                    oktaPassword = scanner.next();
+                }
+            } else {
+                oktaPassword = oktaAWSPassword;
             }
 
             responseAuthenticate = authnticateCredentials(oktaUsername, oktaPassword);
@@ -242,6 +256,9 @@ public class awscli {
         //extract oktaOrg and oktaAWSAppURL from Okta settings file
         oktaOrg = props.getProperty("OKTA_ORG");
         oktaAWSAppURL = props.getProperty("OKTA_AWS_APP_URL");
+        oktaAWSUsername = props.getProperty("OKTA_USERNAME");
+        oktaAWSPassword = props.getProperty("OKTA_PASSWORD");
+        oktaAWSRoleToAssume = props.getProperty("OKTA_AWS_ROLE_TO_ASSUME");
         awsIamKey = props.getProperty("AWS_IAM_KEY");
         awsIamSecret = props.getProperty("AWS_IAM_SECRET");
 /*		String line = oktaBr.readLine();
@@ -383,6 +400,7 @@ public class awscli {
 
         //Gather list of applicable AWS roles
         int i = 0;
+        int j = -1;
         while (resultSAMLDecoded.indexOf("arn:aws") != -1) {
             /*Trying to parse the value of the Role SAML Assertion that typically looks like this:
             <saml2:AttributeValue xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">
@@ -397,12 +415,26 @@ public class awscli {
             principalArns.add(parts[0]);
             roleArns.add(parts[1]);
             System.out.println("[ " + (i + 1) + " ]: " + roleArns.get(i));
+            if (roleArns.get(i).equals(oktaAWSRoleToAssume)) {
+                j = i;
+            } else {
+                System.out.println("No match for role "+ roleArns.get(i));
+            }
             resultSAMLDecoded = (resultSAMLDecoded.substring(resultSAMLDecoded.indexOf("</saml2:AttributeValue") + 1));
             i++;
         }
 
-        //Prompt user for role selection
-        int selection = numSelection(roleArns.size());
+        // Default to no selection
+        int selection = 0;
+
+        // If config.properties has matching role, use it and don't prompt user to select
+        if (j >= 0) {
+            selection = j;
+            System.out.println("Selected option "+ (j+1) + " based on config.properties OKTA_AWS_ROLE_TO_ASSUME value");
+        } else {
+            //Prompt user for role selection
+            selection = numSelection(roleArns.size());
+        }
 
         String principalArn = principalArns.get(selection);
         String roleArn = roleArns.get(selection);
