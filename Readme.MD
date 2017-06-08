@@ -4,6 +4,11 @@ This readme file is an excerpt of the [Okta-AWS Integration Guide](https://suppo
 
 Important Note: This tool has been verified to work on Mac OS X El Capitan and Windows Server 2012 R2 and is expected to work on Linux and Unix as well.
 
+### Add parameters to support silent mode without prompt for user input (2017/6/8 update)
+OKTA_USERNAME=
+OKTA_PASSWORD=
+OKTA_AWS_ROLE_TO_ASSUME=
+
 ### AWS:reInvent Release (2016/11/29 update)
 #### The Okta AWS-CLI tool finally supports multi-policy cross-account roles!
 You can now use this tool with the cross-account role architecture recommended in the [Okta-AWS Integration Guide](https://support.okta.com/help/articles/Knowledge_Article/Amazon-Web-Services-and-Okta-Integration-Guide), i.e. you can assign multiple AssumeRole policies to a single cross-account role.
@@ -58,7 +63,10 @@ Here is the list of parameters that must be maintained in the ```config.properti
   - ```OKTA_AWS_APP_URL``` is the url link of your Okta AWS application url (see below for more info)
   - ```AWS_IAM_KEY```: paste the ```Access Key ID``` value you retrieved in the  previous section 
   -  ```AWS_IAM_SECRET```: paste the ```Secret Access Key``` value you retrieved in the previous section 
-    
+  - ```OKTA_USERNAME``` is the username to use. If present will skip username input.
+  - ```OKTA_PASSWORD``` is the password to use. If present will skip password input.
+  - ```OKTA_AWS_ROLE_TO_ASSUME``` is the role to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found.
+  
   - **Obtaining the AWS app url**
     - Navigate to the ```Admin Dashboard``` of you Okta organization
     - Select the ```Applications``` tab and click on your AWS Application 
