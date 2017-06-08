@@ -148,15 +148,24 @@ public class awscli {
             System.out.print("Username: ");
             Scanner scanner = new Scanner(System.in);
 
-            if (oktaAWSUsername.isEmpty()) {
-                oktaUsername = scanner.next();
-            } else {
-                System.out.println(oktaAWSUsername);
+            String envOktaUsername = System.getenv("OKTA_USERNAME");
+            if (!oktaAWSUsername.isEmpty()) {
                 oktaUsername = oktaAWSUsername;
+                System.out.println(oktaUsername);
+            } else if (envOktaUsername != null && !envOktaUsername.isEmpty()) {
+                oktaUsername = envOktaUsername;
+                System.out.println(oktaUsername);
+            } else {
+                oktaUsername = scanner.next();
             }
 
+            String envOktaPassword = System.getenv("OKTA_PASSWORD");
             String oktaPassword = null;
-            if (oktaAWSPassword.isEmpty()) {
+            if (!oktaAWSPassword.isEmpty()) {
+                oktaPassword = oktaAWSPassword;
+            } else if (envOktaPassword != null && !envOktaPassword.isEmpty()) {
+                oktaPassword = envOktaPassword;
+            } else {
                 Console console = System.console();
                 if (console != null) {
                     oktaPassword = new String(console.readPassword("Password: "));
@@ -164,8 +173,6 @@ public class awscli {
                     System.out.print("Password: ");
                     oktaPassword = scanner.next();
                 }
-            } else {
-                oktaPassword = oktaAWSPassword;
             }
 
             responseAuthenticate = authnticateCredentials(oktaUsername, oktaPassword);
@@ -415,6 +422,10 @@ public class awscli {
             principalArns.add(parts[0]);
             roleArns.add(parts[1]);
             System.out.println("[ " + (i + 1) + " ]: " + roleArns.get(i));
+            String envOktaAWSRoleToAssume = System.getenv("OKTA_AWS_ROLE_TO_ASSUME");
+            if (oktaAWSRoleToAssume.isEmpty() && envOktaAWSRoleToAssume != null && !envOktaAWSRoleToAssume.isEmpty()) {
+                oktaAWSRoleToAssume = envOktaAWSRoleToAssume;
+            }
             if (roleArns.get(i).equals(oktaAWSRoleToAssume)) {
                 j = i;
             } else {
@@ -430,7 +441,7 @@ public class awscli {
         // If config.properties has matching role, use it and don't prompt user to select
         if (j >= 0) {
             selection = j;
-            System.out.println("Selected option "+ (j+1) + " based on config.properties OKTA_AWS_ROLE_TO_ASSUME value");
+            System.out.println("Selected option "+ (j+1) + " based on OKTA_AWS_ROLE_TO_ASSUME value");
         } else {
             //Prompt user for role selection
             selection = numSelection(roleArns.size());
