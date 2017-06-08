@@ -5,9 +5,9 @@ This readme file is an excerpt of the [Okta-AWS Integration Guide](https://suppo
 Important Note: This tool has been verified to work on Mac OS X El Capitan and Windows Server 2012 R2 and is expected to work on Linux and Unix as well.
 
 ### Add parameters to support silent mode without prompt for user input (2017/6/8 update)
-OKTA_USERNAME=
-OKTA_PASSWORD=
-OKTA_AWS_ROLE_TO_ASSUME=
+OKTA_USERNAME
+OKTA_PASSWORD
+OKTA_AWS_ROLE_TO_ASSUME
 
 ### AWS:reInvent Release (2016/11/29 update)
 #### The Okta AWS-CLI tool finally supports multi-policy cross-account roles!
