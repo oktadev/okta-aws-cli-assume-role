@@ -1,1 +1,0 @@
-java -classpath .:oktaawscli.jar:../lib/aws-java-sdk-1.11.37.jar com.okta.tools.awscli

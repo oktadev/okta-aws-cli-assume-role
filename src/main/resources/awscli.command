@@ -1,0 +1,2 @@
+#!/bin/sh
+(cd ${project.basedir}${file.separator}bin && exec java -classpath ${OktaDependenciesClasspath}${path.separator}${project.build.directory}${file.separator}${project.artifactId}-${project.version}.jar com.okta.tools.awscli)
