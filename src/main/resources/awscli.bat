@@ -1,0 +1,1 @@
+java -classpath ${OktaDependenciesClasspath}${path.separator}${project.build.directory}${file.separator}${project.artifactId}-${project.version}.jar com.okta.tools.awscli
