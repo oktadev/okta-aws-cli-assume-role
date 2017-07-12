@@ -1,3 +1,4 @@
+
 /*!
  * Copyright (c) 2016, Okta, Inc. and/or its affiliates. All rights reserved.
  * The Okta software accompanied by this notice is provided pursuant to the Apache License, Version 2.0 (the "License.")
@@ -161,9 +162,9 @@ public class awscli {
 
             String envOktaPassword = System.getenv("OKTA_PASSWORD");
             String oktaPassword = null;
-            if (!oktaAWSPassword.isEmpty()) {
+            if (!oktaAWSPassword.isEmpty() && requestStatus == 0) {
                 oktaPassword = oktaAWSPassword;
-            } else if (envOktaPassword != null && !envOktaPassword.isEmpty()) {
+            } else if (envOktaPassword != null && !envOktaPassword.isEmpty() && requestStatus == 0) {
                 oktaPassword = envOktaPassword;
             } else {
                 Console console = System.console();
