@@ -150,7 +150,7 @@ public class awscli {
             Scanner scanner = new Scanner(System.in);
 
             String envOktaUsername = System.getenv("OKTA_USERNAME");
-            if (!oktaAWSUsername.isEmpty()) {
+            if (oktaAWSUsername != null && !oktaAWSUsername.isEmpty()) {
                 oktaUsername = oktaAWSUsername;
                 System.out.println(oktaUsername);
             } else if (envOktaUsername != null && !envOktaUsername.isEmpty()) {
@@ -162,7 +162,7 @@ public class awscli {
 
             String envOktaPassword = System.getenv("OKTA_PASSWORD");
             String oktaPassword = null;
-            if (!oktaAWSPassword.isEmpty() && requestStatus == 0) {
+            if (oktaAWSPassword != null && !oktaAWSPassword.isEmpty() && requestStatus == 0) {
                 oktaPassword = oktaAWSPassword;
             } else if (envOktaPassword != null && !envOktaPassword.isEmpty() && requestStatus == 0) {
                 oktaPassword = envOktaPassword;
