@@ -57,6 +57,7 @@ import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.nio.charset.*;
+import java.util.function.Function;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
@@ -82,6 +83,9 @@ public class awscli {
     private static String roleToAssume; //the ARN of the role the user wants to eventually assume (not the cross-account role, the "real" role in the target account)
     private static int selectedPolicyRank; //the zero-based rank of the policy selected in the selected cross-account role (in case there is more than one policy tied to the current policy)
     private static final Logger logger = LogManager.getLogger(awscli.class);
+
+
+    private static UserChoiceSelect selector = new ConfigChoice();
 
     public static void main(String[] args) throws Exception {
         awsSetup();
@@ -375,7 +379,8 @@ public class awscli {
 
         //When the app is not assigned to you no assertion is returned
         if (!resultSAMLDecoded.contains("arn:aws")) {
-            logger.error("\nYou do not have access to AWS through Okta. \nPlease contact your administrator.");
+            logger.info("Incorrect results:" + resultSAMLDecoded);
+            logger.error("\nYou do not have access to AWS through Okta. \nPlease contact your administrator");
             System.exit(0);
         }
 
@@ -578,27 +583,7 @@ public class awscli {
     */
     private static String SelectRole(List<String> lstRoles) {
         String strSelectedRole = null;
-
-        System.out.println("\nPlease select the role you want to assume: ");
-
-        //Gather list of roles for the selected managed policy
-        int i = 1;
-        for (String strRoleName : lstRoles) {
-            System.out.println("[ " + i + " ]: " + strRoleName);
-            i++;
-        }
-
-        //Prompt user for policy selection
-        int selection = numSelection(lstRoles.size());
-
-        if (selection < 0 && lstRoles.size() > selection) {
-            System.out.println("\nYou entered an invalid number. Please try again.");
-            return SelectRole(lstRoles);
-        }
-
-        strSelectedRole = lstRoles.get(selection);
-
-        return strSelectedRole;
+        return selector.select("role","Please select the role you want to assume  :",s->s,lstRoles);
     }
 
     /* Retrieves AWS credentials from AWS's assumedRoleResult and write the to aws credential file
@@ -853,14 +838,24 @@ public class awscli {
  */
     public static JSONObject selectFactor(JSONObject authResponse) throws JSONException {
         JSONArray factors = authResponse.getJSONObject("_embedded").getJSONArray("factors");
-        JSONObject factor;
-        String factorType;
-        System.out.println("\nMulti-Factor authentication is required. Please select a factor to use.");
-        //list factor to select from to user
-        System.out.println("Factors:");
+        List<JSONObject> jsonFactors = new ArrayList<JSONObject>(factors.length());
         for (int i = 0; i < factors.length(); i++) {
-            factor = factors.getJSONObject(i);
-            factorType = factor.getString("factorType");
+            jsonFactors.add(factors.getJSONObject(i));
+        }
+
+        return selector.select("factor",
+                "Multi-Factor authentication is required. Please select a factor to use",new factorDescriber(),jsonFactors);
+
+//        //Handles user factor selection
+//        int selection = numSelection(factors.length());
+//        return factors.getJSONObject(selection);
+    }
+
+    private static class factorDescriber implements Function<JSONObject,String> {
+
+        @Override
+        public String apply(JSONObject factor) {
+            String factorType = factor.getString("factorType");
             if (factorType.equals("question")) {
                 factorType = "Security Question";
             } else if (factorType.equals("sms")) {
@@ -873,14 +868,10 @@ public class awscli {
                     factorType = "Okta Verify";
                 }
             }
-            System.out.println("[ " + (i + 1) + " ] : " + factorType);
+
+            return factorType;
         }
-
-        //Handles user factor selection
-        int selection = numSelection(factors.length());
-        return factors.getJSONObject(selection);
     }
-
 
     private static String questionFactor(JSONObject factor, String stateToken) throws JSONException, ClientProtocolException, IOException {
         String question = factor.getJSONObject("profile").getString("questionText");
@@ -1207,20 +1198,6 @@ public class awscli {
 
         AuthResult authResult = authClient.authenticateWithFactor(stateToken, factor.getId(), answer);
 
-        /*
-        Verification verification = new Verification();
-        if(factor.getFactorType().equals("sms")) {
-            verification.setPassCode(answer);
-        }
-        else if (factor.getFactorType().equals("token:software:totp")) {
-            verification.setAnswer(answer);
-        }
-        verification.setAnswer(answer);
-        FactorVerificationResponse mfaResponse  = factorClient.verifyFactor(userId, factor.getId(), verification);
-
-        if(mfaResponse.getFactorResult().equals("SUCCESS"))
-            return mfaResponse.get
-            */
 
         if (!authResult.getStatus().equals("SUCCESS")) {
             System.out.println("\nThe second-factor verification failed.");
@@ -1228,86 +1205,10 @@ public class awscli {
             return authResult.getSessionToken();
         }
 
-        /*JSONObject profile = new JSONObject();
-        String verifyPoint = factor.getJSONObject("_links").getJSONObject("verify").getString("href");
-
-        profile.put("stateToken", stateToken);
-
-        if (answer != "") {
-            profile.put("answer", answer);
-        }
-
-        //create post request
-        CloseableHttpResponse responseAuthenticate = null;
-        CloseableHttpClient httpClient = HttpClients.createDefault();
-
-        HttpPost httpost = new HttpPost(verifyPoint);
-        httpost.addHeader("Accept", "application/json");
-        httpost.addHeader("Content-Type", "application/json");
-        httpost.addHeader("Cache-Control", "no-cache");
-
-        StringEntity entity = new StringEntity(profile.toString(), HTTP.UTF_8);
-        entity.setContentType("application/json");
-        httpost.setEntity(entity);
-        responseAuthenticate = httpClient.execute(httpost);
-
-        BufferedReader br = new BufferedReader(new InputStreamReader(
-                (responseAuthenticate.getEntity().getContent())));
-
-        String outputAuthenticate = br.readLine();
-        JSONObject jsonObjResponse = new JSONObject(outputAuthenticate);
-        //Handles request response
-        if (jsonObjResponse.has("sessionToken")) {
-            //session token returned
-            return jsonObjResponse.getString("sessionToken");
-        } else if (jsonObjResponse.has("factorResult")) {
-            if (jsonObjResponse.getString("sessionToken").equals("TIMEOUT")) {
-                //push factor timeout
-                return "timeout";
-            } else {
-                return "";
-            }
-        } else {
-            //Unsuccessful verification
-            return "";
-        }
-        */
         return "";
     }
 
 
-    /*Handles factor selection based on factors found in parameter authResult, returns the selected factor
-     */
-    public static void selectFactor(AuthResult authResult) {
-        ArrayList<LinkedHashMap> factors = (ArrayList<LinkedHashMap>) authResult.getEmbedded().get("factors");
-        String factorType;
-        System.out.println("\nMulti-Factor authentication required. Please select a factor to use.");
-        //list factor to select from to user
-        System.out.println("Factors:");
-        for (int i = 0; i < factors.size(); i++) {
-            LinkedHashMap<String, Object> factor = factors.get(i);
-            //Factor factor = factors.get(i);
-            factorType = (String) factor.get("factorType");// factor.getFactorType();
-            if (factorType.equals("question")) {
-                factorType = "Security Question";
-            } else if (factorType.equals("sms")) {
-                factorType = "SMS Authentication";
-            } else if (factorType.equals("token:software:totp")) {
-                String provider = (String) factor.get("provider");//factor.getProvider();
-                if (provider.equals("GOOGLE")) {
-                    factorType = "Google Authenticator";
-                } else {
-                    factorType = "Okta Verify";
-                }
-            }
-            System.out.println("[ " + (i + 1) + " ] :" + factorType);
-        }
-
-        //Handles user factor selection
-        int selection = numSelection(factors.size());
-
-        //return factors.get(selection);
-    }
 
     /*Handles MFA for users, returns an Okta session token if user is authenticated
      * Precondition: question factor as JSONObject factor, current state token stateToken

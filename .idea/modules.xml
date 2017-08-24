@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/okta-aws-cli.iml" filepath="$PROJECT_DIR$/okta-aws-cli.iml" />
+      <module fileurl="file://$PROJECT_DIR$/okta-aws-cli-assume-role.iml" filepath="$PROJECT_DIR$/okta-aws-cli-assume-role.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/okta-aws-cli-assume-role_main.iml" filepath="$PROJECT_DIR$/.idea/modules/okta-aws-cli-assume-role_main.iml" group="okta-aws-cli-assume-role" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/okta-aws-cli-assume-role_test.iml" filepath="$PROJECT_DIR$/.idea/modules/okta-aws-cli-assume-role_test.iml" group="okta-aws-cli-assume-role" />
     </modules>
   </component>
 </project>

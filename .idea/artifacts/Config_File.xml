@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact name="Config File">
-    <output-path>$PROJECT_DIR$/out/</output-path>
-    <root id="root">
-      <element id="file-copy" path="$PROJECT_DIR$/src/main/java/com/okta/tools/config.properties" />
-    </root>
-  </artifact>
-</component>

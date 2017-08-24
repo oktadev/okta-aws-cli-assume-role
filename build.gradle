@@ -37,5 +37,5 @@ dependencies {
 }
 
 // Define the main class for the application
-mainClassName = 'App'
+mainClassName = 'com.okta.tools.awscli'
 
