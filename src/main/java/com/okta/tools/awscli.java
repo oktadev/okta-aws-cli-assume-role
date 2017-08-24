@@ -85,12 +85,177 @@ public class awscli {
     private static final Logger logger = LogManager.getLogger(awscli.class);
 
 
-    private static UserChoiceSelect selector = new ConfigChoice();
+    private UserChoiceSelect selector = new InputChoice();
+    private CredRetriever credRetriever  = new StdinCredRetriever();
+
+
 
     public static void main(String[] args) throws Exception {
         awsSetup();
         extractCredentials();
 
+        awscli cli = new awscli();
+        String profileName = cli.oktaAwsHandshake();
+
+        // Print Final message
+        resultMessage(profileName);
+    }
+
+    private  String oktaAwsHandshake() throws IOException {
+        String resultSAML = initiateOktaAuthentication();
+
+
+        // Step #3: Assume an AWS role using the SAML Assertion from Okta
+        AssumeRoleWithSAMLResult assumeResult = new awscli().assumeAWSRole(resultSAML);
+
+        com.amazonaws.services.securitytoken.model.AssumedRoleUser aru = assumeResult.getAssumedRoleUser();
+        String arn = aru.getArn();
+
+
+        // Step #4: Get the final role to assume and update the config file to add it to the user's profile
+        GetRoleToAssume(crossAccountRoleName);
+        logger.trace("Role to assume ARN: " + roleToAssume);
+
+        // Step #5: Write the credentials to ~/.aws/credentials
+        String profileName = setAWSCredentials(assumeResult, arn);
+
+        UpdateConfigFile(profileName, roleToAssume);
+        UpdateConfigFile(DefaultProfileName, roleToAssume);
+        return profileName;
+    }
+
+    private String mfa(JSONObject authResponse) {
+
+        try {
+            //User selects which factor to use
+            JSONObject factor = selectFactor(authResponse);
+            String factorType = factor.getString("factorType");
+            String stateToken = authResponse.getString("stateToken");
+
+            //factor selection handler
+            switch (factorType) {
+                case ("question"): {
+                    //question factor handler
+                    String sessionToken = questionFactor(factor, stateToken);
+                    if (sessionToken.equals("change factor")) {
+                        System.err.println("Factor Change Initiated");
+                        return  mfa(authResponse);
+                    }
+                    return sessionToken;
+                }
+                case ("sms"): {
+                    //sms factor handler
+                    String sessionToken = smsFactor(factor, stateToken);
+                    if (sessionToken.equals("change factor")) {
+                        System.err.println("Factor Change Initiated");
+                        return mfa(authResponse);
+                    }
+                    return sessionToken;
+
+                }
+                case ("token:software:totp"): {
+                    //token factor handler
+                    String sessionToken = totpFactor(factor, stateToken);
+                    if (sessionToken.equals("change factor")) {
+                        System.err.println("Factor Change Initiated");
+                        return mfa(authResponse);
+                    }
+                    return sessionToken;
+                }
+                case ("push"): {
+                    //push factor handles
+                    String result = pushFactor(factor, stateToken);
+                    if (result.equals("timeout") || result.equals("change factor")) {
+                        return mfa(authResponse);
+                    }
+                    return result;
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (ClientProtocolException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return "";
+    }
+
+    /* Assumes SAML role selected by the user based on authorized Okta AWS roles given in SAML assertion result SAML
+         * Precondition: String resultSAML
+         * Postcondition: returns type AssumeRoleWithSAMLResult
+         */
+    private AssumeRoleWithSAMLResult assumeAWSRole(String resultSAML) {
+        // Decode SAML response
+        resultSAML = resultSAML.replace("&#x2b;", "+").replace("&#x3d;", "=");
+        String resultSAMLDecoded = new String(Base64.decodeBase64(resultSAML));
+
+        ArrayList<String> principalArns = new ArrayList<String>();
+        ArrayList<String> roleArns = new ArrayList<String>();
+
+        //When the app is not assigned to you no assertion is returned
+        if (!resultSAMLDecoded.contains("arn:aws")) {
+            logger.error("\nYou do not have access to AWS through Okta. \nPlease contact your administrator.");
+            System.exit(0);
+        }
+
+        class roleInfo {
+            String principalArn;
+            String roleArn;
+
+            public roleInfo(String principalArn, String roleArn) {
+                this.principalArn = principalArn;
+                this.roleArn = roleArn;
+            }
+        }
+
+        //Gather list of applicable AWS roles
+        List<roleInfo> roles = new ArrayList<roleInfo>();
+        while (resultSAMLDecoded.indexOf("arn:aws") != -1) {
+            /*Trying to parse the value of the Role SAML Assertion that typically looks like this:
+            <saml2:AttributeValue xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">
+            arn:aws:iam::[AWS-ACCOUNT-ID]:saml-provider/Okta,arn:aws:iam::[AWS-ACCOUNT-ID]:role/[ROLE_NAME]
+            </saml2:AttributeValue>
+      </saml2:Attribute>
+            */
+            int start = resultSAMLDecoded.indexOf("arn:aws");
+            int end = resultSAMLDecoded.indexOf("</saml2:", start);
+            String resultSAMLRole = resultSAMLDecoded.substring(start, end);
+            String[] parts = resultSAMLRole.split(",");
+            principalArns.add(parts[0]);
+            roleArns.add(parts[1]);
+            roles.add(new roleInfo(parts[0],parts[1]));
+
+            resultSAMLDecoded = (resultSAMLDecoded.substring(resultSAMLDecoded.indexOf("</saml2:AttributeValue") + 1));
+        }
+
+
+        roleInfo role = selector.select("role", "Please choose the role you would like to assume", r -> r.roleArn, roles);
+        String principalArn = role.principalArn;
+        String roleArn = role.roleArn;
+        crossAccountRoleName = roleArn.substring(roleArn.indexOf("/") + 1);
+        logger.debug("Cross-account role is " + crossAccountRoleName);
+
+
+        //creates empty AWS credentials to prevent the AWSSecurityTokenServiceClient object from unintentionally loading the previous profile we just created
+        BasicAWSCredentials awsCreds = new BasicAWSCredentials("", "");
+
+        //use user credentials to assume AWS role
+        AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(awsCreds);
+
+        AssumeRoleWithSAMLRequest assumeRequest = new AssumeRoleWithSAMLRequest()
+                .withPrincipalArn(principalArn)
+                .withRoleArn(roleArn)
+                .withSAMLAssertion(resultSAML)
+                .withDurationSeconds(3600); //default token duration to 12 hours
+
+        return stsClient.assumeRoleWithSAML(assumeRequest);
+    }
+
+    private  String initiateOktaAuthentication() {
         // Step #1: Initiate the authentication and capture the SAML assertion.
         CloseableHttpClient httpClient = null;
         String resultSAML = "";
@@ -111,40 +276,28 @@ public class awscli {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        // Step #3: Assume an AWS role using the SAML Assertion from Okta
-        AssumeRoleWithSAMLResult assumeResult = assumeAWSRole(resultSAML);
-
-        com.amazonaws.services.securitytoken.model.AssumedRoleUser aru = assumeResult.getAssumedRoleUser();
-        String arn = aru.getArn();
-
-
-        // Step #4: Get the final role to assume and update the config file to add it to the user's profile
-        GetRoleToAssume(crossAccountRoleName);
-        logger.trace("Role to assume ARN: " + roleToAssume);
-
-        // Step #5: Write the credentials to ~/.aws/credentials
-        String profileName = setAWSCredentials(assumeResult, arn);
-
-        UpdateConfigFile(profileName, roleToAssume);
-        UpdateConfigFile(DefaultProfileName, roleToAssume);
-
-        // Print Final message
-        resultMessage(profileName);
+        return resultSAML;
     }
 
-    /* Authenticates users credentials via Okta, return Okta session token
-     * Postcondition: returns String oktaSessionToken
-     * */
-    private static String oktaAuthntication() throws ClientProtocolException, JSONException, IOException {
-        CloseableHttpResponse responseAuthenticate = null;
-        int requestStatus = 0;
 
-        //Redo sequence if response from AWS doesn't return 200 Status
-        while (requestStatus != 200) {
+    class Creds {
+        String username;
+        String password;
+        public Creds(String username, String password) {
+            this.username = username;
+            this.password = password;
+        }
+    }
 
+
+    interface CredRetriever  {
+        Creds getCreds();
+    }
+
+    class StdinCredRetriever implements CredRetriever {
+        public Creds getCreds() {
             // Prompt for user credentials
-            System.out.print("Username: ");
+            System.err.print("Username: ");
             Scanner scanner = new Scanner(System.in);
 
             String oktaUsername = scanner.next();
@@ -154,11 +307,25 @@ public class awscli {
             if (console != null) {
                 oktaPassword = new String(console.readPassword("Password: "));
             } else { // hack to be able to debug in an IDE
-                System.out.print("Password: ");
+                System.err.print("Password: ");
                 oktaPassword = scanner.next();
             }
+            return new Creds(oktaUsername,oktaPassword);
+        }
+    }
 
-            responseAuthenticate = authnticateCredentials(oktaUsername, oktaPassword);
+    /* Authenticates users credentials via Okta, return Okta session token
+     * Postcondition: returns String oktaSessionToken
+     * */
+    private String oktaAuthntication() throws ClientProtocolException, JSONException, IOException {
+        CloseableHttpResponse responseAuthenticate = null;
+        int requestStatus = 0;
+
+        //Redo sequence if response from AWS doesn't return 200 Status
+        while (requestStatus != 200) {
+
+            Creds creds = credRetriever.getCreds();
+            responseAuthenticate = authnticateCredentials(creds.username,creds.password);
             requestStatus = responseAuthenticate.getStatusLine().getStatusCode();
             authnFailHandler(requestStatus, responseAuthenticate);
         }
@@ -248,17 +415,6 @@ public class awscli {
         oktaAWSAppURL = props.getProperty("OKTA_AWS_APP_URL");
         awsIamKey = props.getProperty("AWS_IAM_KEY");
         awsIamSecret = props.getProperty("AWS_IAM_SECRET");
-/*		String line = oktaBr.readLine();
-        while(line!=null){
-			if(line.contains("OKTA_ORG")){
-				oktaOrg = line.substring(line.indexOf("=")+1).trim();
-			}
-			else if( line.contains("OKTA_AWS_APP_URL")){
-				oktaAWSAppURL = line.substring(line.indexOf("=")+1).trim();
-			}
-			line = oktaBr.readLine();
-		}	
-		oktaBr.close();*/
     }
 
     /*Uses user's credentials to obtain Okta session Token */
@@ -314,7 +470,7 @@ public class awscli {
         int selection = -1;
         while (selection == -1) {
             //prompt user for selection
-            System.out.print("Selection: ");
+            System.err.print("Selection: ");
             String selectInput = scanner.nextLine();
             try {
                 selection = Integer.parseInt(selectInput) - 1;
@@ -365,72 +521,7 @@ public class awscli {
     }
 
 
-    /* Assumes SAML role selected by the user based on authorized Okta AWS roles given in SAML assertion result SAML
-     * Precondition: String resultSAML
-     * Postcondition: returns type AssumeRoleWithSAMLResult
-     */
-    private static AssumeRoleWithSAMLResult assumeAWSRole(String resultSAML) {
-        // Decode SAML response
-        resultSAML = resultSAML.replace("&#x2b;", "+").replace("&#x3d;", "=");
-        String resultSAMLDecoded = new String(Base64.decodeBase64(resultSAML));
-
-        ArrayList<String> principalArns = new ArrayList<String>();
-        ArrayList<String> roleArns = new ArrayList<String>();
-
-        //When the app is not assigned to you no assertion is returned
-        if (!resultSAMLDecoded.contains("arn:aws")) {
-            logger.info("Incorrect results:" + resultSAMLDecoded);
-            logger.error("\nYou do not have access to AWS through Okta. \nPlease contact your administrator");
-            System.exit(0);
-        }
-
-        System.out.println("\nPlease choose the role you would like to assume: ");
-
-        //Gather list of applicable AWS roles
-        int i = 0;
-        while (resultSAMLDecoded.indexOf("arn:aws") != -1) {
-            /*Trying to parse the value of the Role SAML Assertion that typically looks like this:
-            <saml2:AttributeValue xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">
-            arn:aws:iam::[AWS-ACCOUNT-ID]:saml-provider/Okta,arn:aws:iam::[AWS-ACCOUNT-ID]:role/[ROLE_NAME]
-            </saml2:AttributeValue>
-      </saml2:Attribute>
-            */
-            int start = resultSAMLDecoded.indexOf("arn:aws");
-            int end = resultSAMLDecoded.indexOf("</saml2:", start);
-            String resultSAMLRole = resultSAMLDecoded.substring(start, end);
-            String[] parts = resultSAMLRole.split(",");
-            principalArns.add(parts[0]);
-            roleArns.add(parts[1]);
-            System.out.println("[ " + (i + 1) + " ]: " + roleArns.get(i));
-            resultSAMLDecoded = (resultSAMLDecoded.substring(resultSAMLDecoded.indexOf("</saml2:AttributeValue") + 1));
-            i++;
-        }
-
-        //Prompt user for role selection
-        int selection = numSelection(roleArns.size());
-
-        String principalArn = principalArns.get(selection);
-        String roleArn = roleArns.get(selection);
-        crossAccountRoleName = roleArn.substring(roleArn.indexOf("/") + 1);
-        logger.debug("Cross-account role is " + crossAccountRoleName);
-
-
-        //creates empty AWS credentials to prevent the AWSSecurityTokenServiceClient object from unintentionally loading the previous profile we just created
-        BasicAWSCredentials awsCreds = new BasicAWSCredentials("", "");
-
-        //use user credentials to assume AWS role
-        AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(awsCreds);
-
-        AssumeRoleWithSAMLRequest assumeRequest = new AssumeRoleWithSAMLRequest()
-                .withPrincipalArn(principalArn)
-                .withRoleArn(roleArn)
-                .withSAMLAssertion(resultSAML)
-                .withDurationSeconds(3600); //default token duration to 12 hours
-
-        return stsClient.assumeRoleWithSAML(assumeRequest);
-    }
-
-    private static void GetRoleToAssume(String roleName) {
+    private void GetRoleToAssume(String roleName) {
 
         if (roleName != null && !roleName.equals("") && awsIamKey != null && awsIamSecret != null && !awsIamKey.equals("") && !awsIamSecret.equals("")) {
 
@@ -443,6 +534,9 @@ public class awscli {
             logger.debug("GetRoleResult: " + roleresult.toString());
             Role role = roleresult.getRole();
             logger.debug("getRole: " + role.toString());
+
+
+
             ListAttachedRolePoliciesResult arpr = identityManagementClient.listAttachedRolePolicies(new ListAttachedRolePoliciesRequest().withRoleName(roleName));
             logger.debug("ListAttachedRolePoliciesResult: " + arpr.toString());
             ListRolePoliciesResult lrpr = identityManagementClient.listRolePolicies(new ListRolePoliciesRequest().withRoleName(roleName));
@@ -461,20 +555,8 @@ public class awscli {
 
             if (managedPolicies.size() >= 1) //we prioritize managed policies over inline policies
             {
-                if (managedPolicies.size() > 1) //if there's more than one policy, we're asking the user to select one of them
-                {
-                    List<String> lstManagedPolicies = new ArrayList<String>();
+                AttachedPolicy attachedPolicy = selector.select("policy", "Managed Policies", p -> p.toString(), managedPolicies);
 
-                    for (AttachedPolicy managedPolicy : managedPolicies) {
-                        lstManagedPolicies.add(managedPolicy.getPolicyName());
-                    }
-
-                    logger.debug("Managed Policies: " + managedPolicies.toString());
-
-                    selectedPolicyRank = SelectPolicy(lstManagedPolicies);
-                }
-
-                AttachedPolicy attachedPolicy = managedPolicies.get(selectedPolicyRank);
                 logger.debug("Selected policy " + attachedPolicy.toString());
                 GetPolicyRequest gpr = new GetPolicyRequest().withPolicyArn(attachedPolicy.getPolicyArn());
 
@@ -490,28 +572,20 @@ public class awscli {
                 roleToAssume = ProcessPolicyDocument(policyDoc);
             } else if (inlinePolicies.size() >= 1) //processing inline policies if we have no managed policies
             {
+                 String inlinePolicyName = selector.select("inline-policy","Inline Policies:", s-> s, inlinePolicies);
                 logger.debug("Inline Policies " + inlinePolicies.toString());
-
-                if (inlinePolicies.size() > 1) {
-                    //ask the user to select one policy if there are more than one
-
-                    logger.debug("Inline Policies: " + inlinePolicies.toString());
-
-                    selectedPolicyRank = SelectPolicy(inlinePolicies);
-                }
 
                 //Have to set the role name and the policy name (both are mandatory fields
                 //TODO: handle more than 1 policy (ask the user to choose it?)
-                GetRolePolicyRequest grpr = new GetRolePolicyRequest().withRoleName(roleName).withPolicyName(inlinePolicies.get(selectedPolicyRank));
+                GetRolePolicyRequest grpr = new GetRolePolicyRequest().withRoleName(roleName).withPolicyName(inlinePolicyName);
                 GetRolePolicyResult rpr = identityManagementClient.getRolePolicy(grpr);
                 String policyDoc = rpr.getPolicyDocument();
-
                 roleToAssume = ProcessPolicyDocument(policyDoc);
             }
         }
     }
 
-    private static int SelectPolicy(List<String> lstPolicies) {
+    private int SelectPolicy(List<String> lstPolicies) {
         String strSelectedPolicy = null;
 
         System.out.println("\nPlease select a role policy: ");
@@ -529,7 +603,7 @@ public class awscli {
         return selection;
     }
 
-    private static String ProcessPolicyDocument(String policyDoc) {
+    private String ProcessPolicyDocument(String policyDoc) {
 
         String strRoleToAssume = null;
         try {
@@ -581,15 +655,14 @@ public class awscli {
 
     /* Prompts the user to select a role in case the role policy contains an array of roles instead of a single role
     */
-    private static String SelectRole(List<String> lstRoles) {
-        String strSelectedRole = null;
-        return selector.select("role","Please select the role you want to assume  :",s->s,lstRoles);
+    private  String SelectRole(List<String> lstRoles) {
+        return selector.select("role","Please select the role you wish to assume:",s->s, lstRoles);
     }
 
     /* Retrieves AWS credentials from AWS's assumedRoleResult and write the to aws credential file
      * Precondition :  AssumeRoleWithSAMLResult assumeResult
      */
-    private static String setAWSCredentials(AssumeRoleWithSAMLResult assumeResult, String credentialsProfileName) throws FileNotFoundException, UnsupportedEncodingException, IOException {
+    private String setAWSCredentials(AssumeRoleWithSAMLResult assumeResult, String credentialsProfileName) throws FileNotFoundException, UnsupportedEncodingException, IOException {
         BasicSessionCredentials temporaryCredentials =
                 new BasicSessionCredentials(
                         assumeResult.getCredentials().getAccessKeyId(),
@@ -619,7 +692,7 @@ public class awscli {
         return credentialsProfileName;
     }
 
-    private static void UpdateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
+    private void UpdateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
             throws IOException {
 
         ProfilesConfigFile profilesConfigFile = null;
@@ -653,7 +726,7 @@ public class awscli {
         }
     }
 
-    private static void PopulateCredentialsFile(String profileNameLine, String awsAccessKey, String awsSecretKey, String awsSessionToken)
+    private void PopulateCredentialsFile(String profileNameLine, String awsAccessKey, String awsSecretKey, String awsSessionToken)
             throws IOException {
 
         File inFile = new File(System.getProperty("user.home") + "/.aws/credentials");
@@ -701,7 +774,7 @@ public class awscli {
         }
     }
 
-    private static void UpdateConfigFile(String profileName, String roleToAssume) throws IOException {
+    private void UpdateConfigFile(String profileName, String roleToAssume) throws IOException {
 
         File inFile = new File(System.getProperty("user.home") + "/.aws/config");
 
@@ -752,14 +825,12 @@ public class awscli {
         }
     }
 
-    public static void WriteNewProfile(PrintWriter pw, String profileNameLine, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
+    public  void WriteNewProfile(PrintWriter pw, String profileNameLine, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
 
         pw.println(profileNameLine);
         pw.println("aws_access_key_id=" + awsAccessKey);
         pw.println("aws_secret_access_key=" + awsSecretKey);
         pw.println("aws_session_token=" + awsSessionToken);
-        //pw.println();
-        //pw.println();
     }
 
     public static void WriteNewRoleToAssume(PrintWriter pw, String profileName, String roleToAssume) {
@@ -771,72 +842,12 @@ public class awscli {
         pw.println("region=us-east-1");
     }
 
-    private static String mfa(JSONObject authResponse) {
-
-        try {
-            //User selects which factor to use
-            JSONObject factor = selectFactor(authResponse);
-            String factorType = factor.getString("factorType");
-            String stateToken = authResponse.getString("stateToken");
-
-            //factor selection handler
-            switch (factorType) {
-                case ("question"): {
-                    //question factor handler
-                    String sessionToken = questionFactor(factor, stateToken);
-                    if (sessionToken.equals("change factor")) {
-                        System.out.println("Factor Change Initiated");
-                        return mfa(authResponse);
-                    }
-                    return sessionToken;
-                }
-                case ("sms"): {
-                    //sms factor handler
-                    String sessionToken = smsFactor(factor, stateToken);
-                    if (sessionToken.equals("change factor")) {
-                        System.out.println("Factor Change Initiated");
-                        return mfa(authResponse);
-                    }
-                    return sessionToken;
-
-                }
-                case ("token:software:totp"): {
-                    //token factor handler
-                    String sessionToken = totpFactor(factor, stateToken);
-                    if (sessionToken.equals("change factor")) {
-                        System.out.println("Factor Change Initiated");
-                        return mfa(authResponse);
-                    }
-                    return sessionToken;
-                }
-                case ("push"): {
-                    //push factor handles
-                    String result = pushFactor(factor, stateToken);
-                    if (result.equals("timeout") || result.equals("change factor")) {
-                        return mfa(authResponse);
-                    }
-                    return result;
-                }
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        } catch (ClientProtocolException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        return "";
-    }
-
 
     /*Handles factor selection based on factors found in parameter authResponse, returns the selected factor
  * Precondition: JSINObject authResponse
  * Postcondition: return session token as String sessionToken
  */
-    public static JSONObject selectFactor(JSONObject authResponse) throws JSONException {
+    public  JSONObject selectFactor(JSONObject authResponse) throws JSONException {
         JSONArray factors = authResponse.getJSONObject("_embedded").getJSONArray("factors");
         List<JSONObject> jsonFactors = new ArrayList<JSONObject>(factors.length());
         for (int i = 0; i < factors.length(); i++) {
@@ -844,7 +855,7 @@ public class awscli {
         }
 
         return selector.select("factor",
-                "Multi-Factor authentication is required. Please select a factor to use",new factorDescriber(),jsonFactors);
+                "Multi-Factor authentication is required. Please select a factor to use. Pretty please?",new factorDescriber(),jsonFactors);
 
 //        //Handles user factor selection
 //        int selection = numSelection(factors.length());
@@ -872,6 +883,7 @@ public class awscli {
             return factorType;
         }
     }
+
 
     private static String questionFactor(JSONObject factor, String stateToken) throws JSONException, ClientProtocolException, IOException {
         String question = factor.getJSONObject("profile").getString("questionText");
@@ -1198,7 +1210,6 @@ public class awscli {
 
         AuthResult authResult = authClient.authenticateWithFactor(stateToken, factor.getId(), answer);
 
-
         if (!authResult.getStatus().equals("SUCCESS")) {
             System.out.println("\nThe second-factor verification failed.");
         } else {
@@ -1209,6 +1220,38 @@ public class awscli {
     }
 
 
+    /*Handles factor selection based on factors found in parameter authResult, returns the selected factor
+     */
+    public static void selectFactor(AuthResult authResult) {
+        ArrayList<LinkedHashMap> factors = (ArrayList<LinkedHashMap>) authResult.getEmbedded().get("factors");
+        String factorType;
+        System.out.println("\nMulti-Factor authentication required. Please select a factor to use.");
+        //list factor to select from to user
+        System.out.println("Factors:");
+        for (int i = 0; i < factors.size(); i++) {
+            LinkedHashMap<String, Object> factor = factors.get(i);
+            //Factor factor = factors.get(i);
+            factorType = (String) factor.get("factorType");// factor.getFactorType();
+            if (factorType.equals("question")) {
+                factorType = "Security Question";
+            } else if (factorType.equals("sms")) {
+                factorType = "SMS Authentication";
+            } else if (factorType.equals("token:software:totp")) {
+                String provider = (String) factor.get("provider");//factor.getProvider();
+                if (provider.equals("GOOGLE")) {
+                    factorType = "Google Authenticator";
+                } else {
+                    factorType = "Okta Verify";
+                }
+            }
+            System.out.println("[ " + (i + 1) + " ] :" + factorType);
+        }
+
+        //Handles user factor selection
+        int selection = numSelection(factors.size());
+
+        //return factors.get(selection);
+    }
 
     /*Handles MFA for users, returns an Okta session token if user is authenticated
      * Precondition: question factor as JSONObject factor, current state token stateToken
@@ -1286,16 +1329,18 @@ public class awscli {
         date.add(Calendar.HOUR, 1);
 
         //change with file customization
-        System.out.println("\n----------------------------------------------------------------------------------------------------------------------");
-        System.out.println("Your new access key pair has been stored in the aws configuration file with the following profile name: " + profileName);
-        System.out.println("The AWS Credentials file is located in " + System.getProperty("user.home") + "/.aws/credentials.");
-        System.out.println("Note that it will expire at " + dateFormat.format(date.getTime()));
-        System.out.println("After this time you may safely rerun this script to refresh your access key pair.");
-        System.out.println("To use these credentials, please call the aws cli with the --profile option "
+        System.err.println("\n----------------------------------------------------------------------------------------------------------------------");
+        System.err.println("Your new access key pair has been stored in the aws configuration file with the following profile name: " + profileName);
+        System.err.println("The AWS Credentials file is located in " + System.getProperty("user.home") + "/.aws/credentials.");
+        System.err.println("Note that it will expire at " + dateFormat.format(date.getTime()));
+        System.err.println("After this time you may safely rerun this script to refresh your access key pair.");
+        System.err.println("To use these credentials, please call the aws cli with the --profile option "
                 + "(e.g. aws --profile " + profileName + " ec2 describe-instances)");
-        System.out.println("You can also omit the --profile option to use the last configured profile "
+        System.err.println("You can also omit the --profile option to use the last configured profile "
                 + "(e.g. aws s3 ls)");
-        System.out.println("----------------------------------------------------------------------------------------------------------------------");
+        System.err.println("----------------------------------------------------------------------------------------------------------------------");
+        System.out.println(profileName);
+
     }
 
     /* Authenticates users credentials via Okta, return Okta session token
@@ -1347,10 +1392,10 @@ public class awscli {
                 switch (apiException.getStatusCode()) {
                     case 400:
                     case 401:
-                        System.out.println("You provided invalid credentials, please try again.");
+                        System.err.println("You provided invalid credentials, please try again.");
                         break;
                     case 500:
-                        System.out.println("\nUnable to establish connection with: " +
+                        System.err.println("\nUnable to establish connection with: " +
                                 oktaOrg + " \nPlease verify that your Okta org url is correct and try again");
                         System.exit(0);
                         break;

@@ -47,13 +47,21 @@ class InputChoice implements UserChoiceSelect {
     @Override
     public <T> T select(String choiceName, String desc, Function<T, String> namer, List<T> items) {
         logger.debug(">> select %s", choiceName);
-        System.out.println(desc);
         int i = 0;
         for (T item : items) {
-            System.out.println("[ " + (i + 1) + " ]: " + namer.apply(item));
+            System.err.println("[ " + (i++ + 1) + " ]: " + namer.apply(item));
         }
 
-        return items.get(numSelection(items.size()));
+        if (items.size() >= 1) {
+            return items.get(numSelection(items.size()));
+        } else if (items.size() == 1) {
+            T item = items.get(0);
+            System.err.println(String.format("Only one choice for %s choosing %s",choiceName,namer.apply(item)));
+            return item;
+        } else {
+            System.err.println(String.format("No choices for %s", choiceName));
+            return null;
+        }
     }
 
     private  int numSelection(int max) {

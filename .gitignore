@@ -26,3 +26,13 @@ build/
 target/
 
 .gradle/
+
+*.idea/
+
+.project
+
+.classpath
+
+.settings/
+
+*.iml
