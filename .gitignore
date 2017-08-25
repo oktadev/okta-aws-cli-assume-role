@@ -36,3 +36,6 @@ target/
 .settings/
 
 *.iml
+
+
+bin/
