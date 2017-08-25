@@ -31,7 +31,6 @@ import com.amazonaws.services.identitymanagement.model.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.okta.sdk.clients.AuthApiClient;
-import com.okta.sdk.clients.FactorsApiClient;
 import com.okta.sdk.clients.UserApiClient;
 import com.okta.sdk.exceptions.ApiException;
 import com.okta.sdk.framework.ApiClientConfiguration;
@@ -76,7 +75,6 @@ public class awscli {
 
     private static final String DefaultProfileName = "default";
 
-    private static FactorsApiClient factorClient;
     private static UserApiClient userClient;
     private static String userId;
     private static String crossAccountRoleName = null;
@@ -223,7 +221,7 @@ public class awscli {
         }
 
 
-        roleInfo role = selector.select("role", "Please choose the role you would like to assume", r -> r.roleArn, roles);
+        roleInfo role = selector.select("role", "Please choose the role you would like to assume", roles, r -> r.roleArn);
         String principalArn = role.principalArn;
         String roleArn = role.roleArn;
         crossAccountRoleName = roleArn.substring(roleArn.indexOf("/") + 1);
@@ -270,15 +268,6 @@ public class awscli {
     }
 
 
-    class roleInfo {
-        String principalArn;
-        String roleArn;
-
-        public roleInfo(String principalArn, String roleArn) {
-            this.principalArn = principalArn;
-            this.roleArn = roleArn;
-        }
-    }
 
 
 
@@ -390,7 +379,6 @@ public class awscli {
         AuthResult result = null;
         authClient = new AuthApiClient(oktaSettings);
         userClient = new UserApiClient(oktaSettings);
-        factorClient = new FactorsApiClient(oktaSettings);
 
         // Check if the user credentials are valid
         result = authClient.authenticate(username, password, "");
@@ -520,7 +508,7 @@ public class awscli {
 
             if (managedPolicies.size() >= 1) //we prioritize managed policies over inline policies
             {
-                AttachedPolicy attachedPolicy = selector.select("policy", "Managed Policies", p -> p.toString(), managedPolicies);
+                AttachedPolicy attachedPolicy = selector.select("policy", "Managed Policies", managedPolicies, p -> p.toString());
 
                 logger.debug("Selected policy " + attachedPolicy.toString());
                 GetPolicyRequest gpr = new GetPolicyRequest().withPolicyArn(attachedPolicy.getPolicyArn());
@@ -537,7 +525,7 @@ public class awscli {
                 roleToAssume = ProcessPolicyDocument(policyDoc);
             } else if (inlinePolicies.size() >= 1) //processing inline policies if we have no managed policies
             {
-                 String inlinePolicyName = selector.select("inline-policy","Inline Policies:", s-> s, inlinePolicies);
+                 String inlinePolicyName = selector.select("inline-policy","Inline Policies:", inlinePolicies, s-> s);
                 logger.debug("Inline Policies " + inlinePolicies.toString());
 
                 //Have to set the role name and the policy name (both are mandatory fields
@@ -550,23 +538,6 @@ public class awscli {
         }
     }
 
-    private int SelectPolicy(List<String> lstPolicies) {
-        String strSelectedPolicy = null;
-
-        System.out.println("\nPlease select a role policy: ");
-
-        //Gather list of policies for the selected role
-        int i = 1;
-        for (String strPolicyName : lstPolicies) {
-            System.out.println("[ " + i + " ]: " + strPolicyName);
-            i++;
-        }
-
-        //Prompt user for policy selection
-        int selection = numSelection(lstPolicies.size());
-
-        return selection;
-    }
 
     private String ProcessPolicyDocument(String policyDoc) {
 
@@ -621,7 +592,7 @@ public class awscli {
     /* Prompts the user to select a role in case the role policy contains an array of roles instead of a single role
     */
     private  String SelectRole(List<String> lstRoles) {
-        return selector.select("role","Please select the role you wish to assume:",s->s, lstRoles);
+        return selector.select("role","Please select the role you wish to assume:", lstRoles, s->s);
     }
 
     /* Retrieves AWS credentials from AWS's assumedRoleResult and write the to aws credential file
@@ -803,11 +774,10 @@ public class awscli {
         pw.println("region=us-east-1");
     }
 
-
     /*Handles factor selection based on factors found in parameter authResponse, returns the selected factor
- * Precondition: JSINObject authResponse
- * Postcondition: return session token as String sessionToken
- */
+     * Precondition: JSINObject authResponse
+     * Postcondition: return session token as String sessionToken
+     */
     public  JSONObject selectFactor(JSONObject authResponse) throws JSONException {
         JSONArray factors = authResponse.getJSONObject("_embedded").getJSONArray("factors");
         List<JSONObject> jsonFactors = new ArrayList<JSONObject>(factors.length());
@@ -816,11 +786,7 @@ public class awscli {
         }
 
         return selector.select("factor",
-                "Multi-Factor authentication is required. Please select a factor to use. Pretty please?",new factorDescriber(),jsonFactors);
-
-//        //Handles user factor selection
-//        int selection = numSelection(factors.length());
-//        return factors.getJSONObject(selection);
+                "Multi-Factor authentication is required. Please select a factor to use. Pretty please?", jsonFactors, new factorDescriber());
     }
 
     private static class factorDescriber implements Function<JSONObject,String> {
@@ -1101,37 +1067,6 @@ public class awscli {
     }
 
 
-    /*Handles question factor authentication,
-     * Precondition: question factor as JSONObject factor, current state token stateToken
-     * Postcondition: return session token as String sessionToken
-     */
-    private static String questionFactor(Factor factor, String stateToken) throws JSONException, ClientProtocolException, IOException {
-        /*
-        String question = factor.getJSONObject("profile").getString("questionText");
-        Scanner scanner = new Scanner(System.in);
-        String sessionToken = "";
-        String answer = "";
-
-        //prompt user for answer
-        System.out.println("\nSecurity Question Factor Authentication\nEnter 'change factor' to use a different factor\n");
-        while (sessionToken == "") {
-            if (answer != "") {
-                System.out.println("Incorrect answer, please try again");
-            }
-            System.out.println(question);
-            System.out.println("Answer: ");
-            answer = scanner.nextLine();
-            //verify answer is correct
-            if (answer.toLowerCase().equals("change factor")) {
-                return answer;
-            }
-            sessionToken = verifyAnswer(answer, factor, stateToken);
-        }
-        */
-        return "";//sessionToken;
-    }
-
-
     /*Handles token factor authentication, i.e: Google Authenticator or Okta Verify
     * Precondition: question factor as JSONObject factor, current state token stateToken
     * Postcondition: return session token as String sessionToken
@@ -1167,8 +1102,6 @@ public class awscli {
     */
     private static String verifyAnswer(String answer, Factor factor, String stateToken) throws IOException {
 
-        String strAuthResult = "";
-
         AuthResult authResult = authClient.authenticateWithFactor(stateToken, factor.getId(), answer);
 
         if (!authResult.getStatus().equals("SUCCESS")) {
@@ -1180,108 +1113,6 @@ public class awscli {
         return "";
     }
 
-
-    /*Handles factor selection based on factors found in parameter authResult, returns the selected factor
-     */
-    public static void selectFactor(AuthResult authResult) {
-        ArrayList<LinkedHashMap> factors = (ArrayList<LinkedHashMap>) authResult.getEmbedded().get("factors");
-        String factorType;
-        System.out.println("\nMulti-Factor authentication required. Please select a factor to use.");
-        //list factor to select from to user
-        System.out.println("Factors:");
-        for (int i = 0; i < factors.size(); i++) {
-            LinkedHashMap<String, Object> factor = factors.get(i);
-            //Factor factor = factors.get(i);
-            factorType = (String) factor.get("factorType");// factor.getFactorType();
-            if (factorType.equals("question")) {
-                factorType = "Security Question";
-            } else if (factorType.equals("sms")) {
-                factorType = "SMS Authentication";
-            } else if (factorType.equals("token:software:totp")) {
-                String provider = (String) factor.get("provider");//factor.getProvider();
-                if (provider.equals("GOOGLE")) {
-                    factorType = "Google Authenticator";
-                } else {
-                    factorType = "Okta Verify";
-                }
-            }
-            System.out.println("[ " + (i + 1) + " ] :" + factorType);
-        }
-
-        //Handles user factor selection
-        int selection = numSelection(factors.size());
-
-        //return factors.get(selection);
-    }
-
-    /*Handles MFA for users, returns an Okta session token if user is authenticated
-     * Precondition: question factor as JSONObject factor, current state token stateToken
-     * Postcondition: return session token as String sessionToken
-     */
-
-    private static String mfa(AuthResult authResult) throws IOException {
-/*
-        try {
-
-            //User selects which factor to use
-            Factor selectedFactor = selectFactor(authResult);
-            String factorType = selectedFactor.getFactorType();
-            String stateToken = authResult.getStateToken();
-
-            //factor selection handler
-            switch (factorType) {
-                case ("question"): {
-                    //question factor handler
-                    //String sessionToken = questionFactor(factor, stateToken);
-                    //if (sessionToken.equals("change factor")) {
-                    //    System.out.println("Factor Change Initiated");
-                    //    return mfa(authResponse);
-                    //}
-                    //return sessionToken;
-                }
-                case ("sms"): {
-                    //sms factor handler
-                    //String sessionToken = smsFactor(factor, stateToken);
-                    //if (sessionToken.equals("change factor")) {
-                    //    System.out.println("Factor Change Initiated");
-                    //    return mfa(authResponse);
-                    //}
-                    //return sessionToken;
-
-                }
-                case ("token:software:totp"): {
-                    //token factor handler
-                    String sessionToken = totpFactor(selectedFactor, stateToken);
-                    if (sessionToken.equals("change factor")) {
-                        System.out.println("Factor Change Initiated");
-                        return mfa(authResult);
-                    }
-                    return sessionToken;
-                }
-                case ("push"): {
-                    //push factor handles
-                    /*
-                    String result = pushFactor(factor, stateToken);
-                    if (result.equals("timeout") || result.equals("change factor")) {
-                        return mfa(authResponse);
-                    }
-                    return result;
-
-                }
-            }
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        } /*catch (ClientProtocolException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-*/
-        return "";
-    }
 
     /* prints final status message to user */
     private static void resultMessage(String profileName) {
@@ -1304,92 +1135,17 @@ public class awscli {
 
     }
 
-    /* Authenticates users credentials via Okta, return Okta session token
-     * Postcondition: returns String oktaSessionToken
-     * */
-    private static String oktaAuthentication() throws ClientProtocolException, JSONException, IOException {
-
-        String strSessionToken = "";
-        AuthResult authResult = null;
-
-        int requestStatus = 0;
-        String strAuthStatus = "";
-
-        //Redo sequence if response from AWS doesn't return 200 Status
-        while (!strAuthStatus.equalsIgnoreCase("SUCCESS") && !strAuthStatus.equalsIgnoreCase("MFA_REQUIRED")) {
-
-            // Prompt for user credentials
-            System.out.print("Username: ");
-            //Scanner scanner = new Scanner(System.in);
-
-            String oktaUsername = null; //scanner.next();
-
-            Console console = System.console();
-            String oktaPassword = null;
-            if (console != null) {
-                oktaPassword = new String(console.readPassword("Password: "));
-            } else { // hack to be able to debug in an IDE
-                System.out.print("Password: ");
-            }
-            try {
-                authResult = authenticateCredentials(oktaUsername, oktaPassword);
-                strAuthStatus = authResult.getStatus();
-
-                if (strAuthStatus.equalsIgnoreCase("MFA_REQUIRED")) {
-                    if (userClient != null) {
-                        LinkedHashMap<String, Object> user = (LinkedHashMap<String, Object>) (authResult.getEmbedded().get("user"));
-                        userId = (String) user.get("id");
-
-                        //userId = user.getId();
-                            /*User user = userClient.getUser(oktaUsername);
-                            if(user!=null)
-                                userId = user.getId();*/
-                    }
-                }
-
-            } catch (ApiException apiException) {
-                String strEx = apiException.getMessage();
-
-                switch (apiException.getStatusCode()) {
-                    case 400:
-                    case 401:
-                        System.err.println("You provided invalid credentials, please try again.");
-                        break;
-                    case 500:
-                        System.err.println("\nUnable to establish connection with: " +
-                                oktaOrg + " \nPlease verify that your Okta org url is correct and try again");
-                        System.exit(0);
-                        break;
-                    default:
-                        throw new RuntimeException("Failed : HTTP error code : "
-                                + apiException.getStatusCode() + " Error code: " + apiException.getErrorResponse().getErrorCode() + " Error summary: " + apiException.getErrorResponse().getErrorSummary());
-
-                }
-            }
-            //requestStatus = responseAuthenticate.getStatusLine().getStatusCode();
-            //authnFailHandler(requestStatus, responseAuthenticate);
-        }
+}
 
 
-        //Retrieve and parse the Okta response for session token
-            /*BufferedReader br = new BufferedReader(new InputStreamReader(
-                    (responseAuthenticate.getEntity().getContent())));
 
-            String outputAuthenticate = br.readLine();
-            JSONObject jsonObjResponse = new JSONObject(outputAuthenticate);
+class roleInfo {
+    String principalArn;
+    String roleArn;
 
-            responseAuthenticate.close();*/
-
-        if (strAuthStatus.equalsIgnoreCase("MFA_REQUIRED")) {
-            return mfa(authResult);
-        }
-        //else {
-        //    return jsonObjResponse.getString("sessionToken");
-        //}
-
-        if (authResult != null)
-            strSessionToken = authResult.getSessionToken();
-        return strSessionToken;
+    public roleInfo(String principalArn, String roleArn) {
+        this.principalArn = principalArn;
+        this.roleArn = roleArn;
     }
 
 

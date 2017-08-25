@@ -1,29 +1,34 @@
 package com.okta.tools;
 
+import com.sun.tools.internal.xjc.reader.xmlschema.bindinfo.BIConversion;
+import jdk.internal.util.xml.impl.Input;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 /**
  * Simple abstraction on how to process user choices
  */
-public interface UserChoiceSelect {
-
-    public <T> T select(String choiceName, String desc,  Function<T, String> namer, List<T> items);
+public abstract class UserChoiceSelect {
+    protected static final Logger logger = LogManager.getLogger(awscli.class);
+    public abstract <T> T select(String choiceName, String desc, List<T> items, Function<T, String> namer);
 
 }
 
-
-interface scanFactory {
+/**
+ * Explicitly not using ScannerFactory which is a real thing
+ * becuase we just want to be able to unit test out something that
+ * grabs from stdin
+ */
+interface ScanFactory {
     Scanner getScanner();
 }
 
 
-class inputScanner implements scanFactory {
+class inputScanner implements ScanFactory {
 
     @Override
     public Scanner getScanner() {
@@ -31,21 +36,70 @@ class inputScanner implements scanFactory {
     }
 }
 
-class ConfigChoice implements  UserChoiceSelect {
+class ConfigChoice extends  UserChoiceSelect {
+    private Map<String,String> config;
+
+    public ConfigChoice(Map<String, String> config) {
+        this.config = config;
+    }
 
     @Override
-    public <T> T select(String choiceName, String desc, Function<T, String> namer,  List<T> items) {
-        return null;
+    public <T> T select(String choiceName, String desc, List<T> items, Function<T, String> namer) {
+        if(config.containsKey(choiceName)) {
+            String matchPattern = config.get(choiceName);
+            Pattern p = Pattern.compile(matchPattern);
+            for (Iterator<T> iter = items.iterator(); iter.hasNext(); ) {
+                T item = iter.next();
+                if (p.matcher(namer.apply(item)).matches()) {
+                    return item;
+                }
+            }
+            return null;
+        } else {
+            logger.debug("No config entry for %s",choiceName);
+            return null;
+        }
     }
 }
 
-class InputChoice implements UserChoiceSelect {
+class ConfigThenInput extends UserChoiceSelect{
 
-    private static final Logger logger = LogManager.getLogger(awscli.class);
-    scanFactory scanFactory = new inputScanner();
+    private ConfigChoice config;
+    private InputChoice input;
+
+    public ConfigThenInput(ConfigChoice config, InputChoice input) {
+        this.config = config;
+        this.input = input;
+    }
 
     @Override
-    public <T> T select(String choiceName, String desc, Function<T, String> namer, List<T> items) {
+    public <T> T select(String choiceName, String desc, List<T> items, Function<T, String> namer) {
+        T result = config.select(choiceName,desc,items,namer);
+        if (result == null) {
+            logger.info("No config entry %s, asking for input",choiceName);
+            result = input.select(choiceName,desc,items,namer);
+        }
+        return result;
+    }
+}
+
+class InputChoice extends UserChoiceSelect {
+
+    ScanFactory ScanFactory = new inputScanner();
+
+    InputChoice() {
+        this(new ScanFactory() {
+            public Scanner getScanner() {
+                return new Scanner(System.in);
+            }
+        });
+    }
+    InputChoice(ScanFactory ScanFactory) {
+        this.ScanFactory = ScanFactory;
+    }
+
+    @Override
+    public <T> T select(String choiceName, String desc, List<T> items, Function<T, String> namer) {
         logger.debug(">> select %s", choiceName);
         int i = 0;
         for (T item : items) {
@@ -65,7 +119,7 @@ class InputChoice implements UserChoiceSelect {
     }
 
     private  int numSelection(int max) {
-        Scanner scanner = scanFactory.getScanner();
+        Scanner scanner = ScanFactory.getScanner();
         int selection = -1;
         while (selection == -1) {
             //prompt user for selection
