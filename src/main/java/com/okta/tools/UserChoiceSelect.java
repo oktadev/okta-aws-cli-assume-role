@@ -1,7 +1,5 @@
 package com.okta.tools;
 
-import com.sun.tools.internal.xjc.reader.xmlschema.bindinfo.BIConversion;
-import jdk.internal.util.xml.impl.Input;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
