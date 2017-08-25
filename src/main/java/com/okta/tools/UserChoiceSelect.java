@@ -106,11 +106,11 @@ class InputChoice extends UserChoiceSelect {
             System.err.println("[ " + (i++ + 1) + " ]: " + namer.apply(item));
         }
 
-        if (items.size() >= 1) {
+        if (items.size() > 1) {
             return items.get(numSelection(items.size()));
         } else if (items.size() == 1) {
             T item = items.get(0);
-            System.err.println(String.format("Only one choice for %s choosing %s",choiceName,namer.apply(item)));
+            logger.info("Only one choice for %s choosing %s",choiceName,namer.apply(item));
             return item;
         } else {
             System.err.println(String.format("No choices for %s", choiceName));
