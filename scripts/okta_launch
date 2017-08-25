@@ -1,0 +1,5 @@
+#!/bin/bash
+
+DIR="$(dirname "$(readlink -f "$0")")"
+$DIR/update_okta_settings.sh
+$OKTA_DIR/okta-aws-cli-assume-role/bin/okta-aws-cli-assume-role $@
