@@ -1,0 +1,366 @@
+---
+groups:
+- name: develop
+  jobs:
+    - bump-pre
+    - bump-minor
+    - bump-major
+    - build
+    - notify
+- name: publish
+  jobs:
+    - qa-accept
+    - release
+    - bump-patch
+
+- name: automate
+  jobs:
+    - create-pr-pipelines
+    - bootstrap
+
+resource_types:
+- name: bitbucket-build-status
+  type: docker-image
+  source:
+    repository: docker.((docker-host))/c42/concourse/resources/bitbucket-build-status
+    tag: latest
+
+- name: bitbucket-pull-requests
+  type: docker-image
+  source:
+    repository: docker.((docker-host))/c42/concourse/resources/bitbucket-pull-requests
+    tag: latest
+
+resources:
+- name: source-code
+  type: git
+  source:
+    uri: https://((bitbucket-host))/scm/((git-stash-repository-slug))
+    branch: ((git-branch))
+    username: ((code42-username))
+    password: ((code42-password))
+
+- name: build-status
+  check_every: 24h
+  type: bitbucket-build-status
+  source:
+    base_url: https://((bitbucket-host))
+    username: ((code42-username))
+    password: ((code42-password))
+
+- name: container-image
+  check_every: 1h
+  type: docker-image
+  source:
+    repository: docker-cd.((docker-host))/((container-namespace))/((container-name))
+    username: ((code42-username))
+    password: ((code42-password))
+
+- name: bootstrap-image
+  check_every: 24h
+  type: docker-image
+  source:
+    repository: docker.((docker-host))/alpine
+    tag: latest
+
+- name: container-image-prod
+  check_every: 24h
+  type: docker-image
+  source:
+    repository: docker-cd.((docker-host))/((container-namespace))/((container-name))
+    username: ((code42-username))
+    password: ((code42-password))
+
+- name: ((git-branch-slug))-pull-requests
+  check_every: 10m
+  type: bitbucket-pull-requests
+  source:
+    host: https://((bitbucket-host))
+    project: ((git-stash-repository-project))
+    repo: ((git-stash-repository-name))
+    targeting: refs/heads/((git-branch))
+    username: ((code42-username))
+    password: ((code42-password))
+
+- name: version
+  type: semver
+  source:
+    initial_version: 0.0.1-rc.0
+    driver: git
+    branch: pipeline-state
+    file: ((git-branch-slug)).version
+    uri: https://((bitbucket-host))/scm/((git-stash-repository-slug))
+    username: ((code42-username))
+    password: ((code42-password))
+
+- name: current-version
+  type: semver
+  source:
+    initial_version: 0.0.1-rc.0
+    driver: git
+    branch: pipeline-state
+    file: ((git-branch-slug)).version
+    uri: https://((bitbucket-host))/scm/((git-stash-repository-slug))
+    username: ((code42-username))
+    password: ((code42-password))
+
+jobs:
+
+- name: bump-pre
+  public: true
+  #disable_manual_trigger: true
+  serial_groups: [version]
+  plan:
+  - aggregate:
+    - get: source-code
+      trigger: true
+    - do:
+      - get: version
+        trigger: true
+        params: {pre: rc}
+      - put: version
+        params: {file: version/number}
+  - put: source-code
+    params:
+      repository: source-code
+      tag: version/number
+      tag_prefix: ((tag-prefix))
+
+- name: build
+  public: true
+  plan:
+  - get: version
+    passed: [ bump-pre ]
+    trigger: true
+  - get: source
+    resource: source-code
+    passed: [ bump-pre ]
+    trigger: true
+  - get: container-image
+    params:
+      skip_download: true
+  - put: build-status
+    params:
+      git_dir: source
+      state: INPROGRESS
+  - task: gradle-build
+    file: source/ci/tasks/build.yml
+  - put: container-image
+    params:
+      build: dist/
+      cache: true
+      cache_tag: latest
+      tag: version/number
+      tag_as_latest: true
+  on_success:
+    put: version
+    put: build-status
+    params:
+      git_dir: source
+      state: SUCCESSFUL
+
+- name: notify
+  plan:
+  - get: build-status
+    trigger: true
+    passed: [ build ]
+  - get: source
+    resource: source-code
+    passed: [ build ]
+  - task: prepare-message
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: { repository: "docker.((docker-host))/c42/concourse/images/buildroot", tag: "latest" }
+      inputs:
+      - name: build-status
+      run:
+        path: sh
+        args:
+         - -c
+         - |
+           cat build-status/status.json
+
+- name: qa-accept
+  plan:
+    - aggregate:
+      - get: version
+        params: { pre: qa }
+      - get: source-code
+        passed: [ build ]
+      - get: container-image
+        passed: [build]
+    - put: source-code
+      params:
+        repository: source-code
+        tag: version/number
+        tag_prefix: ((tag-prefix))
+        only_tag: true
+
+- name: release
+  serial_groups: [version]
+  plan:
+  - aggregate:
+    - get: version
+      passed: [ qa-accept ]
+      params: {bump: final}
+    - get: source-code
+      passed: [ qa-accept ]
+  - get: container-image
+    passed: [qa-accept]
+    params: {save: true}
+  - put: container-image-prod
+    params:
+      load: container-image
+      tag: version/version
+      tag_as_latest: true
+  - put: source-code
+    params:
+      repository: source-code
+      tag: version/number
+      tag_prefix: ((tag-prefix))
+      only_tag: true
+
+- name: bump-patch
+  serial_groups: [version]
+  plan:
+  - get: version
+    passed: [release]
+    trigger: true
+  - get: current-version
+  - task: compare-versions
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: { repository: "docker.((docker-host))/c42/concourse/images/buildroot", tag: "latest" }
+      inputs:
+      - name: current-version
+      - name: version
+      run:
+        path: sh
+        args:
+        - -c
+        - |
+          CURRENT_VERSION="$(cat current-version/number | sed -r 's/-.*//')"
+          VERSION="$(cat version/number | sed -r 's/-.*//')"
+          if [ "$CURRENT_VERSION" != "$VERSION" ]
+          then
+            echo "${CURRENT_VERSION} != ${VERSION} - version mismatch, cannot bump patch"
+            exit 1
+          fi
+  on_success:
+    put: version
+    params: {bump: patch}
+
+- name: bump-minor
+  serial_groups: [version]
+  plan:
+  - get: version
+    params: {bump: minor}
+  - task: rc-zero
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: { repository: "docker.((docker-host))/c42/concourse/images/buildroot", tag: "latest" }
+      inputs:
+      - name: version
+      outputs:
+      - name: new-version
+      run:
+        path: sh
+        args:
+         - -c
+         - |
+           echo "$(cat version/number)-rc.0" > new-version/number
+  - put: version
+    params: {file: new-version/number}
+
+- name: bump-major
+  serial_groups: [version]
+  plan:
+  - get: version
+    params: {bump: major}
+  - task: rc-zero
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: { repository: "docker.((docker-host))/c42/concourse/images/buildroot", tag: "latest" }
+      inputs:
+      - name: version
+      outputs:
+      - name: new-version
+      run:
+        path: sh
+        args:
+         - -c
+         - |
+           echo "$(cat version/number)-rc.0" > new-version/number
+  - put: version
+    params: {file: new-version/number}
+
+- name: create-pr-pipelines
+  public: true
+  plan:
+  - get: source
+    resource: source-code
+  - get: meta
+    resource: ((git-branch-slug))-pull-requests
+    trigger: true
+  - task: create-pipelines
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: { repository: "docker.((docker-host))/c42/concourse/images/buildroot", tag: "latest" }
+      inputs:
+      - name: source
+      - name: meta
+      run:
+        path: source/ci/scripts/create-pr-pipelines.sh
+        args:
+         - ((concourse-url))
+         - ((concourse-team))
+         - ((concourse-username))
+         - ((concourse-password))
+         - ((bitbucket-host))
+         - ((git-stash-repository-slug))
+         - ((code42-username))
+         - ((code42-password))
+         - ((docker-host))
+         - ((pipeline-name))
+         - ((container-namespace))
+         - ((container-name))
+         - meta/pull-requests.json
+         - source
+
+- name: bootstrap
+  public: true
+  plan:
+  - get: bootstrap-image
+    trigger: true
+    params:
+      save: true
+  - task: check-image
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: { repository: "docker.((docker-host))/c42/concourse/images/buildroot", tag: "latest" }
+      params:
+        artifactoryuser: ((code42-username))
+        artifactorypass: ((code42-password))
+      run:
+        path: sh
+        args:
+          - -c
+          - |
+            $(curl -s -u $artifactoryuser:$artifactorypass https://docker.((docker-host))/v2/((container-namespace))/((container-name))/tags/list | tee /dev/tty | jq -r ".name == \"((container-namespace))/((container-name))\"") = true
+    on_failure:
+      put: container-image
+      params:
+        load: bootstrap-image
+        tag_as_latest: true

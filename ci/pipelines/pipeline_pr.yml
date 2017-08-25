@@ -1,0 +1,117 @@
+---
+resource_types:
+- name: bitbucket-build-status
+  type: docker-image
+  source:
+    repository: docker.((docker-host))/c42/concourse/resources/bitbucket-build-status
+    tag: latest
+
+resources:
+- name: source-code
+  type: git
+  source:
+    uri: https://((bitbucket-host))/scm/((git-stash-repository-slug))
+    branch: ((git-branch))
+    username: ((code42-username))
+    password: ((code42-password))
+
+- name: build-status
+  type: bitbucket-build-status
+  source:
+    base_url: https://((bitbucket-host))
+    username: ((code42-username))
+    password: ((code42-password))
+
+- name: container-image
+  check_every: 1h
+  type: docker-image
+  source:
+    repository: docker-dev.((docker-host))/((container-namespace))/((container-name))/((pr-slug))
+    username: ((code42-username))
+    password: ((code42-password))
+
+- name: bootstrap-image
+  check_every: 24h
+  type: docker-image
+  source:
+    repository: docker.((docker-host))/alpine
+    tag: latest
+
+jobs:
+
+- name: build
+  public: true
+  plan:
+  - get: source
+    resource: source-code
+    trigger: true
+  - put: build-status
+    params:
+      git_dir: source
+      state: INPROGRESS
+  - get: container-image
+    params:
+      skip_download: true
+  - put: container-image
+    params:
+      build: source/
+      cache: true
+      cache_tag: latest
+      tag_as_latest: true
+  on_success:
+    put: build-status
+    params:
+      git_dir: source
+      state: SUCCESSFUL
+
+- name: notify
+  plan:
+  - get: build-status
+    trigger: true
+    passed: [ build ]
+  - get: source
+    resource: source-code
+    passed: [ build ]
+  - task: prepare-message
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: { repository: "docker.((docker-host))/c42/concourse/images/buildroot", tag: "latest" }
+      inputs:
+      - name: build-status
+      run:
+        path: sh
+        args:
+         - -c
+         - |
+           cat build-status/status.json
+
+- name: bootstrap
+  public: true
+  plan:
+  - get: bootstrap-image
+    trigger: true
+    params:
+      save: true
+  - task: check-image
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: { repository: "docker.((docker-host))/c42/concourse/images/buildroot", tag: "latest" }
+      params:
+        artifactoryuser: ((code42-username))
+        artifactorypass: ((code42-password))
+      run:
+        path: sh
+        args:
+          - -c
+          - |
+            $(curl -s -u $artifactoryuser:$artifactorypass https://docker.((docker-host))/v2/((container-namespace))/((container-name))/((pr-slug))/tags/list | tee /dev/tty | jq -r ".name == \"((container-namespace))/((container-name))/((pr-slug))\"") = true
+    on_failure:
+      put: container-image
+      params:
+        load: bootstrap-image
+        tag_as_latest: true
+
