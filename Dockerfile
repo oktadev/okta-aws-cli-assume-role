@@ -1,4 +1,5 @@
-FROM  artifactory.corp.code42.com:5000/c42/cloud-workstation
+FROM  docker.artifactory.corp.code42.com/c42/cloud-workstation
+
 
 ARG AWS_SDK_VERSION=1.11.180
 ARG OKTA_DIR=/opt/okta
@@ -8,7 +9,7 @@ RUN apk --no-cache add openjdk8-jre-base
 
 # This was uploaded manually because aws only publishes the latest version, and doesn't include that version info in the file name until you unzip
 # or you can build the source in an uber complex project
-RUN curl -o aws-java-sdk.jar http://artifactory.corp.code42.com/artifactory/ext-release-local/com/amazonaws/aws-java-sdk-osgi/$AWS_SDK_VERSION/aws-java-sdk-osgi-$AWS_SDK_VERSION.jar  
+RUN curl -o aws-java-sdk.jar https://artifactory.corp.code42.com/artifactory/ext-release-local/com/amazonaws/aws-java-sdk-osgi/$AWS_SDK_VERSION/aws-java-sdk-osgi-$AWS_SDK_VERSION.jar  
 
 COPY build/distributions/okta-aws-cli-assume-role.tar okta-aws-cli-assume-role.tar
 RUN tar xf okta-aws-cli-assume-role.tar
