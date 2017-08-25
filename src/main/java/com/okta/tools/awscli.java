@@ -80,8 +80,7 @@ public class awscli {
     private static UserApiClient userClient;
     private static String userId;
     private static String crossAccountRoleName = null;
-    private static String roleToAssume; //the ARN of the role the user wants to eventually assume (not the cross-account role, the "real" role in the target account)
-    private static int selectedPolicyRank; //the zero-based rank of the policy selected in the selected cross-account role (in case there is more than one policy tied to the current policy)
+    private String roleToAssume; //the ARN of the role the user wants to eventually assume (not the cross-account role, the "real" role in the target account)
     private static final Logger logger = LogManager.getLogger(awscli.class);
 
 
@@ -202,15 +201,6 @@ public class awscli {
             System.exit(0);
         }
 
-        class roleInfo {
-            String principalArn;
-            String roleArn;
-
-            public roleInfo(String principalArn, String roleArn) {
-                this.principalArn = principalArn;
-                this.roleArn = roleArn;
-            }
-        }
 
         //Gather list of applicable AWS roles
         List<roleInfo> roles = new ArrayList<roleInfo>();
@@ -280,39 +270,18 @@ public class awscli {
     }
 
 
-    class Creds {
-        String username;
-        String password;
-        public Creds(String username, String password) {
-            this.username = username;
-            this.password = password;
+    class roleInfo {
+        String principalArn;
+        String roleArn;
+
+        public roleInfo(String principalArn, String roleArn) {
+            this.principalArn = principalArn;
+            this.roleArn = roleArn;
         }
     }
 
 
-    interface CredRetriever  {
-        Creds getCreds();
-    }
 
-    class StdinCredRetriever implements CredRetriever {
-        public Creds getCreds() {
-            // Prompt for user credentials
-            System.err.print("Username: ");
-            Scanner scanner = new Scanner(System.in);
-
-            String oktaUsername = scanner.next();
-
-            Console console = System.console();
-            String oktaPassword = null;
-            if (console != null) {
-                oktaPassword = new String(console.readPassword("Password: "));
-            } else { // hack to be able to debug in an IDE
-                System.err.print("Password: ");
-                oktaPassword = scanner.next();
-            }
-            return new Creds(oktaUsername,oktaPassword);
-        }
-    }
 
     /* Authenticates users credentials via Okta, return Okta session token
      * Postcondition: returns String oktaSessionToken
@@ -350,7 +319,6 @@ public class awscli {
     private static CloseableHttpResponse authnticateCredentials(String username, String password) throws JSONException, ClientProtocolException, IOException {
         HttpPost httpost = null;
         CloseableHttpClient httpClient = HttpClients.createDefault();
-
 
         //HTTP Post request to Okta API for session token
         httpost = new HttpPost("https://" + oktaOrg + "/api/v1/authn");
@@ -407,8 +375,6 @@ public class awscli {
         FileReader reader = new FileReader(propertiesFile);
         Properties props = new Properties();
         props.load(reader);
-        //Properties configFile = new Properties();
-        //configFile.load(this.getClass().getClassLoader().getResourceAsStream("/config.properties"));
 
         //extract oktaOrg and oktaAWSAppURL from Okta settings file
         oktaOrg = props.getProperty("OKTA_ORG");
@@ -551,7 +517,6 @@ public class awscli {
                 logger.debug("There are no managed policies");
             }
 
-            selectedPolicyRank = 0; //by default, we select the first policy
 
             if (managedPolicies.size() >= 1) //we prioritize managed policies over inline policies
             {
@@ -679,10 +644,6 @@ public class awscli {
         if (credentialsProfileName.contains(":assumed-role")) {
             credentialsProfileName = credentialsProfileName.replaceAll(":assumed-role", "");
         }
-
-        Object[] args = {new String(credentialsProfileName), selectedPolicyRank};
-        MessageFormat profileNameFormat = new MessageFormat("{0}/{1}");
-        credentialsProfileName = profileNameFormat.format(args);
 
         //update the credentials file with the unique profile name
         UpdateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
