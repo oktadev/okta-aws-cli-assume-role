@@ -53,7 +53,6 @@ import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.nio.charset.*;
 import java.util.function.Function;
@@ -78,12 +77,18 @@ public class OktaAWSIntegration {
     private static UserApiClient userClient;
     private static String userId;
     private static String crossAccountRoleName = null;
-    private String roleToAssume; //the ARN of the role the user wants to eventually assume (not the cross-account role, the "real" role in the target account)
     private static final Logger logger = LogManager.getLogger(awscli.class);
 
 
     private UserChoiceSelect selector = new InputChoice();
     private CredRetriever credRetriever;
+
+    protected void setAssumeRoleDuration(int assumeRoleDuration) {
+        this.assumeRoleDuration = assumeRoleDuration;
+    }
+
+    // Defautl of one hour
+    private int assumeRoleDuration = 3600;
 
     public OktaAWSIntegration(UserChoiceSelect selector, CredRetriever credRetriever) {
         this.selector = selector;
@@ -115,9 +120,10 @@ public class OktaAWSIntegration {
         String arn = aru.getArn();
 
 
+
         // Step #4: Get the final role to assume and update the config file to add it to the user's profile
-        GetRoleToAssume(crossAccountRoleName);
-        logger.trace("Role to assume ARN: " + roleToAssume);
+        String roleToAssume=GetRoleToAssume(crossAccountRoleName);
+        logger.debug("Role to assume ARN: " + roleToAssume);
 
         // Step #5: Write the credentials to ~/.aws/credentials
         String profileName = setAWSCredentials(assumeResult, arn);
@@ -240,11 +246,12 @@ public class OktaAWSIntegration {
         //use user credentials to assume AWS role
         AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(awsCreds);
 
+
         AssumeRoleWithSAMLRequest assumeRequest = new AssumeRoleWithSAMLRequest()
                 .withPrincipalArn(principalArn)
                 .withRoleArn(roleArn)
                 .withSAMLAssertion(resultSAML)
-                .withDurationSeconds(3600); //default token duration to 12 hours
+                .withDurationSeconds(assumeRoleDuration); //default token duration to 12 hours
 
         return stsClient.assumeRoleWithSAML(assumeRequest);
     }
@@ -422,33 +429,6 @@ public class OktaAWSIntegration {
         }
     }
 
-    /* Handles user selection prompts */
-    private static int numSelection(int max) {
-        Scanner scanner = new Scanner(System.in);
-
-        int selection = -1;
-        while (selection == -1) {
-            //prompt user for selection
-            System.err.print("Selection: ");
-            String selectInput = scanner.nextLine();
-            try {
-                selection = Integer.parseInt(selectInput) - 1;
-                if (selection >= max) {
-                    InputMismatchException e = new InputMismatchException();
-                    throw e;
-                }
-            } catch (InputMismatchException e) {
-                //raised by something other than a number entered
-                logger.error("Invalid input: Please enter a number corresponding to a role \n");
-                selection = -1;
-            } catch (NumberFormatException e) {
-                //raised by number too high or low selected
-                logger.error("Invalid input: Please enter in a number \n");
-                selection = -1;
-            }
-        }
-        return selection;
-    }
 
     /* Retrieves SAML assertion from Okta containing AWS roles */
     private static String awsSamlHandler(String oktaSessionToken) throws ClientProtocolException, IOException {
@@ -480,8 +460,8 @@ public class OktaAWSIntegration {
     }
 
 
-    private void GetRoleToAssume(String roleName) {
-
+    private String GetRoleToAssume(String roleName) {
+        String roleToAssume = null;
         if (roleName != null && !roleName.equals("") && awsIamKey != null && awsIamSecret != null && !awsIamKey.equals("") && !awsIamSecret.equals("")) {
 
             logger.debug("Creating the AWS Identity Management client");
@@ -493,7 +473,6 @@ public class OktaAWSIntegration {
             logger.debug("GetRoleResult: " + roleresult.toString());
             Role role = roleresult.getRole();
             logger.debug("getRole: " + role.toString());
-
 
 
             ListAttachedRolePoliciesResult arpr = identityManagementClient.listAttachedRolePolicies(new ListAttachedRolePoliciesRequest().withRoleName(roleName));
@@ -541,6 +520,7 @@ public class OktaAWSIntegration {
                 roleToAssume = ProcessPolicyDocument(policyDoc);
             }
         }
+        return roleToAssume;
     }
 
 
@@ -580,15 +560,17 @@ public class OktaAWSIntegration {
                         for (final JsonNode node : resource) {
                             lstRoles.add(node.asText());
                         }
+
                         strRoleToAssume = SelectRole(lstRoles);
                     } else {
                         strRoleToAssume = resource.textValue();
-                        logger.debug("Role to assume: " + roleToAssume);
                     }
                 }
             } catch (IOException ioe) {
+                logger.warn("Error getting role",ioe);
             }
         } catch (UnsupportedEncodingException uee) {
+            logger.warn("Error getting role",uee);
 
         }
         return strRoleToAssume;
