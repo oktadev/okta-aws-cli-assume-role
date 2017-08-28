@@ -29,6 +29,7 @@ public class awscli {
 
         options.addOption(Option.builder("p").longOpt("password-name")
                 .desc("You can supply a password from an environment variable.  Note this is the NAME and not the value")
+                .hasArg()
                 .build());
 
         options.addOption(Option.builder("debug")
