@@ -1,0 +1,9 @@
+#!/bin/sh
+
+export GRADLE_USER_HOME=.gradle
+
+gradle test distTar
+
+cp -r ./build ../dist/.
+cp -r ./scripts ../dist/.
+cp -r ./Dockerfile ../dist/.
