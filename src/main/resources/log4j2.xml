@@ -6,9 +6,6 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="com.okta" level="TRACE">
-      <AppenderRef ref="Console"/>
-    </Logger>
     <Root level="error">
       <AppenderRef ref="Console"/>
     </Root>

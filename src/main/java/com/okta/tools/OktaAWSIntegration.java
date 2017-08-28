@@ -83,13 +83,17 @@ public class OktaAWSIntegration {
 
 
     private UserChoiceSelect selector = new InputChoice();
-    private CredRetriever credRetriever  = new StdinCredRetriever();
+    private CredRetriever credRetriever;
 
-
-
-    public static void main(String[] args) throws Exception {
-
+    public OktaAWSIntegration(UserChoiceSelect selector, CredRetriever credRetriever) {
+        this.selector = selector;
+        this.credRetriever = credRetriever;
     }
+    public OktaAWSIntegration() {
+        this(new InputChoice(),new CredRetriever());
+    }
+
+
 
     protected String authenticateAndSetupProfile() throws IOException {
         awsSetup();
@@ -358,8 +362,8 @@ public class OktaAWSIntegration {
 
     /* Parses application's config file for app URL and Okta Org */
     private static void extractCredentials() throws IOException {
-        //BufferedReader oktaBr = new BufferedReader(new FileReader(new File (System.getProperty("user.dir")) +"/oktaAWSCLI.config"));
-        //RL, 2016-02-25, moving to properties file
+
+        //TODO make this be a CLI option
         String strLocalFolder = System.getProperty("user.dir");
         File propertiesFile = new File("config.properties");
         FileReader reader = new FileReader(propertiesFile);

@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
 public abstract class UserChoiceSelect {
     protected static final Logger logger = LogManager.getLogger(awscli.class);
     public abstract <T> T select(String choiceName, String desc, List<T> items, Function<T, String> namer);
-
 }
 
 /**
@@ -64,6 +63,10 @@ class ConfigThenInput extends UserChoiceSelect{
 
     private ConfigChoice config;
     private InputChoice input;
+
+    public ConfigThenInput(ConfigChoice config) {
+        this(config,new InputChoice());
+    }
 
     public ConfigThenInput(ConfigChoice config, InputChoice input) {
         this.config = config;
