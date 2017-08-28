@@ -22,10 +22,21 @@ public class awscli {
         Options options = new Options();
 
 
-        options.addOption(Option.builder("a").longOpt("answers")
+        options.addOption(Option.builder("f").longOpt("answers-file")
                 .desc("a properties file mapping questions to predefined answers. Regex supported")
                 .hasArg()
                 .build());
+
+        options.addOption(Option.builder( "i").longOpt("ignore-policies")
+                .desc("Select this if you want to assume all the policies associated with a given role")
+                .type(Boolean.class)
+                .build());
+
+        options.addOption(Option.builder( "n").longOpt("profile-name")
+                .desc("When updating the credential file, use this name for the profile instead of the generated one")
+                .hasArg()
+                .build());
+
 
         options.addOption(Option.builder("p").longOpt("password-name")
                 .desc("You can supply a password from an environment variable.  Note this is the NAME and not the value")
@@ -65,8 +76,8 @@ public class awscli {
         // load from answers
         String username = null;
         UserChoiceSelect chooser;
-        if(line.hasOption("answers")) {
-            String answerFileName = line.getOptionValue("answers");
+        if(line.hasOption("answers-file")) {
+            String answerFileName = line.getOptionValue("answers-file");
             logger.debug("Looking for answers {} and user {}",answerFileName,line.getOptionValue("username"));
             logger.debug("Arguments are:{}",line.getArgList());
 
@@ -121,6 +132,8 @@ public class awscli {
 
         CredRetriever retriever = new CredRetriever(passwordRetriever,usernameRetriever);
         OktaAWSIntegration oA = new OktaAWSIntegration(chooser,retriever);
+        oA.setSelectPolicies(!line.hasOption("ignore-policies"));
+        oA.setProfileName(line.getOptionValue("profile-name"));
         String profileName = oA.authenticateAndSetupProfile();
         resultMessage(profileName);
 

@@ -78,7 +78,22 @@ public class OktaAWSIntegration {
     private static String userId;
     private static String crossAccountRoleName = null;
     private static final Logger logger = LogManager.getLogger(awscli.class);
+    private boolean selectPolicies = true;
 
+
+    /**
+     * Sets the resultant name of the profile to be created in aws credentials.
+     * @param profileName
+     */
+    public void setProfileName(String profileName) {
+        this.profileName = profileName;
+    }
+
+    private String profileName;
+
+    protected void setSelectPolicies(boolean selectPolicies) {
+        this.selectPolicies = selectPolicies;
+    }
 
     private UserChoiceSelect selector = new InputChoice();
     private CredRetriever credRetriever;
@@ -120,10 +135,9 @@ public class OktaAWSIntegration {
         String arn = aru.getArn();
 
 
-
         // Step #4: Get the final role to assume and update the config file to add it to the user's profile
         String roleToAssume=GetRoleToAssume(crossAccountRoleName);
-        logger.debug("Role to assume ARN: " + roleToAssume);
+        logger.debug("Role to assume {} arn:", roleToAssume,arn);
 
         // Step #5: Write the credentials to ~/.aws/credentials
         String profileName = setAWSCredentials(assumeResult, arn);
@@ -474,51 +488,54 @@ public class OktaAWSIntegration {
             Role role = roleresult.getRole();
             logger.debug("getRole: " + role.toString());
 
+            if(selectPolicies) {
+                ListAttachedRolePoliciesResult arpr = identityManagementClient.listAttachedRolePolicies(new ListAttachedRolePoliciesRequest().withRoleName(roleName));
+                logger.debug("ListAttachedRolePoliciesResult: " + arpr.toString());
+                ListRolePoliciesResult lrpr = identityManagementClient.listRolePolicies(new ListRolePoliciesRequest().withRoleName(roleName));
+                logger.debug("ListRolePoliciesResult: " + lrpr.toString());
 
-            ListAttachedRolePoliciesResult arpr = identityManagementClient.listAttachedRolePolicies(new ListAttachedRolePoliciesRequest().withRoleName(roleName));
-            logger.debug("ListAttachedRolePoliciesResult: " + arpr.toString());
-            ListRolePoliciesResult lrpr = identityManagementClient.listRolePolicies(new ListRolePoliciesRequest().withRoleName(roleName));
-            logger.debug("ListRolePoliciesResult: " + lrpr.toString());
+                List<String> inlinePolicies = lrpr.getPolicyNames();
+                if (inlinePolicies.size() == 0) {
+                    logger.debug("There are no inlines policies");
+                }
+                List<AttachedPolicy> managedPolicies = arpr.getAttachedPolicies();
+                if (managedPolicies.size() == 0) {
+                    logger.debug("There are no managed policies");
+                }
 
-            List<String> inlinePolicies = lrpr.getPolicyNames();
-            if (inlinePolicies.size() == 0) {
-                logger.debug("There are no inlines policies");
+
+                if (managedPolicies.size() >= 1) //we prioritize managed policies over inline policies
+                {
+                    AttachedPolicy attachedPolicy = selector.select("policy", "Managed Policies", managedPolicies, p -> p.toString());
+
+                    logger.debug("Selected policy " + attachedPolicy.toString());
+                    GetPolicyRequest gpr = new GetPolicyRequest().withPolicyArn(attachedPolicy.getPolicyArn());
+
+                    GetPolicyResult rpr = identityManagementClient.getPolicy(gpr);
+                    logger.debug("GetPolicyResult: " + attachedPolicy.toString());
+                    Policy policy = rpr.getPolicy();
+
+                    GetPolicyVersionResult pvr = identityManagementClient.getPolicyVersion(new GetPolicyVersionRequest().withPolicyArn(policy.getArn()).withVersionId(policy.getDefaultVersionId()));
+                    logger.debug("GetPolicyVersionResult: " + pvr.toString());
+
+                    String policyDoc = pvr.getPolicyVersion().getDocument();
+
+                    roleToAssume = ProcessPolicyDocument(policyDoc);
+                } else if (inlinePolicies.size() >= 1) //processing inline policies if we have no managed policies
+                {
+                    String inlinePolicyName = selector.select("inline-policy","Inline Policies:", inlinePolicies, s-> s);
+                    logger.debug("Inline Policies " + inlinePolicies.toString());
+
+                    //Have to set the role name and the policy name (both are mandatory fields
+                    //TODO: handle more than 1 policy (ask the user to choose it?)
+                    GetRolePolicyRequest grpr = new GetRolePolicyRequest().withRoleName(roleName).withPolicyName(inlinePolicyName);
+                    GetRolePolicyResult rpr = identityManagementClient.getRolePolicy(grpr);
+                    String policyDoc = rpr.getPolicyDocument();
+                    roleToAssume = ProcessPolicyDocument(policyDoc);
+                }
+
             }
-            List<AttachedPolicy> managedPolicies = arpr.getAttachedPolicies();
-            if (managedPolicies.size() == 0) {
-                logger.debug("There are no managed policies");
-            }
 
-
-            if (managedPolicies.size() >= 1) //we prioritize managed policies over inline policies
-            {
-                AttachedPolicy attachedPolicy = selector.select("policy", "Managed Policies", managedPolicies, p -> p.toString());
-
-                logger.debug("Selected policy " + attachedPolicy.toString());
-                GetPolicyRequest gpr = new GetPolicyRequest().withPolicyArn(attachedPolicy.getPolicyArn());
-
-                GetPolicyResult rpr = identityManagementClient.getPolicy(gpr);
-                logger.debug("GetPolicyResult: " + attachedPolicy.toString());
-                Policy policy = rpr.getPolicy();
-
-                GetPolicyVersionResult pvr = identityManagementClient.getPolicyVersion(new GetPolicyVersionRequest().withPolicyArn(policy.getArn()).withVersionId(policy.getDefaultVersionId()));
-                logger.debug("GetPolicyVersionResult: " + pvr.toString());
-
-                String policyDoc = pvr.getPolicyVersion().getDocument();
-
-                roleToAssume = ProcessPolicyDocument(policyDoc);
-            } else if (inlinePolicies.size() >= 1) //processing inline policies if we have no managed policies
-            {
-                 String inlinePolicyName = selector.select("inline-policy","Inline Policies:", inlinePolicies, s-> s);
-                logger.debug("Inline Policies " + inlinePolicies.toString());
-
-                //Have to set the role name and the policy name (both are mandatory fields
-                //TODO: handle more than 1 policy (ask the user to choose it?)
-                GetRolePolicyRequest grpr = new GetRolePolicyRequest().withRoleName(roleName).withPolicyName(inlinePolicyName);
-                GetRolePolicyResult rpr = identityManagementClient.getRolePolicy(grpr);
-                String policyDoc = rpr.getPolicyDocument();
-                roleToAssume = ProcessPolicyDocument(policyDoc);
-            }
         }
         return roleToAssume;
     }
@@ -596,11 +613,16 @@ public class OktaAWSIntegration {
         String awsSecretKey = temporaryCredentials.getAWSSecretKey();
         String awsSessionToken = temporaryCredentials.getSessionToken();
 
-        if (credentialsProfileName.startsWith("arn:aws:sts::")) {
-            credentialsProfileName = credentialsProfileName.substring(13);
-        }
-        if (credentialsProfileName.contains(":assumed-role")) {
-            credentialsProfileName = credentialsProfileName.replaceAll(":assumed-role", "");
+
+        if (profileName == null) {
+            if (credentialsProfileName.startsWith("arn:aws:sts::")) {
+                credentialsProfileName = credentialsProfileName.substring(13);
+            }
+            if (credentialsProfileName.contains(":assumed-role")) {
+                credentialsProfileName = credentialsProfileName.replaceAll(":assumed-role", "");
+            }
+        } else {
+            credentialsProfileName = profileName;
         }
 
         //update the credentials file with the unique profile name
