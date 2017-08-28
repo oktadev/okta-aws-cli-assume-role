@@ -11,8 +11,6 @@ RUN apk --no-cache add openjdk8-jre-base
 # or you can build the source in an uber complex project
 RUN curl -o aws-java-sdk.jar https://artifactory.corp.code42.com/artifactory/ext-release-local/com/amazonaws/aws-java-sdk-osgi/$AWS_SDK_VERSION/aws-java-sdk-osgi-$AWS_SDK_VERSION.jar  
 
-COPY build/distributions/okta-aws-cli-assume-role.tar okta-aws-cli-assume-role.tar
-RUN tar xf okta-aws-cli-assume-role.tar
 
 
 # TODO cleanup
@@ -30,6 +28,9 @@ ENV OKTA_AWS_APP_URL https://code42.okta.com/home/amazon_aws/0oafeti2fsEVtYdVR0x
 
 
 RUN ln -sf $OKTA_DIR/okta_launch /usr/local/bin/
+
+COPY build/distributions/okta-aws-cli-assume-role.tar okta-aws-cli-assume-role.tar
+RUN tar xf okta-aws-cli-assume-role.tar
 
 # Change back 
 WORKDIR /workspace
