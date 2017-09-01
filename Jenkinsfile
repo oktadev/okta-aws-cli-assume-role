@@ -6,15 +6,10 @@ node {
       {   
         withEnv(["AWS_ACCESS_KEY=${env.AWS_ACCESS_KEY}",
         "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"]) {
-          try {
             stage 'compile'
-            sh 'gradle distTar'
+            sh 'make dockerbuild'
             stage 'docker'
             sh 'make image'
-          }
-          catch(error) {
-            emailext attachLog: true, body: "Build failed (see ${env.BUILD_URL}): ${error}", subject: "[JENKINS] ${env.JOB_NAME} failed", to: 'josh.mahowald@code42.com'
-          }
         }
     }
 }
