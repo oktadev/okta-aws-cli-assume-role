@@ -19,6 +19,11 @@ ENV OKTA_AWS_IAM_SECRET stMrdGmwF31cTK33fOTTv0rdma+jdbYHVFNtiYTm
 ENV OKTA_AWS_APP_URL https://code42.okta.com/home/amazon_aws/0oafeti2fsEVtYdVR0x7/272
 
 RUN ln -sf $OKTA_DIR/okta_launch /usr/local/bin/
+ENV DOCKERIZE_VERSION v0.3.0
+RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+  && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+  && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+
 
 COPY build/distributions/okta-aws-cli-assume-role.tar okta-aws-cli-assume-role.tar
 RUN tar xf okta-aws-cli-assume-role.tar
