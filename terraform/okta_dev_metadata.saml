@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?><md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="http://www.okta.com/exkfo8ur019SvqQOZ0x7"><md:IDPSSODescriptor WantAuthnRequestsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><md:KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>MIIDnDCCAoSgAwIBAgIGAU0A1WBqMA0GCSqGSIb3DQEBBQUAMIGOMQswCQYDVQQGEwJVUzETMBEG
+THISISNOTACTUALDOCUMENTBUTYOURMETADATASHOULDLOOKSOMETHINGLIKETHIS
+b0Bva3RhLmNvbTAeFw0xNTA0MjgxNjIwMzNaFw00NTA0MjgxNjIxMzNaMIGOMQswCQYDVQQGEwJV
+UzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5jaXNjbzENMAsGA1UECgwE
+T2t0YTEUMBIGA1UECwwLU1NPUHJvdmlkZXIxDzANBgNVBAMMBmNvZGU0MjEcMBoGCSqGSIb3DQEJ
+ARYNaW5mb0Bva3RhLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKVffni82DBV
+kihiQJgCc/0KhnKkQzOaAKhxAvhuuTO1qJaYenmaNKaayL9guuHADPwSQDVJ4lBbcdEtt0PucsdL
+1hSDHiJL/ODYG4l1jCOoo1+JAid+XGSC6ArOEdOm60PFrg1Xs3lF53HbGwaBa6okvInZ1hww8rCK
+VAe0ZM1YWTFValsunq+B8/kpqzr4rgi5tH6f1vehEFvh+E399R5MJ+xmf3tFRwAtOOFsBdU3APUs
+xnrYg6Dtdx2PtjDHTQwrrYm4RCXNQEOx7pp/KP45UBNYPaS0o71b+Ig7I8aem/sx1RPNsm+D1zLC
+x9MDyHgu72Ig6EJX7CGWHck3KAECAwEAATANBgkqhkiG9w0BAQUFAAOCAQEAnv9tVMEOx/613hns
+rnC1U9NEPZmD6g56BubqHF5n6Buw6VxgaYY8247RiwYsYPKwcsWjR55jH+EOADSfQQbfYWUAuEJ7
+JN+yy/Ryp/OLZysct7mlpwr8RXNMnk/ICRcxcrhwQWuU6BBLP7Xmf207Dq0z/PRdf9XvP3YfImvg
+AUZ0vPipWlh3oambzo+St3CCj0F4zgR2oQyI1HF6jvcZi3Rx34kMfIm1GLvplQbYz6dbXTexAS2O
+h1ccCcyXY/zmy4yjKiwsvQYo7jTH+VMZd/LMzhcT7Nknwp7N8nlMljvcrmqKiNSHntLW8SR4ugBs
+N3Iv60VD1qbniBv82A3h6A==</ds:X509Certificate></ds:X509Data></ds:KeyInfo></md:KeyDescriptor><md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat><md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified</md:NameIDFormat><md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://code42.okta.com/app/amazon_aws/exkfo8ur019SvqQOZ0x7/sso/saml"/><md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://code42.okta.com/app/amazon_aws/exkfo8ur019SvqQOZ0x7/sso/saml"/></md:IDPSSODescriptor></md:EntityDescriptor>
