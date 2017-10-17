@@ -231,13 +231,13 @@ public class awscli {
     private static void extractCredentials() throws IOException {
         //BufferedReader oktaBr = new BufferedReader(new FileReader(new File (System.getProperty("user.dir")) +"/oktaAWSCLI.config"));
         //RL, 2016-02-25, moving to properties file
-        String strLocalFolder = System.getProperty("user.dir");
-        File propertiesFile = new File("config.properties");
+
+        File jarFile = new File(awscli.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+        String parentDir = jarFile.getParentFile().getPath();
+        File propertiesFile = new File(parentDir + "/config.properties");
         FileReader reader = new FileReader(propertiesFile);
         Properties props = new Properties();
         props.load(reader);
-        //Properties configFile = new Properties();
-        //configFile.load(this.getClass().getClassLoader().getResourceAsStream("/config.properties"));
 
         //extract oktaOrg and oktaAWSAppURL from Okta settings file
         oktaOrg = props.getProperty("OKTA_ORG");
