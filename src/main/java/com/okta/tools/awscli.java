@@ -1304,8 +1304,7 @@ public class awscli {
         System.out.println("After this time you may safely rerun this script to refresh your access key pair.");
         System.out.println("To use these credentials, please call the aws cli with the --profile option "
                 + "(e.g. aws --profile " + profileName + " ec2 describe-instances)");
-        System.out.println("You can also omit the --profile option to use the last configured profile "
-                + "(e.g. aws s3 ls)");
+        System.out.println("Your default profile has NOT been changed");
         System.out.println("----------------------------------------------------------------------------------------------------------------------");
     }
 
