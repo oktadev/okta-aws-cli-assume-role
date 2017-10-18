@@ -17,12 +17,19 @@ public class Configuration extends Settings {
      * be INI-formatted.
      *
      * @param reader The settings we want to work with.
-     * @throws IOException Thrown when we cannot read or load from the given {@param reader}.
+     * @throws IOException Thrown when we cannot read or load from the given {@code reader}.
      */
     public Configuration(Reader reader) throws IOException {
         super(reader);
     }
 
+    /**
+     * Add or update a profile to an AWS config file based on {@code name}. This will be linked to a credential profile
+     * of the same {@code name}, which should already be present in the credentials file.
+     * The region for this new profile will be {@link Configuration#REGION_DEFAULT}.
+     * @param name The name of the profile.
+     * @param roleToAssume The ARN of the role to assume in this profile.
+     */
     public void addOrUpdateProfile(String name, String roleToAssume) {
         // profileName is the string used for the section in the AWS config file.
         // This should be prefixed with "profile ".

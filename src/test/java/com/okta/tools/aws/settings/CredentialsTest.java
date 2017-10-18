@@ -62,6 +62,9 @@ class CredentialsTest {
         assertEquals(existingCredentials + "\n\n" + manualRole, credentialsWriter.toString().trim());
     }
 
+    /*
+     * Test updating an existing profile.
+     */
     @Test
     void addOrUpdateProfileToExistingProfile() throws IOException {
         final StringReader credentialsReader = new StringReader(existingCredentials + "\n\n" + manualRole);
