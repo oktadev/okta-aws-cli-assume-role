@@ -29,6 +29,7 @@ import com.okta.sdk.exceptions.ApiException;
 import com.okta.sdk.framework.ApiClientConfiguration;
 import com.okta.sdk.models.auth.AuthResult;
 import com.okta.sdk.models.factors.Factor;
+import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.ClientProtocolException;
@@ -118,7 +119,6 @@ public class awscli {
         String profileName = setAWSCredentials(assumeResult, arn);
 
         UpdateConfigFile(profileName, roleToAssume);
-        UpdateConfigFile(DefaultProfileName, roleToAssume);
 
         // Print Final message
         resultMessage(profileName);
@@ -685,73 +685,17 @@ public class awscli {
     }
 
     private static void UpdateConfigFile(String profileName, String roleToAssume) throws IOException {
-
-        File inFile = new File(System.getProperty("user.home") + "/.aws/config");
-
-        FileInputStream fis = new FileInputStream(inFile);
-        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-        File tempFile = new File(inFile.getAbsolutePath() + ".tmp");
-        PrintWriter pw = new PrintWriter(new FileWriter(tempFile));
-
-        //first, we add our refreshed profile
-        WriteNewRoleToAssume(pw, profileName, roleToAssume);
-
-        String line = null;
-        int lineCounter = 0;
-        boolean bFileStart = true;
-
-        //second, we're copying all the other profiles from the original config file
-        while ((line = br.readLine()) != null) {
-
-            if (line.contains(profileName)) {
-                //we found the section we must replace but we don't necessarily know how many lines we need to skip
-                while ((line = br.readLine()) != null) {
-                    if (line.startsWith("[")) {
-                        pw.println(line); //this is a new profile line, so we're copying it
-                        break;
-                    }
-                }
-            } else {
-                if ((!line.contains(profileName) && !line.equalsIgnoreCase("\n"))) {
-                    pw.println(line);
-                    logger.debug(line);
-                }
+        final String configLocation = System.getProperty("user.home") + "/.aws/config";
+        try (final FileReader fileReader = new FileReader(configLocation)) {
+            // Create the configuration object with the data read from configLocation
+            Configuration configuration = new Configuration(fileReader);
+            // Write the given profile data
+            configuration.addOrUpdateProfile(profileName, roleToAssume);
+            // Write the updated config
+            try (final FileWriter fileWriter = new FileWriter(configLocation)) {
+                configuration.save(fileWriter);
             }
-
-
         }
-
-        pw.flush();
-        pw.close();
-        br.close();
-
-        //delete the original credentials file
-        if (!inFile.delete()) {
-            System.out.println("Could not delete original config file");
-        } else {
-            // Rename the new file to the filename the original file had.
-            if (!tempFile.renameTo(inFile))
-                System.out.println("Could not rename file");
-        }
-    }
-
-    public static void WriteNewProfile(PrintWriter pw, String profileNameLine, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
-
-        pw.println(profileNameLine);
-        pw.println("aws_access_key_id=" + awsAccessKey);
-        pw.println("aws_secret_access_key=" + awsSecretKey);
-        pw.println("aws_session_token=" + awsSessionToken);
-        //pw.println();
-        //pw.println();
-    }
-
-    public static void WriteNewRoleToAssume(PrintWriter pw, String profileName, String roleToAssume) {
-
-        pw.println("[profile " + profileName + "]");
-        if (roleToAssume != null && !roleToAssume.equals(""))
-            pw.println("role_arn=" + roleToAssume);
-        pw.println("source_profile=" + profileName);
-        pw.println("region=us-east-1");
     }
 
     private static String mfa(JSONObject authResponse) {
