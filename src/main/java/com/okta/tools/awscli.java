@@ -13,22 +13,13 @@
 
 package com.okta.tools;
 
-import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.auth.profile.ProfilesConfigFile;
-import com.amazonaws.services.identitymanagement.model.GetPolicyRequest;
-import com.amazonaws.services.identitymanagement.model.GetPolicyResult;
-import com.amazonaws.services.identitymanagement.model.GetPolicyVersionRequest;
-import com.amazonaws.services.identitymanagement.model.GetPolicyVersionResult;
-import com.amazonaws.services.identitymanagement.model.GetRoleRequest;
-import com.amazonaws.services.identitymanagement.model.GetRoleResult;
-import com.amazonaws.services.identitymanagement.model.Policy;
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClient;
+import com.amazonaws.services.identitymanagement.model.*;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
-import com.amazonaws.services.identitymanagement.*;
-import com.amazonaws.services.identitymanagement.model.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.okta.sdk.clients.AuthApiClient;
@@ -38,6 +29,7 @@ import com.okta.sdk.exceptions.ApiException;
 import com.okta.sdk.framework.ApiClientConfiguration;
 import com.okta.sdk.models.auth.AuthResult;
 import com.okta.sdk.models.factors.Factor;
+import com.okta.tools.aws.settings.Credentials;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -46,6 +38,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -54,13 +48,10 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.nio.charset.*;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 //Amazon SDK namespaces
 //Okta SDK namespaces
@@ -680,84 +671,13 @@ public class awscli {
 
     private static void UpdateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
             throws IOException {
+        //TODO: needs to be tested on Windows
+        final String credentialsLocation = System.getProperty("user.home") + "/.aws/credentials";
+        final FileReader fileReader = new FileReader(credentialsLocation);
+        final FileWriter fileWriter = new FileWriter(credentialsLocation);
 
-        ProfilesConfigFile profilesConfigFile = null;
-        Object[] args = {new String(profileName)};
-        MessageFormat profileNameFormatWithBrackets = new MessageFormat("[{0}]");
-        String profileNameWithBrackets = profileNameFormatWithBrackets.format(args);
-
-        try {
-            profilesConfigFile = new ProfilesConfigFile();
-        } catch (AmazonClientException ace) {
-            PopulateCredentialsFile(profileNameWithBrackets, awsAccessKey, awsSecretKey, awsSessionToken);
-        }
-
-        try {
-            if (profilesConfigFile != null && profilesConfigFile.getCredentials(profileName) != null) {
-                //if we end up here, it means we were  able to find a matching profile
-                PopulateCredentialsFile(profileNameWithBrackets, awsAccessKey, awsSecretKey, awsSessionToken);
-            }
-        } catch (AmazonClientException ace) {
-            //this could happen if the default profile doesn't have a valid AWS Access Key ID
-            //in this case, error would be "Unable to load credentials into profile [default]: AWS Access Key ID is not specified."
-            PopulateCredentialsFile(profileNameWithBrackets, awsAccessKey, awsSecretKey, awsSessionToken);
-        } catch (IllegalArgumentException iae) {
-            //if we end up here, it means we were not able to find a matching profile so we need to append one
-            PopulateCredentialsFile(profileNameWithBrackets, awsAccessKey, awsSecretKey, awsSessionToken);
-            //FileWriter fileWriter = new FileWriter(System.getProperty("user.home") + "/.aws/credentials", true);
-            //TODO: need to be updated to work with Windows
-            //PrintWriter writer = new PrintWriter(fileWriter);
-            //WriteNewProfile(writer, profileNameWithBrackets, awsAccessKey, awsSecretKey, awsSessionToken);
-            //fileWriter.close();
-        }
-    }
-
-    private static void PopulateCredentialsFile(String profileNameLine, String awsAccessKey, String awsSecretKey, String awsSessionToken)
-            throws IOException {
-
-        File inFile = new File(System.getProperty("user.home") + "/.aws/credentials");
-        FileInputStream fis = new FileInputStream(inFile);
-        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-        File tempFile = new File(inFile.getAbsolutePath() + ".tmp");
-        PrintWriter pw = new PrintWriter(new FileWriter(tempFile));
-
-        //first, we add our refreshed profile
-        WriteNewProfile(pw, profileNameLine, awsAccessKey, awsSecretKey, awsSessionToken);
-
-        String line = null;
-        int lineCounter = 0;
-        boolean bFileStart = true;
-
-        //second, we're copying all the other profile from the original credentials file
-        while ((line = br.readLine()) != null) {
-
-            if (line.equalsIgnoreCase(profileNameLine) || (lineCounter > 0 && lineCounter < 4)) {
-                //we found the line we must replace and we will skip 3 additional lines
-                ++lineCounter;
-            } else {
-                if ((!line.equalsIgnoreCase("") && !line.equalsIgnoreCase("\n"))) {
-                    if (line.startsWith("[")) {
-                        //this is the start of a new profile, so we're adding a separator line
-                        pw.println();
-                    }
-                    pw.println(line);
-                }
-            }
-        }
-
-        pw.flush();
-        pw.close();
-        br.close();
-
-        //delete the original credentials file
-        if (!inFile.delete()) {
-            System.out.println("Could not delete original credentials file");
-        }
-
-        // Rename the new file to the filename the original file had.
-        if (!tempFile.renameTo(inFile)) {
-            System.out.println("Could not rename file");
-        }
+        Credentials credentials = new Credentials(fileReader);
+        credentials.save(fileWriter);
     }
 
     private static void UpdateConfigFile(String profileName, String roleToAssume) throws IOException {
