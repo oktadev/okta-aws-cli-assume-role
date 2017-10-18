@@ -12,12 +12,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ConfigurationTest {
 
     final String existingProfile = "[profile default]\n"
-            + Configuration.ROLE_ARN + " = " + "default-role_arn" + "\n"
+            + Configuration.ROLE_ARN + " = " + "arn:aws:iam:12345:role/foo" + "\n"
             + Configuration.SOURCE_PROFILE + " = " + "default-source_profile" + "\n"
             + Configuration.REGION + " = " + "default-region";
 
     final String profileName = "new-profilename";
-    final String role_arn = "new-role_arn";
+    final String role_arn = "arn:aws:iam:67890:role/bar";
     final String region = "us-east-1";
     final String manualRole = "[profile " + profileName + "]\n"
             + Configuration.ROLE_ARN + " = " + role_arn + "\n"
