@@ -23,3 +23,5 @@ target/classes/log4j2.xml
 .settings
 .project
 dependency-reduced-pom.xml
+.idea
+*.iml
