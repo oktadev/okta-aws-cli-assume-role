@@ -10,16 +10,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CredentialsTest {
 
-    final String existingCredentials = "[default]\n"
+    private String existingCredentials = "[default]\n"
             + Credentials.ACCES_KEY_ID + " = " + "defaultaccesskey" + "\n"
             + Credentials.SECRET_ACCESS_KEY + " = " + "defaultsecretkey" + "\n"
             + Credentials.SESSION_TOKEN + " = " + "defaultsessiontoken";
 
-    final String roleName = "newrole";
-    final String accessKey = "accesskey";
-    final String secretKey = "secretkey";
-    final String sessionToken = "sessiontoken";
-    final String manualRole = "[" + roleName + "]\n"
+    private String roleName = "newrole";
+    private String accessKey = "accesskey";
+    private String secretKey = "secretkey";
+    private String sessionToken = "sessiontoken";
+    private String manualRole = "[" + roleName + "]\n"
             + Credentials.ACCES_KEY_ID + " = " + accessKey + "\n"
             + Credentials.SECRET_ACCESS_KEY + " = " + secretKey + "\n"
             + Credentials.SESSION_TOKEN + " = " + sessionToken;

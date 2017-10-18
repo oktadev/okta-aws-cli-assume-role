@@ -12,7 +12,7 @@ import java.io.Writer;
  */
 public abstract class Settings {
 
-    protected final Ini settings = new Ini();
+    final Ini settings = new Ini();
 
     /**
      * Create a Settings object from a given {@link java.io.Reader}. The data given by this {@link java.io.Reader} should
@@ -20,7 +20,7 @@ public abstract class Settings {
      * @param reader The settings we want to work with.
      * @throws IOException Thrown when we cannot read or load from the given {@param reader}.
      */
-    public Settings(Reader reader) throws IOException {
+    Settings(Reader reader) throws IOException {
         // Don't escape special characters. By default ini4j escapes ':' to '\:', which is a problem in ARN's.
         Config.getGlobal().setEscape(false);
         settings.load(reader);
