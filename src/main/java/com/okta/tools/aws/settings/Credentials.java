@@ -8,9 +8,9 @@ import java.io.Reader;
 public class Credentials extends Settings {
 
     // Keys used in aws credentials files
-    public static final String ACCES_KEY_ID = "aws_access_key_id";
-    public static final String SECRET_ACCESS_KEY = "aws_secret_access_key";
-    public static final String SESSION_TOKEN = "aws_session_token";
+    static final String ACCES_KEY_ID = "aws_access_key_id";
+    static final String SECRET_ACCESS_KEY = "aws_secret_access_key";
+    static final String SESSION_TOKEN = "aws_session_token";
 
     public Credentials(Reader reader) throws IOException {
         super(reader);
