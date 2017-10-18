@@ -415,7 +415,8 @@ public class awscli {
             roleArns.add(parts[1]);
             System.out.println("[ " + (i + 1) + " ]: " + roleArns.get(i));
             String envOktaAWSRoleToAssume = System.getenv("OKTA_AWS_ROLE_TO_ASSUME");
-            if (oktaAWSRoleToAssume.isEmpty() && envOktaAWSRoleToAssume != null && !envOktaAWSRoleToAssume.isEmpty()) {
+            if (envOktaAWSRoleToAssume != null && oktaAWSRoleToAssume.isEmpty() &&
+                    envOktaAWSRoleToAssume != null && !envOktaAWSRoleToAssume.isEmpty()) {
                 oktaAWSRoleToAssume = envOktaAWSRoleToAssume;
             }
             if (roleArns.get(i).equals(oktaAWSRoleToAssume)) {
@@ -663,8 +664,6 @@ public class awscli {
 
         //update the credentials file with the unique profile name
         UpdateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
-        //also override the default profile
-        UpdateCredentialsFile(DefaultProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
 
         return credentialsProfileName;
     }
@@ -673,11 +672,16 @@ public class awscli {
             throws IOException {
         //TODO: needs to be tested on Windows
         final String credentialsLocation = System.getProperty("user.home") + "/.aws/credentials";
-        final FileReader fileReader = new FileReader(credentialsLocation);
-        final FileWriter fileWriter = new FileWriter(credentialsLocation);
-
-        Credentials credentials = new Credentials(fileReader);
-        credentials.save(fileWriter);
+        try (final FileReader fileReader = new FileReader(credentialsLocation)) {
+            // Create the credentials object with the data read from credentialsLocation
+            Credentials credentials = new Credentials(fileReader);
+            // Write the given profile data
+            credentials.addOrUpdateProfile(profileName, awsAccessKey, awsSecretKey, awsSessionToken);
+            // Write the updated profile
+            try (final FileWriter fileWriter = new FileWriter(credentialsLocation)) {
+                credentials.save(fileWriter);
+            }
+        }
     }
 
     private static void UpdateConfigFile(String profileName, String roleToAssume) throws IOException {
