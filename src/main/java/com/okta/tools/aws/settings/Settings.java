@@ -24,8 +24,8 @@ public abstract class Settings {
     }
 
     /**
-     * Save the settings object to a given {@link java.io.Writer}.
-     * @param writer
+     * Save the settings object to a given {@link java.io.Writer}. The caller is responsible for closing {@param writer}.
+     * @param writer The writer we use to write the settings to.
      * @throws IOException Thrown when we cannot write to {@param writer}.
      */
     public void save(Writer writer) throws IOException {
