@@ -16,7 +16,7 @@ public class Configuration extends Settings {
      * Create a Configuration object from a given {@link Reader}. The data given by this {@link Reader} should
      * be INI-formatted.
      *
-     * @param reader The settings we want to work with.
+     * @param reader The settings we want to work with. N.B.: The reader is consumed by the constructor.
      * @throws IOException Thrown when we cannot read or load from the given {@code reader}.
      */
     public Configuration(Reader reader) throws IOException {

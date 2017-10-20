@@ -2,9 +2,7 @@ package com.okta.tools.aws.settings;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
+import java.io.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -84,4 +82,17 @@ class CredentialsTest {
         assertEquals(expected, credentialsWriter.toString().trim());
     }
 
+    /*
+     * Tests whether the Reader given to the Credentials constructor is properly closed.
+     */
+    @Test
+    public void constructorClosesReader() throws Exception {
+        final String simpleIniDocument = "[ini]\nfoo=bar";
+        final StringReader reader = new StringReader(simpleIniDocument);
+
+        // This should consume reader
+        new Credentials(reader);
+        // Causing this to throw an exception
+        assertThrows(IOException.class, () -> reader.ready(), "Stream closed");
+    }
 }
