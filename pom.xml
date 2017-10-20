@@ -13,9 +13,13 @@
         <joda-time.version>2.9.9</joda-time.version>
         <json.version>20170516</json.version>
         <log4j.version>2.8.2</log4j.version>
+        <junit.jupiter.version>5.0.1</junit.jupiter.version>
+        <junit.platform.version>1.0.1</junit.platform.version>
+        <ini4j.version>0.5.4</ini4j.version>
     </properties>
 
     <dependencies>
+        <!-- runtime dependencies -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
@@ -45,6 +49,26 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ini4j</groupId>
+            <artifactId>ini4j</artifactId>
+            <version>${ini4j.version}</version>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- To avoid compiler warnings about @API annotations in JUnit code -->
+        <dependency>
+            <groupId>org.apiguardian</groupId>
+            <artifactId>apiguardian-api</artifactId>
+            <version>1.0.0</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -79,6 +103,25 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <includes>
+                        <include>**/Test*.java</include>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*TestCase.java</include>
+                    </includes>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.platform</groupId>
+                        <artifactId>junit-platform-surefire-provider</artifactId>
+                        <version>${junit.platform.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>
