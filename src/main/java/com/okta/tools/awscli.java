@@ -675,9 +675,10 @@ public class awscli {
         try (final FileReader fileReader = new FileReader(credentialsLocation)) {
             // Create the credentials object with the data read from credentialsLocation
             Credentials credentials = new Credentials(fileReader);
+
             // Write the given profile data
             credentials.addOrUpdateProfile(profileName, awsAccessKey, awsSecretKey, awsSessionToken);
-            // Write the updated profile
+            // Write the updated profile (fileReader is already closed by the Credentials constructor)
             try (final FileWriter fileWriter = new FileWriter(credentialsLocation)) {
                 credentials.save(fileWriter);
             }
@@ -691,7 +692,7 @@ public class awscli {
             Configuration configuration = new Configuration(fileReader);
             // Write the given profile data
             configuration.addOrUpdateProfile(profileName, roleToAssume);
-            // Write the updated config
+            // Write the updated profile (fileReader is already closed by the Credentials constructor)
             try (final FileWriter fileWriter = new FileWriter(configLocation)) {
                 configuration.save(fileWriter);
             }

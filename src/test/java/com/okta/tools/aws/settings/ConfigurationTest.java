@@ -84,4 +84,18 @@ class ConfigurationTest {
 
         assertEquals(expected, configurationWriter.toString().trim());
     }
+
+    /*
+     * Tests whether the Reader given to the Configuration constructor is properly closed.
+     */
+    @Test
+    public void constructorClosesReader() throws Exception {
+        final String simpleIniDocument = "[ini]\nfoo=bar";
+        final StringReader reader = new StringReader(simpleIniDocument);
+
+        // This should consume reader
+        new Configuration(reader);
+        // Causing this to throw an exception
+        assertThrows(IOException.class, () -> reader.ready(), "Stream closed");
+    }
 }
