@@ -69,8 +69,6 @@ public class awscli {
     private static String awsIamSecret = null;
     private static AuthApiClient authClient;
 
-    private static final String DefaultProfileName = "default";
-
     private static FactorsApiClient factorClient;
     private static UserApiClient userClient;
     private static String userId;
@@ -80,7 +78,6 @@ public class awscli {
     private static final Logger logger = LogManager.getLogger(awscli.class);
 
     public static void main(String[] args) throws Exception {
-        awsSetup();
         extractCredentials();
 
         // Step #1: Initiate the authentication and capture the SAML assertion.
@@ -118,10 +115,10 @@ public class awscli {
         // Step #5: Write the credentials to ~/.aws/credentials
         String profileName = setAWSCredentials(assumeResult, arn);
 
-        UpdateConfigFile(profileName, roleToAssume);
+        final boolean newConfig = UpdateConfigFile(profileName, roleToAssume);
 
         // Print Final message
-        resultMessage(profileName);
+        resultMessage(profileName, newConfig);
     }
 
     /* Authenticates users credentials via Okta, return Okta session token
@@ -210,34 +207,6 @@ public class awscli {
         httpost.setEntity(entity);
 
         return httpClient.execute(httpost);
-    }
-
-    /* creates required AWS credential file if necessary" */
-    private static void awsSetup() throws FileNotFoundException, UnsupportedEncodingException {
-        //check if credentials file has been created
-        File f = new File(System.getProperty("user.home") + "/.aws/credentials");
-        //creates credentials file if it doesn't exist yet
-        if (!f.exists()) {
-            f.getParentFile().mkdirs();
-
-            PrintWriter writer = new PrintWriter(f, "UTF-8");
-            writer.println("[default]");
-            writer.println("aws_access_key_id=");
-            writer.println("aws_secret_access_key=");
-            writer.close();
-        }
-
-        f = new File(System.getProperty("user.home") + "/.aws/config");
-        //creates credentials file if it doesn't exist yet
-        if (!f.exists()) {
-            f.getParentFile().mkdirs();
-
-            PrintWriter writer = new PrintWriter(f, "UTF-8");
-            writer.println("[profile default]");
-            writer.println("output = json");
-            writer.println("region = us-east-1");
-            writer.close();
-        }
     }
 
     /* Parses application's config file for app URL and Okta Org */
@@ -672,31 +641,42 @@ public class awscli {
             throws IOException {
         //TODO: needs to be tested on Windows
         final String credentialsLocation = System.getProperty("user.home") + "/.aws/credentials";
-        try (final FileReader fileReader = new FileReader(credentialsLocation)) {
+        try (final Reader reader = new File(credentialsLocation).isFile() ?
+                new FileReader(credentialsLocation) : new StringReader("")) {
             // Create the credentials object with the data read from credentialsLocation
-            Credentials credentials = new Credentials(fileReader);
+            Credentials credentials = new Credentials(reader);
 
             // Write the given profile data
             credentials.addOrUpdateProfile(profileName, awsAccessKey, awsSecretKey, awsSessionToken);
-            // Write the updated profile (fileReader is already closed by the Credentials constructor)
+            // Write the updated profile (reader is already closed by the Credentials constructor)
             try (final FileWriter fileWriter = new FileWriter(credentialsLocation)) {
                 credentials.save(fileWriter);
             }
         }
     }
 
-    private static void UpdateConfigFile(String profileName, String roleToAssume) throws IOException {
+    /**
+     * See {@link Configuration#addOrUpdateProfile(String, String)}.
+     * @param profileName See description.
+     * @param roleToAssume See description.
+     * @return Did we generate a new configuration file?
+     * @throws IOException See description.
+     */
+    private static boolean UpdateConfigFile(String profileName, String roleToAssume) throws IOException {
         final String configLocation = System.getProperty("user.home") + "/.aws/config";
-        try (final FileReader fileReader = new FileReader(configLocation)) {
+        final boolean newConfiguration = !new File(configLocation).isFile();
+        try (final Reader reader = newConfiguration ?
+                new StringReader("") : new FileReader(configLocation)) {
             // Create the configuration object with the data read from configLocation
-            Configuration configuration = new Configuration(fileReader);
+            Configuration configuration = new Configuration(reader);
             // Write the given profile data
             configuration.addOrUpdateProfile(profileName, roleToAssume);
-            // Write the updated profile (fileReader is already closed by the Credentials constructor)
+            // Write the updated profile (reader is already closed by the Credentials constructor)
             try (final FileWriter fileWriter = new FileWriter(configLocation)) {
                 configuration.save(fileWriter);
             }
         }
+        return newConfiguration;
     }
 
     private static String mfa(JSONObject authResponse) {
@@ -1292,7 +1272,7 @@ public class awscli {
     }
 
     /* prints final status message to user */
-    private static void resultMessage(String profileName) {
+    private static void resultMessage(String profileName, boolean newConfig) {
         Calendar date = Calendar.getInstance();
         SimpleDateFormat dateFormat = new SimpleDateFormat();
         date.add(Calendar.HOUR, 1);
@@ -1305,7 +1285,12 @@ public class awscli {
         System.out.println("After this time you may safely rerun this script to refresh your access key pair.");
         System.out.println("To use these credentials, please call the aws cli with the --profile option "
                 + "(e.g. aws --profile " + profileName + " ec2 describe-instances)");
-        System.out.println("Your default profile has NOT been changed");
+        if (newConfig) {
+            System.out.println("In addition your default profile has been set to " + profileName + " so you can omit " +
+                    "the --profile option if you want to use this profile.");
+        } else {
+            System.out.println("Your default profile has NOT been changed");
+        }
         System.out.println("----------------------------------------------------------------------------------------------------------------------");
     }
 
