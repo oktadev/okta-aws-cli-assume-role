@@ -14,6 +14,9 @@ public abstract class Settings {
 
     final Ini settings = new Ini();
 
+    // the name of the aws cli "default" profile
+    protected static final String DEFAULTPROFILENAME = "default";
+
     /**
      * Create a Settings object from a given {@link java.io.Reader}. The data given by this {@link java.io.Reader} should
      * be INI-formatted.

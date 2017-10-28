@@ -4,12 +4,14 @@ import org.ini4j.Profile;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 
 public class Configuration extends Settings {
 
     static final String ROLE_ARN = "role_arn";
     static final String SOURCE_PROFILE = "source_profile";
     static final String REGION = "region";
+    static final String PROFILE_PREFIX = "profile ";
     private static final String REGION_DEFAULT = "us-east-1";
 
     /**
@@ -33,8 +35,19 @@ public class Configuration extends Settings {
     public void addOrUpdateProfile(String name, String roleToAssume) {
         // profileName is the string used for the section in the AWS config file.
         // This should be prefixed with "profile ".
-        final String profileName = "profile " + name;
-        final Profile.Section awsProfile = settings.get(profileName) != null ? settings.get(profileName) : settings.add(profileName);
+        final String profileName = PROFILE_PREFIX + name;
+
+        // Determine whether this is a new AWS configuration file. If it is, we'll set the default
+        // profile to this profile.
+        final boolean newConfig = settings.isEmpty();
+        if (newConfig) {
+            writeConfigurationProfile(settings.add(DEFAULTPROFILENAME), name, roleToAssume);
+        }
+
+        // Write the new profile data
+        final Profile.Section awsProfile = settings.get(profileName) != null
+                ? settings.get(profileName)
+                : settings.add(profileName);
         writeConfigurationProfile(awsProfile, name, roleToAssume);
     }
 
