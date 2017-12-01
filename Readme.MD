@@ -13,7 +13,7 @@ Same parameters can be set as environment variable. config.properties parameter 
 
 ### AWS:reInvent Release (2016/11/29 update)
 #### The Okta AWS-CLI tool finally supports multi-policy cross-account roles!
-You can now use this tool with the cross-account role architecture recommended in the [Okta-AWS Integration Guide](https://support.okta.com/help/articles/Knowledge_Article/Amazon-Web-Services-and-Okta-Integration-Guide), i.e. you can assign multiple AssumeRole policies to a single cross-account role.
+You can now use this tool with the cross-account role architecture recommended in the [Okta-AWS Integration Guide](https://support.okta.com/help/Documentation/Knowledge_Article/Integrating-the-Amazon-Web-Services-Command-Line-Interface-Using-Okta), i.e. you can assign multiple AssumeRole policies to a single cross-account role.
 
 ##### Important note
 
