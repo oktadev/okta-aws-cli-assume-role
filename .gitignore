@@ -15,8 +15,6 @@ lib/aws-java-sdk-1.10.74.jar
 
 lib/aws-java-sdk-1.11.37.jar
 
-lib/aws-java-sdk-1.11.228.jar
-
 .idea/workspace.xml
 
 target/classes/log4j2.xml
