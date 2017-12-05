@@ -4,6 +4,16 @@ This readme file is an excerpt of the [Okta-AWS Integration Guide](https://suppo
 
 Important Note: This tool has been verified to work on Mac OS X El Capitan and Windows Server 2012 R2 and is expected to work on Linux and Unix as well.
 
+### Wrap AWS CLI with session resumption (2017/12/5 update)
+Stored IAM credentials are no longer used: you no longer need to distribute or rotate these credentials.
+
+Minimal config requires only your orgname and Amazon Web Services Okta app embed link:
+
+```json
+OKTA_ORG=acmecorp.oktapreview.com
+OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
+```
+
 ### Add config.properties parameters to support silent mode without prompt for user input (2017/6/8 update)
 - OKTA_USERNAME
 - OKTA_PASSWORD
@@ -43,7 +53,15 @@ cp target/okta-aws-cli-*.jar out/oktaawscli.jar
 Run the program:
 
 ```bash
-./awscli
+./awscli sts get-caller-identity
+```
+
+This will prompt for Okta credentials, log you into AWS, let you pick a role, and store a session for you.
+
+Run the program again to see session resumption (you won't be asked for Okta credentials until the session expires):
+
+```bash
+./awscli sts get-caller-identity
 ```
 
 ## Compiling the application
@@ -77,9 +95,7 @@ In order to generate the key and secret to be configured in the ```config.proper
 Here is the list of parameters that must be maintained in the ```config.properties``` file:
   
   - ```OKTA_ORG``` which is the url of your Okta org (starting with https://).
-  - ```OKTA_AWS_APP_URL``` is the url link of your Okta AWS application url (see below for more info)
-  - ```AWS_IAM_KEY```: paste the ```Access Key ID``` value you retrieved in the  previous section 
-  -  ```AWS_IAM_SECRET```: paste the ```Secret Access Key``` value you retrieved in the previous section 
+  - ```OKTA_AWS_APP_URL``` is the url link of your Okta AWS application url (see below for more info) 
   - ```OKTA_USERNAME``` is the username to use. If present will skip username input.
   - ```OKTA_PASSWORD``` is the password to use. If present will skip password input.
   - ```OKTA_AWS_ROLE_TO_ASSUME``` is the role to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found.
@@ -90,11 +106,6 @@ Here is the list of parameters that must be maintained in the ```config.properti
     - Under the ```General``` menu, scroll down to find the ```App Embed Link``` section 
     - Your link is located under ```EMBED LINK``` 
   - Replace the example values in ```config.properties``` with your values
-
-## Running the application
-  - To run the application, you can use  the ```awscli.command``` file you will find in the ```out``` folder. You may need to edit to fix the references to the AWS Java SDK, which we remind you to put into the ```lib``` directory.
-  - Navigate to the ```out``` sub-folder with Terminal and run ```./awscli.command``` 
-  - The default command is the following: ```java -classpath oktaawscli.jar:$HOME/Projects/okta-aws-cli-assume-role/lib/aws-java-sdk-1.10.74.jar:$HOME/Projects/okta-aws-cli-assume-role/lib/okta-sdk.jar com.okta.tools.awscli```
   
 ## Support 
 Have a question or see a bug? Email developers@okta.com. For feature requests, feel free to open an issue on this repo. If you find a security vulnerability, please follow our [Vulnerability Reporting Process](https://www.okta.com/vulnerability-reporting-policy/).
