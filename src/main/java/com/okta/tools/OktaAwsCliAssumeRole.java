@@ -1,16 +1,18 @@
-
-/*!
- * Copyright (c) 2016, Okta, Inc. and/or its affiliates. All rights reserved.
- * The Okta software accompanied by this notice is provided pursuant to the Apache License, Version 2.0 (the "License.")
+/*
+ * Copyright 2017 Okta
  *
- * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *
- * See the License for the specific language governing permissions and limitations under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package com.okta.tools;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -24,7 +26,9 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
-import javafx.util.Pair;
+import com.okta.tools.saml.AwsSamlRoleUtils;
+import com.okta.tools.saml.PrincipalArn;
+import com.okta.tools.saml.RoleArn;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -76,9 +80,9 @@ final class OktaAwsCliAssumeRole {
     }
 
     String run(Instant startInstant) throws Exception {
-        Optional<Pair<String, Instant>> session = getCurrentSession();
+        Optional<Session> session = getCurrentSession();
         if (session.isPresent() && sessionIsActive(startInstant, session.get()))
-            return session.get().getKey();
+            return session.get().profileName;
         String oktaSessionToken = getOktaSessionToken();
         String samlResponse = getSamlResponseForAws(oktaSessionToken);
         AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
@@ -91,19 +95,30 @@ final class OktaAwsCliAssumeRole {
         return profileName;
     }
 
-    private Optional<Pair<String, Instant>> getCurrentSession() throws IOException {
+    private static class Session
+    {
+        final String profileName;
+        final Instant expiry;
+
+        private Session(String profileName, Instant expiry) {
+            this.profileName = profileName;
+            this.expiry = expiry;
+        }
+    }
+
+    private Optional<Session> getCurrentSession() throws IOException {
         if (Files.exists(Paths.get(OKTA_AWS_CLI_SESSION_FILE))) {
             Properties properties = new Properties();
             properties.load(new FileReader(OKTA_AWS_CLI_SESSION_FILE));
             String expiry = properties.getProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY);
             String profileName = properties.getProperty(OKTA_AWS_CLI_PROFILE_PROPERTY);
             Instant expiryInstant = Instant.parse(expiry);
-            return Optional.of(new Pair<>(profileName, expiryInstant));
+            return Optional.of(new Session(profileName, expiryInstant));
         }
         return Optional.empty();
     }
-    private boolean sessionIsActive(Instant startInstant, Pair<String, Instant> session) {
-        return startInstant.isBefore(session.getValue());
+    private boolean sessionIsActive(Instant startInstant, Session session) {
+        return startInstant.isBefore(session.expiry);
     }
 
     private String getOktaSessionToken() throws IOException {
@@ -124,11 +139,11 @@ final class OktaAwsCliAssumeRole {
 
     private String getAuthnResponse() throws IOException {
         while (true) {
-            Pair<StatusLine, String> response = logInToOkta(getUsername(), getPassword());
-            int requestStatus = response.getKey().getStatusCode();
+            LoginResult response = logInToOkta(getUsername(), getPassword());
+            int requestStatus = response.statusLine.getStatusCode();
             authnFailHandler(requestStatus);
             if (requestStatus == HttpStatus.SC_OK)
-                return response.getValue();
+                return response.responseContent;
         }
     }
 
@@ -159,10 +174,19 @@ final class OktaAwsCliAssumeRole {
         }
     }
 
+    private static final class LoginResult {
+        final StatusLine statusLine;
+        final String responseContent;
+
+        private LoginResult(StatusLine statusLine, String responseContent) {
+            this.statusLine = statusLine;
+            this.responseContent = responseContent;
+        }
+    }
     /**
      * Uses user's credentials to obtain Okta session Token
      */
-    private Pair<StatusLine, String> logInToOkta(String username, String password) throws JSONException, IOException {
+    private LoginResult logInToOkta(String username, String password) throws JSONException, IOException {
         HttpPost httpPost = new HttpPost("https://" + oktaOrg + "/api/v1/authn");
 
         httpPost.addHeader("Accept", "application/json");
@@ -183,7 +207,7 @@ final class OktaAwsCliAssumeRole {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(65536);
             authnResponse.getEntity().writeTo(byteArrayOutputStream);
 
-            return new Pair<>(authnResponse.getStatusLine(), byteArrayOutputStream.toString());
+            return new LoginResult(authnResponse.getStatusLine(), byteArrayOutputStream.toString());
         }
     }
 
@@ -265,32 +289,26 @@ final class OktaAwsCliAssumeRole {
         }
     }
 
-    private AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String resultSAML) {
-        String resultSAMLDecoded = new String(Base64.getDecoder().decode(resultSAML));
-
-        List<String> principalArns = new ArrayList<>();
-        List<String> roleArns = new ArrayList<>();
+    private AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse) {
+        Map<RoleArn, PrincipalArn> roleIdpPairs = AwsSamlRoleUtils.getRoles(samlResponse);
+        List<RoleArn> roleArns = new ArrayList<>();
 
         System.out.println("\nPlease choose the role you would like to assume: ");
 
         //Gather list of applicable AWS roles
         int i = 0;
         int j = -1;
-        while (resultSAMLDecoded.contains("arn:aws")) {
-            int start = resultSAMLDecoded.indexOf("arn:aws");
-            int end = resultSAMLDecoded.indexOf("</saml2:", start);
-            String resultSAMLRole = resultSAMLDecoded.substring(start, end);
-            String[] parts = resultSAMLRole.split(",");
-            principalArns.add(parts[0]);
-            roleArns.add(parts[1]);
-            System.out.println("[ " + (i + 1) + " ]: " + roleArns.get(i));
-            if (roleArns.get(i).equals(awsRoleToAssume)) {
+
+        for (Map.Entry<RoleArn, PrincipalArn> resultSAMLRole : roleIdpPairs.entrySet()) {
+            roleArns.add(resultSAMLRole.getKey());
+            System.out.println("[ " + (i + 1) + " ]: " + roleArns.get(i).getRoleArn());
+            if (roleArns.get(i).getRoleArn().equals(awsRoleToAssume)) {
                 j = i;
-            } else {
-                System.out.println("No match for role "+ roleArns.get(i));
             }
-            resultSAMLDecoded = (resultSAMLDecoded.substring(resultSAMLDecoded.indexOf("</saml2:AttributeValue") + 1));
             i++;
+        }
+        if (awsRoleToAssume != null && j == -1) {
+            System.out.println("No match for role " + roleArns.get(i).getRoleArn());
         }
 
         // Default to no selection
@@ -305,13 +323,13 @@ final class OktaAwsCliAssumeRole {
             selection = promptForMenuSelection(roleArns.size());
         }
 
-        String principalArn = principalArns.get(selection);
-        String roleArn = roleArns.get(selection);
+        RoleArn roleArn = roleArns.get(selection);
+        PrincipalArn principalArn = roleIdpPairs.get(roleArn);
 
         return new AssumeRoleWithSAMLRequest()
-                .withPrincipalArn(principalArn)
-                .withRoleArn(roleArn)
-                .withSAMLAssertion(resultSAML)
+                .withPrincipalArn(principalArn.getPrincipalArn())
+                .withRoleArn(roleArn.getRoleArn())
+                .withSAMLAssertion(samlResponse)
                 .withDurationSeconds(3600);
     }
 
@@ -402,6 +420,7 @@ final class OktaAwsCliAssumeRole {
                     return sessionToken;
 
                 }
+                case ("token:hardware"):
                 case ("token:software:totp"): {
                     //token factor handler
                     String sessionToken = totpFactor(factor, stateToken);
@@ -429,13 +448,19 @@ final class OktaAwsCliAssumeRole {
 
     private JSONObject selectFactor(JSONObject authResponse) throws JSONException {
         JSONArray factors = authResponse.getJSONObject("_embedded").getJSONArray("factors");
-        JSONObject factor;
         String factorType;
         System.out.println("\nMulti-Factor authentication is required. Please select a factor to use.");
 
+        List<JSONObject> supportedFactors = getUsableFactors(factors);
+        if (supportedFactors.isEmpty())
+            if (factors.length() > 0)
+                throw new IllegalStateException("None of your factors are supported.");
+            else
+                throw new IllegalStateException("You have no factors enrolled.");
+
         System.out.println("Factors:");
-        for (int i = 0; i < factors.length(); i++) {
-            factor = factors.getJSONObject(i);
+        for (int i = 0; i < supportedFactors.size(); i++) {
+            JSONObject factor = supportedFactors.get(i);
             factorType = factor.getString("factorType");
             switch (factorType) {
                 case "question":
@@ -457,8 +482,20 @@ final class OktaAwsCliAssumeRole {
         }
 
         //Handles user factor selection
-        int selection = promptForMenuSelection(factors.length());
-        return factors.getJSONObject(selection);
+        int selection = promptForMenuSelection(supportedFactors.size());
+        return supportedFactors.get(selection - 1);
+    }
+
+    private List<JSONObject> getUsableFactors(JSONArray factors) {
+        List<JSONObject> eligibleFactors = new ArrayList<>();
+        for (int i = 0; i < factors.length(); i++) {
+            JSONObject factor = factors.getJSONObject(i);
+            // web-type factors can't be verified from the CLI
+            if (!"web".equals(factor.getString("factorType"))) {
+                eligibleFactors.add(factor);
+            }
+        }
+        return eligibleFactors;
     }
 
 
