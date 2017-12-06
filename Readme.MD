@@ -14,6 +14,26 @@ OKTA_ORG=acmecorp.oktapreview.com
 OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
 ```
 
+If the role you are assuming does not have sts:AssumeRole, you will need to attach an inline policy like this to it to
+at least allow the role to assume itself:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sts:AssumeRole"
+            ],
+            "Resource": [
+                "arn:aws:iam::123456789012:role/ReadOnly"
+            ]
+        }
+    ]
+}
+```
+
 ### Add config.properties parameters to support silent mode without prompt for user input (2017/6/8 update)
 - OKTA_USERNAME
 - OKTA_PASSWORD
@@ -106,7 +126,48 @@ Here is the list of parameters that must be maintained in the ```config.properti
     - Under the ```General``` menu, scroll down to find the ```App Embed Link``` section 
     - Your link is located under ```EMBED LINK``` 
   - Replace the example values in ```config.properties``` with your values
-  
+
+## Troubleshooting
+
+### I get "You have no factors enrolled"
+
+This means that MFA is enforced, but you have no factors enrolled on your user.
+
+You should enrol a CLI-supported factor (all except Duo as far as I know).
+
+### I have Duo, but I get "None of your factors are supported"
+
+This means that MFA is enforced, but none of the factors you have enrolled are supported.
+
+Okta's integration with Duo requires an iframe which isn't practical to interact with from a CLI context. 
+
+### I can pick a role, but I get "not authorized to perform: sts:AssumeRole"
+
+If you see an error like this:
+```plain
+User arn:aws:iam::123456789012:assumed-role/RoleName/user.name@example.com is not authorized to perform:
+sts:AssumeRole on resource: arn:aws:iam::123456789012:role/RoleName 
+```
+
+Then you will need to attach an inline policy like this to the role to allow the role to assume itself:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sts:AssumeRole"
+            ],
+            "Resource": [
+                "arn:aws:iam::123456789012:role/RoleName"
+            ]
+        }
+    ]
+}
+```
+
 ## Support 
 Have a question or see a bug? Email developers@okta.com. For feature requests, feel free to open an issue on this repo. If you find a security vulnerability, please follow our [Vulnerability Reporting Process](https://www.okta.com/vulnerability-reporting-policy/).
 
