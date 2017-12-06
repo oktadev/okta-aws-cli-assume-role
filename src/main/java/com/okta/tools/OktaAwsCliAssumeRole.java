@@ -304,10 +304,11 @@ final class OktaAwsCliAssumeRole {
             System.out.println("[ " + (i + 1) + " ]: " + roleArns.get(i).getRoleArn());
             if (roleArns.get(i).getRoleArn().equals(awsRoleToAssume)) {
                 j = i;
-            } else {
-                System.out.println("No match for role "+ roleArns.get(i).getRoleArn());
             }
             i++;
+        }
+        if (awsRoleToAssume != null && j == -1) {
+            System.out.println("No match for role " + roleArns.get(i).getRoleArn());
         }
 
         // Default to no selection
