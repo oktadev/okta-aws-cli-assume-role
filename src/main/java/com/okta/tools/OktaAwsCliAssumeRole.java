@@ -419,6 +419,7 @@ final class OktaAwsCliAssumeRole {
                     return sessionToken;
 
                 }
+                case ("token:hardware"):
                 case ("token:software:totp"): {
                     //token factor handler
                     String sessionToken = totpFactor(factor, stateToken);
