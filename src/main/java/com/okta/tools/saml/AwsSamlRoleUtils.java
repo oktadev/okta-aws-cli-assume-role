@@ -28,13 +28,13 @@ import java.util.Map;
 public final class AwsSamlRoleUtils {
     private static final String AWS_ROLE_SAML_ATTRIBUTE = "https://aws.amazon.com/SAML/Attributes/Role";
 
-    public static Map<RoleArn, PrincipalArn> getRoles(String samlResponse) {
-        Map<RoleArn, PrincipalArn> roles = new LinkedHashMap<>();
+    public static Map<String, String> getRoles(String samlResponse) {
+        Map<String, String> roles = new LinkedHashMap<>();
         for (String roleIdpPair: getRoleIdpPairs(samlResponse)) {
             String[] parts = roleIdpPair.split(",");
             String principalArn = parts[0];
             String roleArn  = parts[1];
-            roles.put(() -> roleArn, () -> principalArn);
+            roles.put(roleArn, principalArn);
         }
         return roles;
     }

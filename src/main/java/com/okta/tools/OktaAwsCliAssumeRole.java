@@ -26,17 +26,17 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
-import com.okta.tools.saml.AwsSamlRoleUtils;
-import com.okta.tools.saml.PrincipalArn;
-import com.okta.tools.saml.RoleArn;
+import com.okta.tools.saml.*;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -289,9 +289,11 @@ final class OktaAwsCliAssumeRole {
         }
     }
 
-    private AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse) {
-        Map<RoleArn, PrincipalArn> roleIdpPairs = AwsSamlRoleUtils.getRoles(samlResponse);
-        List<RoleArn> roleArns = new ArrayList<>();
+    private AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse) throws IOException {
+        Map<String, String> roleIdpPairs = AwsSamlRoleUtils.getRoles(samlResponse);
+        List<String> roleArns = new ArrayList<>();
+
+        List<AccountOption> accountOptions = getAvailableRoles(samlResponse);
 
         System.out.println("\nPlease choose the role you would like to assume: ");
 
@@ -299,16 +301,19 @@ final class OktaAwsCliAssumeRole {
         int i = 0;
         int j = -1;
 
-        for (Map.Entry<RoleArn, PrincipalArn> resultSAMLRole : roleIdpPairs.entrySet()) {
-            roleArns.add(resultSAMLRole.getKey());
-            System.out.println("[ " + (i + 1) + " ]: " + roleArns.get(i).getRoleArn());
-            if (roleArns.get(i).getRoleArn().equals(awsRoleToAssume)) {
-                j = i;
+        for (AccountOption accountOption: accountOptions) {
+            System.out.println(accountOption.accountName);
+            for (RoleOption roleOption : accountOption.roleOptions) {
+                roleArns.add(roleOption.roleArn);
+                System.out.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
+                if (roleOption.roleArn.equals(awsRoleToAssume)) {
+                    j = i;
+                }
+                i++;
             }
-            i++;
         }
         if (awsRoleToAssume != null && j == -1) {
-            System.out.println("No match for role " + roleArns.get(i).getRoleArn());
+            System.out.println("No match for role " + roleArns.get(i));
         }
 
         // Default to no selection
@@ -323,14 +328,36 @@ final class OktaAwsCliAssumeRole {
             selection = promptForMenuSelection(roleArns.size());
         }
 
-        RoleArn roleArn = roleArns.get(selection);
-        PrincipalArn principalArn = roleIdpPairs.get(roleArn);
+        String roleArn = roleArns.get(selection);
+        String principalArn = roleIdpPairs.get(roleArn);
 
         return new AssumeRoleWithSAMLRequest()
-                .withPrincipalArn(principalArn.getPrincipalArn())
-                .withRoleArn(roleArn.getRoleArn())
+                .withPrincipalArn(principalArn)
+                .withRoleArn(roleArn)
                 .withSAMLAssertion(samlResponse)
                 .withDurationSeconds(3600);
+    }
+
+    private List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {
+        Document document = getSigninPageDocument(samlResponse);
+        return AwsSamlSigninParser.parseAccountOptions(document);
+    }
+
+    private Document getSigninPageDocument(String samlResponse) throws IOException {
+        HttpPost httpPost = new HttpPost("https://signin.aws.amazon.com/saml");
+        UrlEncodedFormEntity samlForm = new UrlEncodedFormEntity(Arrays.asList(
+                new BasicNameValuePair("SAMLResponse", samlResponse),
+                new BasicNameValuePair("RelayState", "")
+        ), StandardCharsets.UTF_8);
+        httpPost.setEntity(samlForm);
+        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+             CloseableHttpResponse samlSigninResponse = httpClient.execute(httpPost)) {
+            return Jsoup.parse(
+                    samlSigninResponse.getEntity().getContent(),
+                    StandardCharsets.UTF_8.name(),
+                    "https://signin.aws.amazon.com/saml"
+            );
+        }
     }
 
     private String createAwsProfile(AssumeRoleWithSAMLResult assumeResult) throws IOException {
