@@ -15,8 +15,10 @@
  */
 package com.okta.tools;
 
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.time.Instant;
 import java.util.*;
 
@@ -36,7 +38,14 @@ public class awscli {
 
     private static OktaAwsCliAssumeRole createAwscli() throws IOException {
         Properties properties = new Properties();
-        properties.load(new FileReader("config.properties"));
+        InputStream config;
+        try {
+            config = new FileInputStream("config.properties");
+        } catch (IOException ex) {
+            // Fallback to classpath input stream
+            config = properties.getClass().getResourceAsStream("/config.properties");
+        }
+        properties.load(new InputStreamReader(config));
 
         return OktaAwsCliAssumeRole.createOktaAwsCliAssumeRole(
                 getEnvOrConfig(properties, "OKTA_ORG"),
