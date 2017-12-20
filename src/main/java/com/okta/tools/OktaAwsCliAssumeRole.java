@@ -201,7 +201,7 @@ final class OktaAwsCliAssumeRole {
         entity.setContentType("application/json");
         httpPost.setEntity(entity);
 
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+        try (CloseableHttpClient httpClient = HttpClients.createSystem()) {
             CloseableHttpResponse authnResponse = httpClient.execute(httpPost);
 
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(65536);
@@ -270,7 +270,7 @@ final class OktaAwsCliAssumeRole {
     private Document launchOktaAwsApp(String oktaSessionToken) throws IOException {
 
         HttpGet httpget = new HttpGet(oktaAWSAppURL + "?onetimetoken=" + oktaSessionToken);
-        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+        try (CloseableHttpClient httpClient = HttpClients.createSystem();
              CloseableHttpResponse responseSAML = httpClient.execute(httpget)) {
 
             if (responseSAML.getStatusLine().getStatusCode() >= 500) {
@@ -350,7 +350,7 @@ final class OktaAwsCliAssumeRole {
                 new BasicNameValuePair("RelayState", "")
         ), StandardCharsets.UTF_8);
         httpPost.setEntity(samlForm);
-        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+        try (CloseableHttpClient httpClient = HttpClients.createSystem();
              CloseableHttpResponse samlSigninResponse = httpClient.execute(httpPost)) {
             return Jsoup.parse(
                     samlSigninResponse.getEntity().getContent(),
@@ -653,7 +653,7 @@ final class OktaAwsCliAssumeRole {
         }
 
         //create post request
-        CloseableHttpClient httpClient = HttpClients.createDefault();
+        CloseableHttpClient httpClient = HttpClients.createSystem();
 
         HttpPost httpost = new HttpPost(verifyPoint);
         httpost.addHeader("Accept", "application/json");
@@ -706,7 +706,7 @@ final class OktaAwsCliAssumeRole {
 
                 while (pushResult == null || pushResult.equals("WAITING")) {
                     pushResult = null;
-                    httpClient = HttpClients.createDefault();
+                    httpClient = HttpClients.createSystem();
 
                     HttpPost pollReq = new HttpPost(pollUrl);
                     pollReq.addHeader("Accept", "application/json");
