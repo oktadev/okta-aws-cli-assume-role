@@ -234,7 +234,7 @@ final class OktaAwsCliAssumeRole {
     }
 
     private int promptForMenuSelection(int max) {
-        if (max == 1) return 1;
+        if (max == 1) return 0;
         Scanner scanner = new Scanner(System.in);
 
         int selection = -1;
@@ -510,7 +510,7 @@ final class OktaAwsCliAssumeRole {
 
         //Handles user factor selection
         int selection = promptForMenuSelection(supportedFactors.size());
-        return supportedFactors.get(selection - 1);
+        return supportedFactors.get(selection);
     }
 
     private List<JSONObject> getUsableFactors(JSONArray factors) {
