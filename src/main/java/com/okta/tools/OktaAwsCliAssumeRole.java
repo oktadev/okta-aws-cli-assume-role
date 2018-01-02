@@ -313,7 +313,7 @@ final class OktaAwsCliAssumeRole {
             }
         }
         if ((awsRoleToAssume != null && !awsRoleToAssume.isEmpty()) && j == -1) {
-            System.out.println("\ncould not find the role " + awsRoleToAssume + "\n specified in the config.properties file.");
+            System.out.println("No match for role " + awsRoleToAssume);
         }
 
         // Default to no selection
