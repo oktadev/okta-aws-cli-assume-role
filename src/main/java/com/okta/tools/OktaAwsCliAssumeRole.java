@@ -312,7 +312,7 @@ final class OktaAwsCliAssumeRole {
                 i++;
             }
         }
-        if (awsRoleToAssume != null && j == -1) {
+        if ((awsRoleToAssume != null && !awsRoleToAssume.isEmpty()) && j == -1) {
             System.out.println("No match for role " + awsRoleToAssume);
         }
 
