@@ -290,47 +290,54 @@ final class OktaAwsCliAssumeRole {
     }
 
     private AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse) throws IOException {
-        Map<String, String> roleIdpPairs = AwsSamlRoleUtils.getRoles(samlResponse);
-        List<String> roleArns = new ArrayList<>();
-
-        List<AccountOption> accountOptions = getAvailableRoles(samlResponse);
-
-        System.out.println("\nPlease choose the role you would like to assume: ");
-
-        //Gather list of applicable AWS roles
-        int i = 0;
-        int j = -1;
-
-        for (AccountOption accountOption: accountOptions) {
-            System.out.println(accountOption.accountName);
-            for (RoleOption roleOption : accountOption.roleOptions) {
-                roleArns.add(roleOption.roleArn);
-                System.out.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
-                if (roleOption.roleArn.equals(awsRoleToAssume)) {
-                    j = i;
-                }
-                i++;
-            }
-        }
-        if ((awsRoleToAssume != null && !awsRoleToAssume.isEmpty()) && j == -1) {
-            System.out.println("No match for role " + awsRoleToAssume);
-        }
-
-        // Default to no selection
-        final int selection;
-
-        // If config.properties has matching role, use it and don't prompt user to select
-        if (j >= 0) {
-            selection = j;
-            System.out.println("Selected option "+ (j+1) + " based on OKTA_AWS_ROLE_TO_ASSUME value");
+        Map<String, String> roleIdpMap = AwsSamlRoleUtils.getRoles(samlResponse);
+        final String roleArn;
+        final String principalArn;
+        if (roleIdpMap.size() == 1) {
+            Set<Map.Entry<String, String>> entries = roleIdpMap.entrySet();
+            Map.Entry<String, String> next = entries.iterator().next();
+            roleArn = next.getKey();
+            principalArn = next.getValue();
         } else {
-            //Prompt user for role selection
-            selection = promptForMenuSelection(roleArns.size());
+            List<AccountOption> accountOptions = getAvailableRoles(samlResponse);
+            List<String> roleArns = new ArrayList<>();
+
+            System.out.println("\nPlease choose the role you would like to assume: ");
+
+            //Gather list of applicable AWS roles
+            int i = 0;
+            int j = -1;
+
+            for (AccountOption accountOption : accountOptions) {
+                System.out.println(accountOption.accountName);
+                for (RoleOption roleOption : accountOption.roleOptions) {
+                    roleArns.add(roleOption.roleArn);
+                    System.out.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
+                    if (roleOption.roleArn.equals(awsRoleToAssume)) {
+                        j = i;
+                    }
+                    i++;
+                }
+            }
+            if ((awsRoleToAssume != null && !awsRoleToAssume.isEmpty()) && j == -1) {
+                System.out.println("No match for role " + awsRoleToAssume);
+            }
+
+            // Default to no selection
+            final int selection;
+
+            // If config.properties has matching role, use it and don't prompt user to select
+            if (j >= 0) {
+                selection = j;
+                System.out.println("Selected option " + (j + 1) + " based on OKTA_AWS_ROLE_TO_ASSUME value");
+            } else {
+                //Prompt user for role selection
+                selection = promptForMenuSelection(roleArns.size());
+            }
+
+            roleArn = roleArns.get(selection);
+            principalArn = roleIdpMap.get(roleArn);
         }
-
-        String roleArn = roleArns.get(selection);
-        String principalArn = roleIdpPairs.get(roleArn);
-
         return new AssumeRoleWithSAMLRequest()
                 .withPrincipalArn(principalArn)
                 .withRoleArn(roleArn)
