@@ -50,6 +50,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -79,6 +80,14 @@ final class OktaAwsCliAssumeRole {
         this.awsRoleToAssume = awsRoleToAssume;
     }
 
+    private static String getSessionFile() {
+        return getSessionFilePath().toString();
+    }
+
+    private static Path getSessionFilePath() {
+        return Paths.get(System.getProperty("user.home") , OKTA_AWS_CLI_SESSION_FILE);
+    }
+
     String run(Instant startInstant) throws Exception {
         Optional<Session> session = getCurrentSession();
         if (session.isPresent() && sessionIsActive(startInstant, session.get()))
@@ -106,10 +115,16 @@ final class OktaAwsCliAssumeRole {
         }
     }
 
+    public static void logoutSession() throws IOException {
+        if (Files.exists(getSessionFilePath())) {
+            Files.delete(getSessionFilePath());
+        }
+    }
+
     private Optional<Session> getCurrentSession() throws IOException {
-        if (Files.exists(Paths.get(OKTA_AWS_CLI_SESSION_FILE))) {
+        if (Files.exists(getSessionFilePath())) {
             Properties properties = new Properties();
-            properties.load(new FileReader(OKTA_AWS_CLI_SESSION_FILE));
+            properties.load(new FileReader(getSessionFile()));
             String expiry = properties.getProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY);
             String profileName = properties.getProperty(OKTA_AWS_CLI_PROFILE_PROPERTY);
             Instant expiryInstant = Instant.parse(expiry);
@@ -134,7 +149,7 @@ final class OktaAwsCliAssumeRole {
         Properties properties = new Properties();
         properties.setProperty(OKTA_AWS_CLI_PROFILE_PROPERTY, profileName);
         properties.setProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY, expiryInstant.toString());
-        properties.store(new FileWriter(OKTA_AWS_CLI_SESSION_FILE), "Saved at: " + Instant.now().toString());
+        properties.store(new FileWriter(getSessionFile()), "Saved at: " + Instant.now().toString());
     }
 
     private String getAuthnResponse() throws IOException {
@@ -293,43 +308,54 @@ final class OktaAwsCliAssumeRole {
         Map<String, String> roleIdpPairs = AwsSamlRoleUtils.getRoles(samlResponse);
         List<String> roleArns = new ArrayList<>();
 
-        List<AccountOption> accountOptions = getAvailableRoles(samlResponse);
+        String principalArn;
+        String roleArn;
 
-        System.out.println("\nPlease choose the role you would like to assume: ");
+        if (roleIdpPairs.size() > 1) {
+            List<AccountOption> accountOptions = getAvailableRoles(samlResponse);
 
-        //Gather list of applicable AWS roles
-        int i = 0;
-        int j = -1;
+            System.out.println("\nPlease choose the role you would like to assume: ");
+            System.out.println(roleIdpPairs.toString());
+            System.out.println(accountOptions.toString());
+            //Gather list of applicable AWS roles
+            int i = 0;
+            int j = -1;
 
-        for (AccountOption accountOption: accountOptions) {
-            System.out.println(accountOption.accountName);
-            for (RoleOption roleOption : accountOption.roleOptions) {
-                roleArns.add(roleOption.roleArn);
-                System.out.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
-                if (roleOption.roleArn.equals(awsRoleToAssume)) {
-                    j = i;
+            for (AccountOption accountOption : accountOptions) {
+                System.out.println(accountOption.accountName);
+                for (RoleOption roleOption : accountOption.roleOptions) {
+                    roleArns.add(roleOption.roleArn);
+                    System.out.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
+                    if (roleOption.roleArn.equals(awsRoleToAssume)) {
+                        j = i;
+                    }
+                    i++;
                 }
-                i++;
             }
-        }
-        if ((awsRoleToAssume != null && !awsRoleToAssume.isEmpty()) && j == -1) {
-            System.out.println("No match for role " + awsRoleToAssume);
-        }
+            if ((awsRoleToAssume != null && !awsRoleToAssume.isEmpty()) && j == -1) {
+                System.out.println("No match for role " + awsRoleToAssume);
+            }
 
-        // Default to no selection
-        final int selection;
+            // Default to no selection
+            final int selection;
 
-        // If config.properties has matching role, use it and don't prompt user to select
-        if (j >= 0) {
-            selection = j;
-            System.out.println("Selected option "+ (j+1) + " based on OKTA_AWS_ROLE_TO_ASSUME value");
+            // If config.properties has matching role, use it and don't prompt user to select
+            if (j >= 0) {
+                selection = j;
+                System.out.println("Selected option "+ (j+1) + " based on OKTA_AWS_ROLE_TO_ASSUME value");
+            } else {
+                //Prompt user for role selection
+                selection = promptForMenuSelection(roleArns.size());
+            }
+
+            roleArn = roleArns.get(selection);
+            principalArn = roleIdpPairs.get(roleArn);
         } else {
-            //Prompt user for role selection
-            selection = promptForMenuSelection(roleArns.size());
+            Map.Entry<String, String> role = roleIdpPairs.entrySet().iterator().next();
+            System.out.println("Auto select role as only one is available : " + role.getKey());
+            roleArn = role.getKey();
+            principalArn = role.getValue();
         }
-
-        String roleArn = roleArns.get(selection);
-        String principalArn = roleIdpPairs.get(roleArn);
 
         return new AssumeRoleWithSAMLRequest()
                 .withPrincipalArn(principalArn)

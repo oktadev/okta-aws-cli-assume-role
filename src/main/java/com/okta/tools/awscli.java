@@ -24,6 +24,12 @@ import java.util.*;
 
 public class awscli {
     public static void main(String[] args) throws Exception {
+        if (args.length > 0 && "logout".equals(args[0])) {
+            OktaAwsCliAssumeRole.logoutSession();
+            System.out.println("You have been logged out");
+            System.exit(0);
+            return;
+        }
         String profileName = createAwscli().run(Instant.now());
         List<String> awsCommand = new ArrayList<>();
         awsCommand.add("aws");
