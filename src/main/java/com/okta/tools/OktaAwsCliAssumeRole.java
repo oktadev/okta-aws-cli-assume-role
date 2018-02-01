@@ -27,6 +27,7 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
 import com.okta.tools.saml.*;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -39,6 +40,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ini4j.Profile;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -67,16 +69,18 @@ final class OktaAwsCliAssumeRole {
     private final String oktaUsername;
     private final String oktaPassword;
     private final String awsRoleToAssume;
+    private final String oktaProfile;
 
-    static OktaAwsCliAssumeRole createOktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaAWSUsername, String oktaAWSPassword, String oktaAWSRoleToAssume) {
-        return new OktaAwsCliAssumeRole(oktaOrg, oktaAWSAppURL, oktaAWSUsername, oktaAWSPassword, oktaAWSRoleToAssume);
+    static OktaAwsCliAssumeRole createOktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaAWSUsername, String oktaAWSPassword,String oktaProfile, String oktaAWSRoleToAssume) {
+        return new OktaAwsCliAssumeRole(oktaOrg, oktaAWSAppURL, oktaAWSUsername, oktaAWSPassword,oktaProfile, oktaAWSRoleToAssume);
     }
 
-    private OktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaUsername, String oktaAWSPassword, String awsRoleToAssume) {
+    private OktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaUsername, String oktaAWSPassword,String oktaProfile, String awsRoleToAssume) {
         this.oktaOrg = oktaOrg;
         this.oktaAWSAppURL = oktaAWSAppURL;
         this.oktaUsername = oktaUsername;
         this.oktaPassword = oktaAWSPassword;
+        this.oktaProfile = oktaProfile;
         this.awsRoleToAssume = awsRoleToAssume;
     }
 
@@ -387,7 +391,6 @@ final class OktaAwsCliAssumeRole {
     }
 
     private String createAwsProfile(AssumeRoleWithSAMLResult assumeResult) throws IOException {
-        String credentialsProfileName = assumeResult.getAssumedRoleUser().getArn();
         BasicSessionCredentials temporaryCredentials =
                 new BasicSessionCredentials(
                         assumeResult.getCredentials().getAccessKeyId(),
@@ -398,15 +401,24 @@ final class OktaAwsCliAssumeRole {
         String awsSecretKey = temporaryCredentials.getAWSSecretKey();
         String awsSessionToken = temporaryCredentials.getSessionToken();
 
-        if (credentialsProfileName.startsWith("arn:aws:sts::")) {
-            credentialsProfileName = credentialsProfileName.substring(13);
-        }
-        if (credentialsProfileName.contains(":assumed-role")) {
-            credentialsProfileName = credentialsProfileName.replaceAll(":assumed-role", "");
-        }
-
+        String credentialsProfileName = getProfileName(assumeResult);
         updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
+        return credentialsProfileName;
+    }
 
+    private String getProfileName(AssumeRoleWithSAMLResult assumeResult) {
+        String credentialsProfileName;
+        if(StringUtils.isNotBlank(oktaProfile))  {
+            credentialsProfileName = oktaProfile;
+        } else {
+            credentialsProfileName = assumeResult.getAssumedRoleUser().getArn();
+            if (credentialsProfileName.startsWith("arn:aws:sts::")) {
+                credentialsProfileName = credentialsProfileName.substring(13);
+            }
+            if (credentialsProfileName.contains(":assumed-role")) {
+                credentialsProfileName = credentialsProfileName.replaceAll(":assumed-role", "");
+            }
+        }
         return credentialsProfileName;
     }
 
