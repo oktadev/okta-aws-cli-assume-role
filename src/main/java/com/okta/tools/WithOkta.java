@@ -1,3 +1,7 @@
+package com.okta.tools;
+
+import java.time.Instant;
+
 /*
  * Copyright 2017 Okta
  *
@@ -13,28 +17,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.okta.tools;
 
-import java.time.Instant;
-import java.util.*;
 
-public class awscli {
+public class WithOkta {
     public static void main(String[] args) throws Exception {
-        if (args.length > 0 && "logout".equals(args[0])) {
-            OktaAwsCliAssumeRole.logoutSession();
-            System.out.println("You have been logged out");
-            System.exit(0);
-            return;
-        }
-        String profileName = OktaAwsConfig.createAwscli().run(Instant.now());
-        List<String> awsCommand = new ArrayList<>();
-        awsCommand.add("aws");
-        awsCommand.add("--profile");
-        awsCommand.add(profileName);
-        awsCommand.addAll(Arrays.asList(args));
-        ProcessBuilder awsProcessBuilder = new ProcessBuilder().inheritIO().command(awsCommand);
+        OktaAwsConfig.createAwscli().run(Instant.now());
+        ProcessBuilder awsProcessBuilder = new ProcessBuilder().inheritIO().command(args);
         Process awsSubProcess = awsProcessBuilder.start();
         int exitCode = awsSubProcess.waitFor();
         System.exit(exitCode);
-        }
+    }
+
 }
+
