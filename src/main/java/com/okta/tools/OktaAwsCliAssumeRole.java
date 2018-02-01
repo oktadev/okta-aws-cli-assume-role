@@ -26,6 +26,7 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
+import com.okta.tools.aws.settings.MultipleProfile;
 import com.okta.tools.saml.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
@@ -63,6 +64,7 @@ final class OktaAwsCliAssumeRole {
     private static final String OKTA_AWS_CLI_SESSION_FILE = ".okta-aws-cli-session";
     private static final String OKTA_AWS_CLI_EXPIRY_PROPERTY = "OKTA_AWS_CLI_EXPIRY";
     private static final String OKTA_AWS_CLI_PROFILE_PROPERTY = "OKTA_AWS_CLI_PROFILE";
+    private static final String OKTA_AWS_MULTIPLE_PROFILE = ".okta-profile-expiry";
 
     private final String oktaOrg;
     private final String oktaAWSAppURL;
@@ -104,6 +106,7 @@ final class OktaAwsCliAssumeRole {
         String profileName = createAwsProfile(assumeResult);
 
         updateConfigFile(profileName, assumeRequest.getRoleArn());
+        newUserProfile(profileName, OKTA_AWS_CLI_SESSION_FILE);
         updateCurrentSession(sessionExpiry, profileName);
         return profileName;
     }
@@ -438,6 +441,18 @@ final class OktaAwsCliAssumeRole {
                 credentials.save(fileWriter);
             }
         }
+    }
+    private void newUserProfile(String OKTA_AWS_CLI_SESSION_FILE, String profileName) throws IOException {
+
+        String profileStore = System.getProperty("user.home") + "/.aws/.okta-profile-expiry";
+        boolean newConfiguration = !new File(profileStore).isFile();
+        try (Reader reader = newConfiguration ?
+                new FileReader(profileStore) : new StringReader("") {
+            MultipleProfile multipleProfile = new MultipleProfile(reader);
+
+
+
+            }
     }
 
     private void updateConfigFile(String profileName, String roleToAssume) throws IOException {
