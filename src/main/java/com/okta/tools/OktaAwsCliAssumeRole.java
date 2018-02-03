@@ -613,6 +613,7 @@ final class OktaAwsCliAssumeRole {
                     return sessionToken;
 
                 }
+                case ("token"):
                 case ("token:hardware"):
                 case ("token:software:totp"): {
                     //token factor handler
@@ -662,6 +663,7 @@ final class OktaAwsCliAssumeRole {
                 case "sms":
                     factorType = "SMS Authentication";
                     break;
+                case "token":
                 case "token:software:totp":
                     String provider = factor.getString("provider");
                     if (provider.equals("GOOGLE")) {
