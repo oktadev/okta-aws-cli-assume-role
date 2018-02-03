@@ -43,7 +43,7 @@ class ConfigurationTest {
     private String region = "us-east-1";
     private String manualRole = "[profile " + profileName + "]\n"
             + Configuration.ROLE_ARN + " = " + role_arn + "\n"
-            + SOURCE_PROFILE + " = " + profileName + "\n"
+            + SOURCE_PROFILE + " = " + profileName + "_source\n"
             + Configuration.REGION + " = " + region;
 
     /*
@@ -72,7 +72,7 @@ class ConfigurationTest {
         // Write an initial profile. This should create a default profile as well.
         initiallyEmpty.addOrUpdateProfile(profileName, role_arn);
         assertEquals(2, initiallyEmpty.settings.size());
-        assertEquals(profileName, initiallyEmpty.settings.get(DEFAULTPROFILENAME, SOURCE_PROFILE));
+        assertEquals(profileName + "_source", initiallyEmpty.settings.get(DEFAULTPROFILENAME, SOURCE_PROFILE));
         assertEquals(role_arn, initiallyEmpty.settings.get(DEFAULTPROFILENAME, ROLE_ARN));
         // State of the default profile after creating an initial profile.
         final Map<String, String> defaultProfileBefore = sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME));
@@ -112,7 +112,7 @@ class ConfigurationTest {
         final String updatedPrefix = "updated_";
         final String expected = "[profile " + profileName + "]\n"
                 + Configuration.ROLE_ARN + " = " + updatedPrefix + role_arn + "\n"
-                + SOURCE_PROFILE + " = " + profileName + "\n"
+                + SOURCE_PROFILE + " = " + profileName + "_source\n"
                 + Configuration.REGION + " = " + region
                 + "\n\n" + existingProfile;
 

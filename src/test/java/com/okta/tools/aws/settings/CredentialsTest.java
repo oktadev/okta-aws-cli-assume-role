@@ -32,7 +32,7 @@ class CredentialsTest {
     private String accessKey = "accesskey";
     private String secretKey = "secretkey";
     private String sessionToken = "sessiontoken";
-    private String manualRole = "[" + roleName + "]\n"
+    private String manualRole = "[" + roleName + "_source]\n"
             + Credentials.ACCES_KEY_ID + " = " + accessKey + "\n"
             + Credentials.SECRET_ACCESS_KEY + " = " + secretKey + "\n"
             + Credentials.SESSION_TOKEN + " = " + sessionToken;
@@ -86,7 +86,7 @@ class CredentialsTest {
 
         final String updatedPrefix = "updated_";
         final String expected = existingCredentials + "\n\n"
-                + "[" + roleName + "]\n"
+                + "[" + roleName + "_source]\n"
                 + Credentials.ACCES_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
                 + Credentials.SECRET_ACCESS_KEY + " = " + updatedPrefix + secretKey + "\n"
                 + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken;
