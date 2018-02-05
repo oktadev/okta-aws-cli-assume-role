@@ -67,7 +67,7 @@ public class Configuration extends Settings {
 
     private void writeConfigurationProfile(Profile.Section awsProfile, String name, String roleToAssume) {
         awsProfile.put(ROLE_ARN, roleToAssume);
-        awsProfile.put(SOURCE_PROFILE, name);
+        awsProfile.put(SOURCE_PROFILE, name + "_source");
         awsProfile.put(REGION, REGION_DEFAULT);
     }
 }
