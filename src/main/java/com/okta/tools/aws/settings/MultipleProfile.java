@@ -19,6 +19,7 @@ import org.ini4j.Profile;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.time.Instant;
 
 public class MultipleProfile extends Settings {
 
@@ -35,14 +36,14 @@ public class MultipleProfile extends Settings {
      * @throws IOException Thrown when we cannot read or load from the given {@param reader}.
      */
 
-    MultipleProfile(Reader reader) throws IOException {
+    public MultipleProfile(Reader reader) throws IOException {
         super(reader);
 
     }
 
     /**
-     * Add or update a profile to an Okta Profile file based on {@code name}. This will be linked to a credential profile
-     * of the same {@code name}, which should already be present in the credentials file.
+     * Add or update a profile to an Okta Profile file based on {@code name}. This will be linked to a okta profile
+     * of the same {@code name}, which should already be present in the profile expiry file.
      * The region for this new profile will be {@link Configuration#REGION_DEFAULT}.
      * @param name The name of the profile.
      * @param expiry the expiry time of the profile session.
@@ -51,13 +52,14 @@ public class MultipleProfile extends Settings {
 
 
 
-        public void addOrUpdateProfile(String name, String expiry, String okta_session) {
-            final Profile.Section awsProfile = settings.get(name) != null ? settings.get(name) : settings.add(name);
+        public void addOrUpdateProfile(String name, String okta_session,Instant expiry) {
+            name = name + "_source";
+            final Profile.Section awsProfile = settings.get(name) != null  ? settings.get(name) : settings.add(name);
 
-            writeSessionProfile(awsProfile,name, expiry , okta_session);
+            writeSessionProfile(awsProfile,name, okta_session , expiry);
         }
 
-        private void writeSessionProfile(Profile.Section awsProfile, String name, String expiry, String okta_session) {
+        private void writeSessionProfile(Profile.Section awsProfile, String name, String okta_session, Instant expiry) {
         awsProfile.put(SOURCE_PROFILE, name);
         awsProfile.put(OKTA_SESSION, okta_session);
         awsProfile.put(PROFILE_EXPIRY, expiry);
