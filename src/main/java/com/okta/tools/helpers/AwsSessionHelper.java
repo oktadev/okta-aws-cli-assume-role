@@ -24,7 +24,7 @@ public final class AwsSessionHelper
      */
     private static Path getSessionPath()
     {
-        return AwsFileHelper.getFilePath(AwsFileHelper.getAwsDirectory().toString(), ".current-session");
+        return AwsFileHelper.getFilePath(AwsFileHelper.getAwsDirectory().toString(), "/.current-session");
     }
 
     /**

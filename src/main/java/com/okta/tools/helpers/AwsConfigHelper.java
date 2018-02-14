@@ -15,7 +15,7 @@ public final class AwsConfigHelper {
      */
     public static Reader getConfigReader() throws FileNotFoundException
     {
-        return AwsFileHelper.getReader(AwsFileHelper.getAwsDirectory().toString() + "config");
+        return AwsFileHelper.getReader(AwsFileHelper.getAwsDirectory().toString() + "/config");
     }
 
     /**
@@ -27,6 +27,6 @@ public final class AwsConfigHelper {
      */
     public static FileWriter getConfigWriter() throws IOException
     {
-        return AwsFileHelper.getWriter(AwsFileHelper.getAwsDirectory().toString() + "config");
+        return AwsFileHelper.getWriter(AwsFileHelper.getAwsDirectory().toString() + "/config");
     }
 }

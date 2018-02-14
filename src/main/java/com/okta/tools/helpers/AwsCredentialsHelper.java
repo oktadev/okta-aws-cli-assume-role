@@ -15,7 +15,7 @@ public final class AwsCredentialsHelper {
      */
     public static Reader getCredsReader() throws FileNotFoundException
     {
-        return AwsFileHelper.getReader(AwsFileHelper.getAwsDirectory().toString() + "credentials");
+        return AwsFileHelper.getReader(AwsFileHelper.getAwsDirectory().toString() + "/credentials");
     }
 
     /**
@@ -27,6 +27,6 @@ public final class AwsCredentialsHelper {
      */
     public static FileWriter getCredsWriter() throws IOException
     {
-        return AwsFileHelper.getWriter(AwsFileHelper.getAwsDirectory().toString() + "credentials");
+        return AwsFileHelper.getWriter(AwsFileHelper.getAwsDirectory().toString() + "/credentials");
     }
 }
