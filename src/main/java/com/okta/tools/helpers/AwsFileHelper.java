@@ -1,0 +1,79 @@
+package com.okta.tools.helpers;
+
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public final class AwsFileHelper {
+    private static final String USER_HOME = System.getProperty("user.home");
+
+    /**
+     * Gets a directory with the given path, creating it if it doesn't exist
+     * @author Andrei Hava
+     * @since 02/14/2019
+     * @param path The path of the directory to be returned
+     * @return The path of the directory
+     */
+    private static Path getDirectory(String path)
+    {
+        File dir = new File(path);
+        dir.mkdir();
+
+        return dir.toPath();
+    }
+
+    /**
+     * Gets the path of the AWS directory (USER_HOME/.aws)
+     * @author Andrei Hava
+     * @since 02/14/2019
+     * @return The path of the AWS directory
+     */
+    public static Path getAwsDirectory()
+    {
+        return getDirectory(USER_HOME + "/.aws/");
+    }
+
+    /**
+     * Gets a reader for the given file. Creates a StringReader if the file is not found
+     * @author Andrei Hava
+     * @since 02/14/2018
+     * @param path The path of the file to get the reader for
+     * @return The reader for the given file
+     * @throws FileNotFoundException
+     */
+    public static Reader getReader(String path) throws FileNotFoundException
+    {
+        String configPath = path;
+        if (!new File(configPath).isFile())
+        {
+            return new StringReader("");
+        }
+        return new FileReader(configPath);
+    }
+
+    /**
+     * Get a FileWriter for a given path
+     * @author Andrei Hava
+     * @since 02/14/2018
+     * @param path The path for the file
+     * @return The FileReader for the given path
+     * @throws IOException
+     */
+    public static FileWriter getWriter(String path) throws IOException
+    {
+        String configPath = path;
+
+        return new FileWriter(configPath);
+    }
+
+    /**
+     * Gets the Path of a specified file
+     * @param parentDirectory The parent directory path of the file
+     * @param fileName The file name
+     * @return The Path of the file
+     */
+    public static Path getFilePath(String parentDirectory, String fileName)
+    {
+        return Paths.get(parentDirectory, fileName);
+    }
+}

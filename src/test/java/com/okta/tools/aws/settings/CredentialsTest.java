@@ -16,6 +16,7 @@
 package com.okta.tools.aws.settings;
 
 import org.junit.jupiter.api.Test;
+import org.junit.platform.commons.util.StringUtils;
 
 import java.io.*;
 
@@ -57,7 +58,9 @@ class CredentialsTest {
         credentials.addOrUpdateProfile(roleName, accessKey, secretKey, sessionToken);
         credentials.save(credentialsWriter);
 
-        assertEquals(manualRole, credentialsWriter.toString().trim());
+        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
+
+        assertEquals(manualRole, given);
     }
 
     /*
@@ -72,7 +75,10 @@ class CredentialsTest {
         credentials.addOrUpdateProfile(roleName, accessKey, secretKey, sessionToken);
         credentials.save(credentialsWriter);
 
-        assertEquals(existingCredentials + "\n\n" + manualRole, credentialsWriter.toString().trim());
+        String expected = existingCredentials + "\n\n" + manualRole;
+        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
     }
 
     /*
@@ -94,7 +100,9 @@ class CredentialsTest {
         credentials.addOrUpdateProfile(roleName, updatedPrefix + accessKey, updatedPrefix + secretKey, updatedPrefix + sessionToken);
         credentials.save(credentialsWriter);
 
-        assertEquals(expected, credentialsWriter.toString().trim());
+        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
     }
 
     /*
