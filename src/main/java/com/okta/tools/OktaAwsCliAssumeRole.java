@@ -42,7 +42,6 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ini4j.Ini;
-import org.ini4j.Profile;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -97,34 +96,25 @@ final class OktaAwsCliAssumeRole {
 
     String run(Instant startInstant) throws Exception {
         Optional<Session> session = getCurrentSession();
-        Instant expiry = startInstant.plus(864000 - 30, ChronoUnit.SECONDS);
-        String profileStore = System.getProperty("user.home") + "/.aws/.okta-profile-expiry";
-        Ini ini = new Ini(new File(profileStore));
-
-        if (session.isPresent() && sessionIsActive(startInstant, session.get())) {
-            if (OktaAwsConfig.createAwscli().oktaProfile != null) {
-                String profile = OktaAwsConfig.createAwscli().oktaProfile;
-                Set <String> activeSessions = ini.keySet();
-                if (!activeSessions.contains(profile)) {
-                    addOrUpdateProfile(OktaAwsConfig.createAwscli().oktaProfile, session.get().toString(), expiry);
-                }
-            }
-            else {
-                addOrUpdateProfile(session.get().profileName, "", expiry);
-            }
-                return session.get().profileName;
+        if(!multiProfileIniExists()) {
+               multiProfileCreateIni();
         }
-        String oktaSessionToken = getOktaSessionToken();
-        String samlResponse = getSamlResponseForAws(oktaSessionToken);
-        AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
-        Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
-        AssumeRoleWithSAMLResult assumeResult = assumeChosenAwsRole(assumeRequest);
-        String profileName = createAwsProfile(assumeResult);
+        if (session.isPresent() && sessionIsActive(startInstant, session.get()) && oktaProfile.isEmpty())
+            return session.get().profileName;
+        if (profileDoesNotExistsOrExpired()) {
+                String oktaSessionToken = getOktaSessionToken();
+                String samlResponse = getSamlResponseForAws(oktaSessionToken);
+                AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
+                Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
+                AssumeRoleWithSAMLResult assumeResult = assumeChosenAwsRole(assumeRequest);
+                String profileName = createAwsProfile(assumeResult);
 
-        updateConfigFile(profileName, assumeRequest.getRoleArn());
-        addOrUpdateProfile(profileName,"",startInstant);
-        updateCurrentSession(sessionExpiry, profileName);
-        return profileName;
+                updateConfigFile(profileName, assumeRequest.getRoleArn());
+                addOrUpdateProfile(profileName, assumeRequest.getRoleArn(), startInstant);
+                updateCurrentSession(sessionExpiry, profileName);
+                return profileName;
+        }
+        return oktaProfile;
     }
 
     private static class Session
@@ -166,6 +156,46 @@ final class OktaAwsCliAssumeRole {
         } else {
             return authnResult.getString("sessionToken");
         }
+    }
+
+    private void multiProfileCreateIni() throws  IOException {
+
+        boolean result = false;
+        File okta = new File(System.getProperty("user.home") + "/.okta");
+        File profileIni = new File(System.getProperty("user.home") + "/.okta/.okta-profile-expiry");
+        if (!okta.exists()) {
+            System.out.println("creating Directory and File: " + okta.getName() + profileIni.getName());
+            try {
+                result = okta.mkdir() && profileIni.createNewFile();
+            } catch (SecurityException se) {
+                System.out.println("Permission too low");
+            }
+            if (result)
+                System.out.println("Okta profile expiry created");
+            else
+                System.out.println("Okta profile expiry was not created");
+        }
+    }
+    private boolean multiProfileIniExists() {
+        File okta = new File(System.getProperty("user.home") + "/.okta");
+        return(!okta.exists());
+    }
+
+
+    private boolean profileDoesNotExistsOrExpired() throws IOException {
+        Instant start = Instant.now();
+        String profileStore = System.getProperty("user.home") + "/.okta/.okta-profile-expiry";
+        Ini ini = new Ini(new File(profileStore));
+        Set<String> activeSessions = ini.keySet();
+        if (oktaProfile == null) return true;
+        if (!activeSessions.contains(oktaProfile)) return true;
+        if (activeSessions.contains(oktaProfile)) {
+            Ini.Section profilesection = ini.get(oktaProfile);
+            String profileExpiry = profilesection.get("profile_expiry");
+            Instant expiry = Instant.parse(profileExpiry);
+            if(start.isAfter(expiry)) return true;
+        }
+        return false;
     }
 
     private void updateCurrentSession(Instant expiryInstant, String profileName) throws IOException {
@@ -460,7 +490,7 @@ final class OktaAwsCliAssumeRole {
     }
     private void addOrUpdateProfile(String profileName,String oktaSession ,Instant start) throws IOException {
 
-        String profileStore = System.getProperty("user.home") + "/.aws/.okta-profile-expiry";
+        String profileStore = System.getProperty("user.home") + "/.okta/.okta-profile-expiry";
 
         try (final Reader reader = profileStore.isEmpty() ?
                 new StringReader("") :new FileReader(profileStore)) {
