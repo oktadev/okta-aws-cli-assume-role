@@ -24,6 +24,7 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
+import com.okta.tools.authentication.OktaAuthentication;
 import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
 import com.okta.tools.models.Session;
@@ -84,9 +85,12 @@ final class OktaAwsCliAssumeRole {
 
     String run(Instant startInstant) throws Exception {
         Optional<Session> session = AwsSessionHelper.getCurrentSession();
-        if (session.isPresent() && AwsSessionHelper.sessionIsActive(startInstant, session.get()))
+
+        if (session.isPresent() && AwsSessionHelper.sessionIsActive(startInstant, session.get())) {
             return session.get().profileName;
-        String oktaSessionToken = getOktaSessionToken();
+        }
+
+        String oktaSessionToken = OktaAuthentication.getOktaSessionToken(getUsername(), getPassword(), oktaOrg);
         String samlResponse = getSamlResponseForAws(oktaSessionToken);
         AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
         Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
@@ -96,25 +100,6 @@ final class OktaAwsCliAssumeRole {
         updateConfigFile(profileName, assumeRequest.getRoleArn());
         AwsSessionHelper.updateCurrentSession(sessionExpiry, profileName);
         return profileName;
-    }
-
-    private String getOktaSessionToken() throws IOException {
-        JSONObject authnResult = new JSONObject(getAuthnResponse());
-        if (authnResult.getString("status").equals("MFA_REQUIRED")) {
-            return promptForFactor(authnResult);
-        } else {
-            return authnResult.getString("sessionToken");
-        }
-    }
-
-    private String getAuthnResponse() throws IOException {
-        while (true) {
-            LoginResult response = logInToOkta(getUsername(), getPassword());
-            int requestStatus = response.statusLine.getStatusCode();
-            authnFailHandler(requestStatus);
-            if (requestStatus == HttpStatus.SC_OK)
-                return response.responseContent;
-        }
     }
 
     private String getUsername() {
@@ -144,43 +129,6 @@ final class OktaAwsCliAssumeRole {
         }
     }
 
-    private static final class LoginResult {
-        final StatusLine statusLine;
-        final String responseContent;
-
-        private LoginResult(StatusLine statusLine, String responseContent) {
-            this.statusLine = statusLine;
-            this.responseContent = responseContent;
-        }
-    }
-    /**
-     * Uses user's credentials to obtain Okta session Token
-     */
-    private LoginResult logInToOkta(String username, String password) throws JSONException, IOException {
-        HttpPost httpPost = new HttpPost("https://" + oktaOrg + "/api/v1/authn");
-
-        httpPost.addHeader("Accept", "application/json");
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.addHeader("Cache-Control", "no-cache");
-
-        JSONObject authnRequest = new JSONObject();
-        authnRequest.put("username", username);
-        authnRequest.put("password", password);
-
-        StringEntity entity = new StringEntity(authnRequest.toString(), StandardCharsets.UTF_8);
-        entity.setContentType("application/json");
-        httpPost.setEntity(entity);
-
-        try (CloseableHttpClient httpClient = HttpClients.createSystem()) {
-            CloseableHttpResponse authnResponse = httpClient.execute(httpPost);
-
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(65536);
-            authnResponse.getEntity().writeTo(byteArrayOutputStream);
-
-            return new LoginResult(authnResponse.getStatusLine(), byteArrayOutputStream.toString());
-        }
-    }
-
     private AssumeRoleWithSAMLResult assumeChosenAwsRole(AssumeRoleWithSAMLRequest assumeRequest) {
         BasicAWSCredentials nullCredentials = new BasicAWSCredentials("", "");
         AWSCredentialsProvider nullCredentialsProvider = new AWSStaticCredentialsProvider(nullCredentials);
@@ -190,42 +138,6 @@ final class OktaAwsCliAssumeRole {
                 .withCredentials(nullCredentialsProvider)
                 .build();
         return sts.assumeRoleWithSAML(assumeRequest);
-    }
-
-    private void authnFailHandler(int requestStatus) {
-        if (requestStatus == 400 || requestStatus == 401) {
-            logger.error("Invalid username or password.");
-        } else if (requestStatus == 500) {
-            logger.error("\nUnable to establish connection with: " + oktaOrg +
-                    " \nPlease verify that your Okta org url is correct and try again");
-        } else if (requestStatus != 200) {
-            throw new RuntimeException("Failed : HTTP error code : " + requestStatus);
-        }
-    }
-
-    private int promptForMenuSelection(int max) {
-        if (max == 1) return 0;
-        Scanner scanner = new Scanner(System.in);
-
-        int selection = -1;
-        while (selection == -1) {
-            //prompt user for selection
-            System.out.print("Selection: ");
-            String selectInput = scanner.nextLine();
-            try {
-                selection = Integer.parseInt(selectInput) - 1;
-                if (selection < 0 || selection >= max) {
-                    throw new InputMismatchException();
-                }
-            } catch (InputMismatchException e) {
-                logger.error("Invalid input: Please enter a valid selection\n");
-                selection = -1;
-            } catch (NumberFormatException e) {
-                logger.error("Invalid input: Please enter in a number \n");
-                selection = -1;
-            }
-        }
-        return selection;
     }
 
     private String getSamlResponseForAws(String oktaSessionToken) throws IOException {
@@ -300,7 +212,7 @@ final class OktaAwsCliAssumeRole {
                 System.out.println("Selected option "+ (j+1) + " based on OKTA_AWS_ROLE_TO_ASSUME value");
             } else {
                 //Prompt user for role selection
-                selection = promptForMenuSelection(roleArns.size());
+                selection = MenuHelper.promptForMenuSelection(roleArns.size());
             }
 
             roleArn = roleArns.get(selection);
@@ -405,342 +317,5 @@ final class OktaAwsCliAssumeRole {
                 configuration.save(fileWriter);
             }
         }
-    }
-
-    private String promptForFactor(JSONObject authResponse) {
-
-        try {
-            //User selects which factor to use
-            JSONObject factor = selectFactor(authResponse);
-            String factorType = factor.getString("factorType");
-            String stateToken = authResponse.getString("stateToken");
-
-            //factor selection handler
-            switch (factorType) {
-                case ("question"): {
-                    //question factor handler
-                    String sessionToken = questionFactor(factor, stateToken);
-                    if (sessionToken.equals("change factor")) {
-                        System.out.println("Factor Change Initiated");
-                        return promptForFactor(authResponse);
-                    }
-                    return sessionToken;
-                }
-                case ("sms"): {
-                    //sms factor handler
-                    String sessionToken = smsFactor(factor, stateToken);
-                    if (sessionToken.equals("change factor")) {
-                        System.out.println("Factor Change Initiated");
-                        return promptForFactor(authResponse);
-                    }
-                    return sessionToken;
-
-                }
-                case ("token:hardware"):
-                case ("token:software:totp"): {
-                    //token factor handler
-                    String sessionToken = totpFactor(factor, stateToken);
-                    if (sessionToken.equals("change factor")) {
-                        System.out.println("Factor Change Initiated");
-                        return promptForFactor(authResponse);
-                    }
-                    return sessionToken;
-                }
-                case ("push"): {
-                    //push factor handles
-                    String result = pushFactor(factor, stateToken);
-                    if (result.equals("timeout") || result.equals("change factor")) {
-                        return promptForFactor(authResponse);
-                    }
-                    return result;
-                }
-            }
-        } catch (JSONException | IOException e) {
-            e.printStackTrace();
-        }
-
-        return "";
-    }
-
-    private JSONObject selectFactor(JSONObject authResponse) throws JSONException {
-        JSONArray factors = authResponse.getJSONObject("_embedded").getJSONArray("factors");
-        String factorType;
-        System.out.println("\nMulti-Factor authentication is required. Please select a factor to use.");
-
-        List<JSONObject> supportedFactors = getUsableFactors(factors);
-        if (supportedFactors.isEmpty())
-            if (factors.length() > 0)
-                throw new IllegalStateException("None of your factors are supported.");
-            else
-                throw new IllegalStateException("You have no factors enrolled.");
-
-        System.out.println("Factors:");
-        for (int i = 0; i < supportedFactors.size(); i++) {
-            JSONObject factor = supportedFactors.get(i);
-            factorType = factor.getString("factorType");
-            switch (factorType) {
-                case "question":
-                    factorType = "Security Question";
-                    break;
-                case "sms":
-                    factorType = "SMS Authentication";
-                    break;
-                case "token:software:totp":
-                    String provider = factor.getString("provider");
-                    if (provider.equals("GOOGLE")) {
-                        factorType = "Google Authenticator";
-                    } else {
-                        factorType = "Okta Verify";
-                    }
-                    break;
-            }
-            System.out.println("[ " + (i + 1) + " ] : " + factorType);
-        }
-
-        //Handles user factor selection
-        int selection = promptForMenuSelection(supportedFactors.size());
-        return supportedFactors.get(selection);
-    }
-
-    private List<JSONObject> getUsableFactors(JSONArray factors) {
-        List<JSONObject> eligibleFactors = new ArrayList<>();
-        for (int i = 0; i < factors.length(); i++) {
-            JSONObject factor = factors.getJSONObject(i);
-            // web-type factors can't be verified from the CLI
-            if (!"web".equals(factor.getString("factorType"))) {
-                eligibleFactors.add(factor);
-            }
-        }
-        return eligibleFactors;
-    }
-
-
-    private String questionFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
-        String question = factor.getJSONObject("profile").getString("questionText");
-        Scanner scanner = new Scanner(System.in);
-        String sessionToken = "";
-        String answer = "";
-
-        //prompt user for answer
-        System.out.println("\nSecurity Question Factor Authentication\nEnter 'change factor' to use a different factor\n");
-        while ("".equals(sessionToken)) {
-            if (!"".equals(answer)) {
-                System.out.println("Incorrect answer, please try again");
-            }
-            System.out.println(question);
-            System.out.println("Answer: ");
-            answer = scanner.nextLine();
-            //verify answer is correct
-            if (answer.toLowerCase().equals("change factor")) {
-                return answer;
-            }
-            sessionToken = verifyAnswer(answer, factor, stateToken, "question");
-        }
-        return sessionToken;
-    }
-
-
-    /**
-     * Handles sms factor authentication
-     * Precondition: question factor as JSONObject factor, current state token stateToken
-     * Postcondition: return session token as String sessionToken
-     */
-    private String smsFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
-        Scanner scanner = new Scanner(System.in);
-        String answer = "";
-        String sessionToken = "";
-
-        System.out.println("\nSMS Factor Authentication \nEnter 'change factor' to use a different factor");
-        while ("".equals(sessionToken)) {
-            if (!"".equals(answer)) {
-                System.out.println("Incorrect passcode, please try again or type 'new code' to be sent a new sms token");
-            } else {
-                //send initial code to user
-                verifyAnswer("", factor, stateToken, "sms");
-            }
-            System.out.println("SMS Code: ");
-            answer = scanner.nextLine();
-            switch (answer.toLowerCase()) {
-                case "new code":
-                    answer = "";
-                    System.out.println("New code sent! \n");
-                    break;
-                case "change factor":
-                    return answer;
-            }
-            sessionToken = verifyAnswer(answer, factor, stateToken, "sms");
-        }
-        return sessionToken;
-    }
-
-    /**
-     * Handles token factor authentication, i.e: Google Authenticator or Okta Verify
-     * Precondition: question factor as JSONObject factor, current state token stateToken
-     * Postcondition: return session token as String sessionToken
-     */
-    private String totpFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
-        Scanner scanner = new Scanner(System.in);
-        String sessionToken = "";
-        String answer = "";
-
-        //prompt for token
-        System.out.println("\n" + factor.getString("provider") + " Token Factor Authentication\nEnter 'change factor' to use a different factor");
-        while ("".equals(sessionToken)) {
-            if (!"".equals(answer)) {
-                System.out.println("Invalid token, please try again");
-            }
-
-            System.out.println("Token: ");
-            answer = scanner.nextLine();
-            //verify auth Token
-            if (answer.toLowerCase().equals("change factor")) {
-                return answer;
-            }
-            sessionToken = verifyAnswer(answer, factor, stateToken, "token:software:totp");
-        }
-        return sessionToken;
-    }
-
-
-    /**
-     * Handles push factor authentication
-     */
-    private String pushFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
-        String sessionToken = "";
-
-        System.out.println("\nPush Factor Authentication");
-        while ("".equals(sessionToken)) {
-            //Verify if Okta Push has been pushed
-            sessionToken = verifyAnswer(null, factor, stateToken, "push");
-            System.out.println(sessionToken);
-            if (sessionToken.equals("Timeout")) {
-                System.out.println("Session has timed out");
-                return "timeout";
-            }
-        }
-        return sessionToken;
-    }
-
-
-    /**
-     * Handles verification for all Factor types
-     * Precondition: question factor as JSONObject factor, current state token stateToken
-     * Postcondition: return session token as String sessionToken
-     */
-    private String verifyAnswer(String answer, JSONObject factor, String stateToken, String factorType)
-            throws JSONException, IOException {
-
-        String sessionToken = null;
-
-        JSONObject profile = new JSONObject();
-        String verifyPoint = factor.getJSONObject("_links").getJSONObject("verify").getString("href");
-
-        profile.put("stateToken", stateToken);
-
-        if (answer != null && !"".equals(answer)) {
-            profile.put("answer", answer);
-        }
-
-        //create post request
-        CloseableHttpClient httpClient = HttpClients.createSystem();
-
-        HttpPost httpost = new HttpPost(verifyPoint);
-        httpost.addHeader("Accept", "application/json");
-        httpost.addHeader("Content-Type", "application/json");
-        httpost.addHeader("Cache-Control", "no-cache");
-
-        StringEntity entity = new StringEntity(profile.toString(), StandardCharsets.UTF_8);
-        entity.setContentType("application/json");
-        httpost.setEntity(entity);
-        CloseableHttpResponse responseAuthenticate = httpClient.execute(httpost);
-
-        BufferedReader br = new BufferedReader(new InputStreamReader((responseAuthenticate.getEntity().getContent())));
-
-        String outputAuthenticate = br.readLine();
-        JSONObject jsonObjResponse = new JSONObject(outputAuthenticate);
-
-        if (jsonObjResponse.has("errorCode")) {
-            String errorSummary = jsonObjResponse.getString("errorSummary");
-            System.out.println(errorSummary);
-            System.out.println("Please try again");
-            if (factorType.equals("question")) {
-                questionFactor(factor, stateToken);
-            }
-
-            if (factorType.equals("token:software:totp")) {
-                totpFactor(factor, stateToken);
-            }
-        }
-
-        if (jsonObjResponse.has("sessionToken"))
-            sessionToken = jsonObjResponse.getString("sessionToken");
-
-        String pushResult = null;
-        if (factorType.equals("push")) {
-            if (jsonObjResponse.has("_links")) {
-                JSONObject linksObj = jsonObjResponse.getJSONObject("_links");
-
-                JSONArray names = linksObj.names();
-                JSONArray links = linksObj.toJSONArray(names);
-                String pollUrl = "";
-                for (int i = 0; i < links.length(); i++) {
-                    JSONObject link = links.getJSONObject(i);
-                    String linkName = link.getString("name");
-                    if (linkName.equals("poll")) {
-                        pollUrl = link.getString("href");
-                        break;
-                    }
-                }
-
-
-                while (pushResult == null || pushResult.equals("WAITING")) {
-                    pushResult = null;
-                    httpClient = HttpClients.createSystem();
-
-                    HttpPost pollReq = new HttpPost(pollUrl);
-                    pollReq.addHeader("Accept", "application/json");
-                    pollReq.addHeader("Content-Type", "application/json");
-                    pollReq.addHeader("Cache-Control", "no-cache");
-
-                    entity = new StringEntity(profile.toString(), StandardCharsets.UTF_8);
-                    entity.setContentType("application/json");
-                    pollReq.setEntity(entity);
-
-                    CloseableHttpResponse responsePush = httpClient.execute(pollReq);
-
-                    br = new BufferedReader(new InputStreamReader((responsePush.getEntity().getContent())));
-
-                    String outputTransaction = br.readLine();
-                    JSONObject jsonTransaction = new JSONObject(outputTransaction);
-
-
-                    if (jsonTransaction.has("factorResult")) {
-                        pushResult = jsonTransaction.getString("factorResult");
-                    }
-
-                    if (pushResult == null && jsonTransaction.has("status")) {
-                        pushResult = jsonTransaction.getString("status");
-                    }
-
-                    System.out.println("Waiting for you to approve the Okta push notification on your device...");
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException iex) {
-                        throw new RuntimeException(iex);
-                    }
-
-                    if (jsonTransaction.has("sessionToken")) {
-                        sessionToken = jsonTransaction.getString("sessionToken");
-                    }
-                }
-            }
-
-        }
-
-
-        if (sessionToken != null)
-            return sessionToken;
-        else
-            return pushResult;
     }
 }
