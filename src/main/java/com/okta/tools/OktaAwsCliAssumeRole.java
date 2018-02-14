@@ -26,7 +26,9 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
+import com.okta.tools.models.Session;
 import com.okta.tools.saml.*;
+import com.okta.tools.helpers.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -40,7 +42,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ini4j.Profile;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -60,9 +61,6 @@ import java.util.*;
 final class OktaAwsCliAssumeRole {
 
     private static final Logger logger = LogManager.getLogger(OktaAwsCliAssumeRole.class);
-    private static final String OKTA_AWS_CLI_SESSION_FILE = ".okta-aws-cli-session";
-    private static final String OKTA_AWS_CLI_EXPIRY_PROPERTY = "OKTA_AWS_CLI_EXPIRY";
-    private static final String OKTA_AWS_CLI_PROFILE_PROPERTY = "OKTA_AWS_CLI_PROFILE";
 
     private final String oktaOrg;
     private final String oktaAWSAppURL;
@@ -84,17 +82,9 @@ final class OktaAwsCliAssumeRole {
         this.awsRoleToAssume = awsRoleToAssume;
     }
 
-    private static String getSessionFile() {
-        return getSessionFilePath().toString();
-    }
-
-    private static Path getSessionFilePath() {
-        return Paths.get(System.getProperty("user.home") , OKTA_AWS_CLI_SESSION_FILE);
-    }
-
     String run(Instant startInstant) throws Exception {
-        Optional<Session> session = getCurrentSession();
-        if (session.isPresent() && sessionIsActive(startInstant, session.get()))
+        Optional<Session> session = AwsSessionHelper.getCurrentSession();
+        if (session.isPresent() && AwsSessionHelper.sessionIsActive(startInstant, session.get()))
             return session.get().profileName;
         String oktaSessionToken = getOktaSessionToken();
         String samlResponse = getSamlResponseForAws(oktaSessionToken);
@@ -104,40 +94,8 @@ final class OktaAwsCliAssumeRole {
         String profileName = createAwsProfile(assumeResult);
 
         updateConfigFile(profileName, assumeRequest.getRoleArn());
-        updateCurrentSession(sessionExpiry, profileName);
+        AwsSessionHelper.updateCurrentSession(sessionExpiry, profileName);
         return profileName;
-    }
-
-    private static class Session
-    {
-        final String profileName;
-        final Instant expiry;
-
-        private Session(String profileName, Instant expiry) {
-            this.profileName = profileName;
-            this.expiry = expiry;
-        }
-    }
-
-    public static void logoutSession() throws IOException {
-        if (Files.exists(getSessionFilePath())) {
-            Files.delete(getSessionFilePath());
-        }
-    }
-
-    private Optional<Session> getCurrentSession() throws IOException {
-        if (Files.exists(getSessionFilePath())) {
-            Properties properties = new Properties();
-            properties.load(new FileReader(getSessionFile()));
-            String expiry = properties.getProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY);
-            String profileName = properties.getProperty(OKTA_AWS_CLI_PROFILE_PROPERTY);
-            Instant expiryInstant = Instant.parse(expiry);
-            return Optional.of(new Session(profileName, expiryInstant));
-        }
-        return Optional.empty();
-    }
-    private boolean sessionIsActive(Instant startInstant, Session session) {
-        return startInstant.isBefore(session.expiry);
     }
 
     private String getOktaSessionToken() throws IOException {
@@ -147,13 +105,6 @@ final class OktaAwsCliAssumeRole {
         } else {
             return authnResult.getString("sessionToken");
         }
-    }
-
-    private void updateCurrentSession(Instant expiryInstant, String profileName) throws IOException {
-        Properties properties = new Properties();
-        properties.setProperty(OKTA_AWS_CLI_PROFILE_PROPERTY, profileName);
-        properties.setProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY, expiryInstant.toString());
-        properties.store(new FileWriter(getSessionFile()), "Saved at: " + Instant.now().toString());
     }
 
     private String getAuthnResponse() throws IOException {
@@ -424,33 +375,33 @@ final class OktaAwsCliAssumeRole {
 
     private void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
             throws IOException {
-        File credentialsLocation = Paths.get(System.getProperty("user.home"))
-                .resolve(".aws").resolve("credentials").toFile();
-        try (final Reader reader = credentialsLocation.isFile() ?
-                new FileReader(credentialsLocation) : new StringReader("")) {
-            // Create the credentials object with the data read from credentialsLocation
+
+        try (Reader reader = AwsCredentialsHelper.getCredsReader())
+        {
+            // Create the credentials object with the data read from the credentials file
             Credentials credentials = new Credentials(reader);
 
             // Write the given profile data
             credentials.addOrUpdateProfile(profileName, awsAccessKey, awsSecretKey, awsSessionToken);
-            // Write the updated profile (reader is already closed by the Credentials constructor)
-            try (final FileWriter fileWriter = new FileWriter(credentialsLocation)) {
+
+            // Write the updated profile
+            try (FileWriter fileWriter = AwsCredentialsHelper.getCredsWriter())
+            {
                 credentials.save(fileWriter);
             }
         }
     }
 
     private void updateConfigFile(String profileName, String roleToAssume) throws IOException {
-        String configLocation = System.getProperty("user.home") + "/.aws/config";
-        boolean newConfiguration = !new File(configLocation).isFile();
-        try (Reader reader = newConfiguration ?
-                new StringReader("") : new FileReader(configLocation)) {
-            // Create the configuration object with the data read from configLocation
+        try (Reader reader = AwsConfigHelper.getConfigReader()) {
+            // Create the configuration object with the data from the config file
             Configuration configuration = new Configuration(reader);
+
             // Write the given profile data
             configuration.addOrUpdateProfile(profileName, roleToAssume);
-            // Write the updated profile (reader is already closed by the Credentials constructor)
-            try (FileWriter fileWriter = new FileWriter(configLocation)) {
+
+            // Write the updated profile
+            try (FileWriter fileWriter = AwsConfigHelper.getConfigWriter()) {
                 configuration.save(fileWriter);
             }
         }
