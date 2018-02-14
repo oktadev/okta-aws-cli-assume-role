@@ -91,7 +91,7 @@ final class OktaAwsCliAssumeRole {
         }
 
         String oktaSessionToken = OktaAuthentication.getOktaSessionToken(getUsername(), getPassword(), oktaOrg);
-        String samlResponse = getSamlResponseForAws(oktaSessionToken);
+        String samlResponse = OktaSaml.getSamlResponseForAws(oktaAWSAppURL, oktaSessionToken);
         AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
         Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
         AssumeRoleWithSAMLResult assumeResult = assumeChosenAwsRole(assumeRequest);
@@ -138,37 +138,6 @@ final class OktaAwsCliAssumeRole {
                 .withCredentials(nullCredentialsProvider)
                 .build();
         return sts.assumeRoleWithSAML(assumeRequest);
-    }
-
-    private String getSamlResponseForAws(String oktaSessionToken) throws IOException {
-        Document document = launchOktaAwsApp(oktaSessionToken);
-        Elements samlResponseInputElement = document.select("form input[name=SAMLResponse]");
-        if (samlResponseInputElement.isEmpty()) {
-            throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
-        }
-        return samlResponseInputElement.attr("value");
-    }
-
-    private Document launchOktaAwsApp(String oktaSessionToken) throws IOException {
-
-        HttpGet httpget = new HttpGet(oktaAWSAppURL + "?onetimetoken=" + oktaSessionToken);
-        try (CloseableHttpClient httpClient = HttpClients.createSystem();
-             CloseableHttpResponse responseSAML = httpClient.execute(httpget)) {
-
-            if (responseSAML.getStatusLine().getStatusCode() >= 500) {
-                throw new RuntimeException("Server error when loading Okta AWS App: "
-                        + responseSAML.getStatusLine().getStatusCode());
-            } else if (responseSAML.getStatusLine().getStatusCode() >= 400) {
-                throw new RuntimeException("Client error when loading Okta AWS App: "
-                        + responseSAML.getStatusLine().getStatusCode());
-            }
-
-            return Jsoup.parse(
-                    responseSAML.getEntity().getContent(),
-                    StandardCharsets.UTF_8.name(),
-                    oktaAWSAppURL
-            );
-        }
     }
 
     private AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse) throws IOException {
