@@ -178,7 +178,7 @@ final class OktaAwsCliAssumeRole {
     }
     private boolean multiProfileIniExists() {
         File okta = new File(System.getProperty("user.home") + "/.okta");
-        return(!okta.exists());
+        return(okta.exists());
     }
 
 
