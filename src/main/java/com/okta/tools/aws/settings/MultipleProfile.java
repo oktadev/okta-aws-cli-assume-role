@@ -35,7 +35,6 @@ public class MultipleProfile extends Settings {
      * @param reader The settings we want to work with. N.B.: The reader is consumed by the constructor.
      * @throws IOException Thrown when we cannot read or load from the given {@param reader}.
      */
-
     public MultipleProfile(Reader reader) throws IOException {
         super(reader);
 
@@ -49,20 +48,15 @@ public class MultipleProfile extends Settings {
      * @param expiry the expiry time of the profile session.
      * @param okta_session the expiry time of the okta session
      */
+    public void addOrUpdateProfile(String name, String okta_session,Instant expiry) {
 
+        final Profile.Section awsProfile = settings.get(name) != null  ? settings.get(name) : settings.add(name);
+        writeSessionProfile(awsProfile,name, okta_session , expiry);
+    }
 
-
-        public void addOrUpdateProfile(String name, String okta_session,Instant expiry) {
-            name = name + "_source";
-            final Profile.Section awsProfile = settings.get(name) != null  ? settings.get(name) : settings.add(name);
-
-            writeSessionProfile(awsProfile,name, okta_session , expiry);
-        }
-
-        private void writeSessionProfile(Profile.Section awsProfile, String name, String okta_session, Instant expiry) {
+    private void writeSessionProfile(Profile.Section awsProfile, String name, String okta_session, Instant expiry) {
         awsProfile.put(SOURCE_PROFILE, name);
         awsProfile.put(OKTA_SESSION, okta_session);
         awsProfile.put(PROFILE_EXPIRY, expiry);
-
-        }
+    }
 }
