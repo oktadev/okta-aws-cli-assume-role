@@ -110,7 +110,7 @@ final class OktaAwsCliAssumeRole {
                 String profileName = createAwsProfile(assumeResult);
 
                 updateConfigFile(profileName, assumeRequest.getRoleArn());
-                addOrUpdateProfile(profileName, assumeRequest.getRoleArn(), startInstant);
+                addOrUpdateProfile(profileName, assumeRequest.getRoleArn(), sessionExpiry);
                 updateCurrentSession(sessionExpiry, profileName);
                 return profileName;
         }
@@ -193,7 +193,7 @@ final class OktaAwsCliAssumeRole {
             Ini.Section profilesection = ini.get(oktaProfile);
             String profileExpiry = profilesection.get("profile_expiry");
             Instant expiry = Instant.parse(profileExpiry);
-            if(start.isAfter(expiry)) return true;
+            return (start.isAfter(expiry));
         }
         return false;
     }
