@@ -26,6 +26,7 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
+import com.okta.tools.aws.settings.MultipleProfile;
 import com.okta.tools.saml.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
@@ -40,7 +41,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ini4j.Profile;
+import org.ini4j.Ini;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -63,6 +64,7 @@ final class OktaAwsCliAssumeRole {
     private static final String OKTA_AWS_CLI_SESSION_FILE = ".okta-aws-cli-session";
     private static final String OKTA_AWS_CLI_EXPIRY_PROPERTY = "OKTA_AWS_CLI_EXPIRY";
     private static final String OKTA_AWS_CLI_PROFILE_PROPERTY = "OKTA_AWS_CLI_PROFILE";
+
 
     private final String oktaOrg;
     private final String oktaAWSAppURL;
@@ -94,18 +96,25 @@ final class OktaAwsCliAssumeRole {
 
     String run(Instant startInstant) throws Exception {
         Optional<Session> session = getCurrentSession();
-        if (session.isPresent() && sessionIsActive(startInstant, session.get()))
+        if(!multiProfileIniExists()) {
+               multiProfileCreateIni();
+        }
+        if (session.isPresent() && sessionIsActive(startInstant, session.get()) && oktaProfile.isEmpty())
             return session.get().profileName;
-        String oktaSessionToken = getOktaSessionToken();
-        String samlResponse = getSamlResponseForAws(oktaSessionToken);
-        AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
-        Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
-        AssumeRoleWithSAMLResult assumeResult = assumeChosenAwsRole(assumeRequest);
-        String profileName = createAwsProfile(assumeResult);
+        if (profileDoesNotExistsOrExpired()) {
+                String oktaSessionToken = getOktaSessionToken();
+                String samlResponse = getSamlResponseForAws(oktaSessionToken);
+                AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
+                Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
+                AssumeRoleWithSAMLResult assumeResult = assumeChosenAwsRole(assumeRequest);
+                String profileName = createAwsProfile(assumeResult);
 
-        updateConfigFile(profileName, assumeRequest.getRoleArn());
-        updateCurrentSession(sessionExpiry, profileName);
-        return profileName;
+                updateConfigFile(profileName, assumeRequest.getRoleArn());
+                addOrUpdateProfile(profileName, assumeRequest.getRoleArn(), sessionExpiry);
+                updateCurrentSession(sessionExpiry, profileName);
+                return profileName;
+        }
+        return oktaProfile;
     }
 
     private static class Session
@@ -147,6 +156,46 @@ final class OktaAwsCliAssumeRole {
         } else {
             return authnResult.getString("sessionToken");
         }
+    }
+
+    private void multiProfileCreateIni() throws  IOException {
+
+        boolean result = false;
+        File okta = new File(System.getProperty("user.home") + "/.okta");
+        File profileIni = new File(System.getProperty("user.home") + "/.okta/.okta-profile-expiry");
+        if (!okta.exists()) {
+            System.out.println("creating Directory and File: " + okta.getName() + profileIni.getName());
+            try {
+                result = okta.mkdir() && profileIni.createNewFile();
+            } catch (SecurityException se) {
+                System.out.println("Permission too low");
+            }
+            if (result)
+                System.out.println("Okta profile expiry created");
+            else
+                System.out.println("Okta profile expiry was not created");
+        }
+    }
+    private boolean multiProfileIniExists() {
+        File okta = new File(System.getProperty("user.home") + "/.okta");
+        return(okta.exists());
+    }
+
+
+    private boolean profileDoesNotExistsOrExpired() throws IOException {
+        Instant start = Instant.now();
+        String profileStore = System.getProperty("user.home") + "/.okta/.okta-profile-expiry";
+        Ini ini = new Ini(new File(profileStore));
+        Set<String> activeSessions = ini.keySet();
+        if (oktaProfile == null) return true;
+        if (!activeSessions.contains(oktaProfile)) return true;
+        if (activeSessions.contains(oktaProfile)) {
+            Ini.Section profilesection = ini.get(oktaProfile);
+            String profileExpiry = profilesection.get("profile_expiry");
+            Instant expiry = Instant.parse(profileExpiry);
+            return (start.isAfter(expiry));
+        }
+        return false;
     }
 
     private void updateCurrentSession(Instant expiryInstant, String profileName) throws IOException {
@@ -438,6 +487,19 @@ final class OktaAwsCliAssumeRole {
                 credentials.save(fileWriter);
             }
         }
+    }
+    private void addOrUpdateProfile(String profileName,String oktaSession ,Instant start) throws IOException {
+
+        String profileStore = System.getProperty("user.home") + "/.okta/.okta-profile-expiry";
+
+        try (final Reader reader = profileStore.isEmpty() ?
+                new StringReader("") :new FileReader(profileStore)) {
+            MultipleProfile multipleProfile = new MultipleProfile(reader);
+            multipleProfile.addOrUpdateProfile(profileName, oktaSession, start);
+            try (final FileWriter fileWriter = new FileWriter(profileStore)) {
+                multipleProfile.save(fileWriter);
+            }
+            }
     }
 
     private void updateConfigFile(String profileName, String roleToAssume) throws IOException {
