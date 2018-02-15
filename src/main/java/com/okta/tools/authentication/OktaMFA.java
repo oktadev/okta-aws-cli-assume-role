@@ -18,59 +18,43 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class OktaMFA
-{
+public class OktaMFA {
     /**
      * Prompt the user for 2FA after primary authentication
-     * @param authResponse The response from primary auth
+     *
+     * @param primaryAuthResponse The response from primary auth
      * @return The session token
      */
-    public static String promptForFactor(JSONObject authResponse)
-    {
+    public static String promptForFactor(JSONObject primaryAuthResponse) {
         try {
-            //User selects which factor to use
-            JSONObject factor = selectFactor(authResponse);
+            // User selects which factor to use
+            JSONObject factor = selectFactor(primaryAuthResponse);
             String factorType = factor.getString("factorType");
-            String stateToken = authResponse.getString("stateToken");
+            String stateToken = primaryAuthResponse.getString("stateToken");
 
-            //factor selection handler
+            // Factor selection handler
             switch (factorType) {
                 case ("question"): {
-                    //question factor handler
+                    // Security Question handler
                     String sessionToken = questionFactor(factor, stateToken);
-                    if (sessionToken.equals("change factor")) {
-                        System.out.println("Factor Change Initiated");
-                        return promptForFactor(authResponse);
-                    }
-                    return sessionToken;
+                    return handleTimeoutsAndChanges(sessionToken, primaryAuthResponse);
                 }
                 case ("sms"): {
-                    //sms factor handler
+                    // SMS handler
                     String sessionToken = smsFactor(factor, stateToken);
-                    if (sessionToken.equals("change factor")) {
-                        System.out.println("Factor Change Initiated");
-                        return promptForFactor(authResponse);
-                    }
-                    return sessionToken;
+                    return handleTimeoutsAndChanges(sessionToken, primaryAuthResponse);
 
                 }
                 case ("token:hardware"):
                 case ("token:software:totp"): {
-                    //token factor handler
+                    // Token handler
                     String sessionToken = totpFactor(factor, stateToken);
-                    if (sessionToken.equals("change factor")) {
-                        System.out.println("Factor Change Initiated");
-                        return promptForFactor(authResponse);
-                    }
-                    return sessionToken;
+                    return handleTimeoutsAndChanges(sessionToken, primaryAuthResponse);
                 }
                 case ("push"): {
-                    //push factor handles
-                    String result = pushFactor(factor, stateToken);
-                    if (result.equals("timeout") || result.equals("change factor")) {
-                        return promptForFactor(authResponse);
-                    }
-                    return result;
+                    // Push handler
+                    String sessionToken = pushFactor(factor, stateToken);
+                    return handleTimeoutsAndChanges(sessionToken, primaryAuthResponse);
                 }
             }
         } catch (JSONException | IOException e) {
@@ -80,18 +64,44 @@ public class OktaMFA
         return "";
     }
 
-    private static JSONObject selectFactor(JSONObject authResponse) throws JSONException
-    {
-        JSONArray factors = authResponse.getJSONObject("_embedded").getJSONArray("factors");
+    /**
+     * Handles MFA timeouts and factor changes
+     *
+     * @param sessionToken        The current state of the MFA
+     * @param primaryAuthResponse The response from Primary Authentication
+     * @return The factor prompt if invalid, session token otherwise
+     */
+    private static String handleTimeoutsAndChanges(String sessionToken, JSONObject primaryAuthResponse) {
+        if (sessionToken.equals("change factor")) {
+            System.out.println("Factor change initiated");
+            return promptForFactor(primaryAuthResponse);
+        } else if (sessionToken.equals("timeout")) {
+            System.out.println("Factor timed out");
+            return promptForFactor(primaryAuthResponse);
+        }
+        return sessionToken;
+    }
+
+    /**
+     * Handles selection of a factor from multiple choices
+     *
+     * @param primaryAuthResponse The response from Primary Authentication
+     * @return A {@link JSONObject} representing the selected factor.
+     * @throws JSONException
+     */
+    private static JSONObject selectFactor(JSONObject primaryAuthResponse) throws JSONException {
+        JSONArray factors = primaryAuthResponse.getJSONObject("_embedded").getJSONArray("factors");
         String factorType;
         System.out.println("\nMulti-Factor authentication is required. Please select a factor to use.");
 
         List<JSONObject> supportedFactors = getUsableFactors(factors);
-        if (supportedFactors.isEmpty())
-            if (factors.length() > 0)
+        if (supportedFactors.isEmpty()) {
+            if (factors.length() > 0) {
                 throw new IllegalStateException("None of your factors are supported.");
-            else
+            } else {
                 throw new IllegalStateException("You have no factors enrolled.");
+            }
+        }
 
         System.out.println("Factors:");
         for (int i = 0; i < supportedFactors.size(); i++) {
@@ -102,7 +112,7 @@ public class OktaMFA
                     factorType = "Security Question";
                     break;
                 case "sms":
-                    factorType = "SMS Authentication";
+                    factorType = "SMS Verification";
                     break;
                 case "token:software:totp":
                     String provider = factor.getString("provider");
@@ -116,31 +126,48 @@ public class OktaMFA
             System.out.println("[ " + (i + 1) + " ] : " + factorType);
         }
 
-        //Handles user factor selection
+        // Handles user factor selection
         int selection = MenuHelper.promptForMenuSelection(supportedFactors.size());
         return supportedFactors.get(selection);
     }
 
-    private static List<JSONObject> getUsableFactors(JSONArray factors)
-    {
+    /**
+     * Selects the supported factors from a list of factors
+     *
+     * @param factors The list of factors
+     * @return A {@link List<JSONObject>} of supported factors
+     */
+    private static List<JSONObject> getUsableFactors(JSONArray factors) {
         List<JSONObject> eligibleFactors = new ArrayList<>();
+
         for (int i = 0; i < factors.length(); i++) {
             JSONObject factor = factors.getJSONObject(i);
-            // web-type factors can't be verified from the CLI
+
+            // Factors that only work on the web cannot be verified via the CLI
             if (!"web".equals(factor.getString("factorType"))) {
                 eligibleFactors.add(factor);
             }
         }
+
         return eligibleFactors;
     }
 
+    /**
+     * Handles the Security Question factor
+     *
+     * @param factor A {@link JSONObject} representing the user's factor
+     * @param stateToken The current state token
+     * @return The session token
+     * @throws JSONException
+     * @throws IOException
+     */
     private static String questionFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
         String question = factor.getJSONObject("profile").getString("questionText");
         Scanner scanner = new Scanner(System.in);
         String sessionToken = "";
         String answer = "";
 
-        //prompt user for answer
+        // Prompt the user for the Security Question Answer
         System.out.println("\nSecurity Question Factor Authentication\nEnter 'change factor' to use a different factor\n");
         while ("".equals(sessionToken)) {
             if (!"".equals(answer)) {
@@ -149,20 +176,27 @@ public class OktaMFA
             System.out.println(question);
             System.out.println("Answer: ");
             answer = scanner.nextLine();
-            //verify answer is correct
+
+            // Factor change requested
             if (answer.toLowerCase().equals("change factor")) {
                 return answer;
             }
+
+            // Verify the answer's validity
             sessionToken = verifyAnswer(answer, factor, stateToken, "question");
         }
+
         return sessionToken;
     }
 
-
     /**
-     * Handles sms factor authentication
-     * Precondition: question factor as JSONObject factor, current state token stateToken
-     * Postcondition: return session token as String sessionToken
+     * Handles the SMS Verification factor
+     *
+     * @param factor A {@link JSONObject} representing the user's factor
+     * @param stateToken The current state token
+     * @return The session token
+     * @throws JSONException
+     * @throws IOException
      */
     private static String smsFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
         Scanner scanner = new Scanner(System.in);
@@ -172,37 +206,48 @@ public class OktaMFA
         System.out.println("\nSMS Factor Authentication \nEnter 'change factor' to use a different factor");
         while ("".equals(sessionToken)) {
             if (!"".equals(answer)) {
-                System.out.println("Incorrect passcode, please try again or type 'new code' to be sent a new sms token");
+                System.out.println("Incorrect passcode, please try again or type 'new code' to be sent a new SMS passcode");
             } else {
-                //send initial code to user
+                // Send initial code to the user
                 verifyAnswer("", factor, stateToken, "sms");
             }
+
             System.out.println("SMS Code: ");
             answer = scanner.nextLine();
+
             switch (answer.toLowerCase()) {
                 case "new code":
+                    // New SMS passcode requested
                     answer = "";
                     System.out.println("New code sent! \n");
                     break;
                 case "change factor":
+                    // Factor change requested
                     return answer;
             }
+
+            // Verify the validity of the SMS passcode
             sessionToken = verifyAnswer(answer, factor, stateToken, "sms");
         }
+
         return sessionToken;
     }
 
     /**
-     * Handles token factor authentication, i.e: Google Authenticator or Okta Verify
-     * Precondition: question factor as JSONObject factor, current state token stateToken
-     * Postcondition: return session token as String sessionToken
+     * Handles Token Factor verification
+     *
+     * @param factor A {@link JSONObject} representing the user's factor
+     * @param stateToken The current state token
+     * @return The session token
+     * @throws JSONException
+     * @throws IOException
      */
     private static String totpFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
         Scanner scanner = new Scanner(System.in);
         String sessionToken = "";
         String answer = "";
 
-        //prompt for token
+        // Prompt for token
         System.out.println("\n" + factor.getString("provider") + " Token Factor Authentication\nEnter 'change factor' to use a different factor");
         while ("".equals(sessionToken)) {
             if (!"".equals(answer)) {
@@ -211,39 +256,58 @@ public class OktaMFA
 
             System.out.println("Token: ");
             answer = scanner.nextLine();
-            //verify auth Token
+
+            // Factor change requested
             if (answer.toLowerCase().equals("change factor")) {
                 return answer;
             }
+
+            // Verify the validity of the token
             sessionToken = verifyAnswer(answer, factor, stateToken, "token:software:totp");
         }
+
         return sessionToken;
     }
 
 
     /**
-     * Handles push factor authentication
+     * Handles Push verification
+     *
+     * @param factor A {@link JSONObject} representing the user's factor
+     * @param stateToken The current state token
+     * @return The session token
+     * @throws JSONException
+     * @throws IOException
      */
     private static String pushFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
         String sessionToken = "";
-
         System.out.println("\nPush Factor Authentication");
+
         while ("".equals(sessionToken)) {
-            //Verify if Okta Push has been pushed
+            // Verify if Okta Push has been verified
             sessionToken = verifyAnswer(null, factor, stateToken, "push");
             System.out.println(sessionToken);
+
+            // Session has timed out
             if (sessionToken.equals("Timeout")) {
                 System.out.println("Session has timed out");
                 return "timeout";
             }
         }
+
         return sessionToken;
     }
 
     /**
-     * Handles verification for all Factor types
-     * Precondition: question factor as JSONObject factor, current state token stateToken
-     * Postcondition: return session token as String sessionToken
+     * Handles verification for all factor types
+     *
+     * @param answer The answer to the factor
+     * @param factor A {@link JSONObject} representing the factor to be verified
+     * @param stateToken The current state token
+     * @param factorType The factor type
+     * @return The session token
+     * @throws JSONException
+     * @throws IOException
      */
     private static String verifyAnswer(String answer, JSONObject factor, String stateToken, String factorType)
             throws JSONException, IOException {
@@ -259,28 +323,30 @@ public class OktaMFA
             profile.put("answer", answer);
         }
 
-        //create post request
+        // Create POST request
         CloseableHttpClient httpClient = HttpClients.createSystem();
 
-        HttpPost httpost = new HttpPost(verifyPoint);
-        httpost.addHeader("Accept", "application/json");
-        httpost.addHeader("Content-Type", "application/json");
-        httpost.addHeader("Cache-Control", "no-cache");
+        HttpPost httpPost = new HttpPost(verifyPoint);
+        httpPost.addHeader("Accept", "application/json");
+        httpPost.addHeader("Content-Type", "application/json");
+        httpPost.addHeader("Cache-Control", "no-cache");
 
         StringEntity entity = new StringEntity(profile.toString(), StandardCharsets.UTF_8);
         entity.setContentType("application/json");
-        httpost.setEntity(entity);
-        CloseableHttpResponse responseAuthenticate = httpClient.execute(httpost);
+        httpPost.setEntity(entity);
+        CloseableHttpResponse responseAuthenticate = httpClient.execute(httpPost);
 
         BufferedReader br = new BufferedReader(new InputStreamReader((responseAuthenticate.getEntity().getContent())));
 
         String outputAuthenticate = br.readLine();
         JSONObject jsonObjResponse = new JSONObject(outputAuthenticate);
 
+        // An error has been returned by Okta
         if (jsonObjResponse.has("errorCode")) {
             String errorSummary = jsonObjResponse.getString("errorSummary");
             System.out.println(errorSummary);
             System.out.println("Please try again");
+
             if (factorType.equals("question")) {
                 questionFactor(factor, stateToken);
             }
@@ -290,9 +356,11 @@ public class OktaMFA
             }
         }
 
-        if (jsonObjResponse.has("sessionToken"))
+        if (jsonObjResponse.has("sessionToken")) {
             sessionToken = jsonObjResponse.getString("sessionToken");
+        }
 
+        // Handle Push
         String pushResult = null;
         if (factorType.equals("push")) {
             if (jsonObjResponse.has("_links")) {
@@ -310,7 +378,7 @@ public class OktaMFA
                     }
                 }
 
-
+                // Wait for push state change
                 while (pushResult == null || pushResult.equals("WAITING")) {
                     pushResult = null;
                     httpClient = HttpClients.createSystem();
@@ -330,7 +398,6 @@ public class OktaMFA
 
                     String outputTransaction = br.readLine();
                     JSONObject jsonTransaction = new JSONObject(outputTransaction);
-
 
                     if (jsonTransaction.has("factorResult")) {
                         pushResult = jsonTransaction.getString("factorResult");

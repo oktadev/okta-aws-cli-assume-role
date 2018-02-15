@@ -15,15 +15,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public final class OktaAuthentication
-{
+public final class OktaAuthentication {
     private static final Logger logger = LogManager.getLogger(OktaAuthentication.class);
 
     /**
      * Performs primary and secondary (2FA) authentication, then returns a session token
+     *
      * @param username The username of the user
      * @param password The password of the user
-     * @param oktaOrg The org to authenticate against
+     * @param oktaOrg  The org to authenticate against
      * @return The session token
      * @throws IOException
      */
@@ -37,15 +37,35 @@ public final class OktaAuthentication
     }
 
     /**
-     * Perform primary authentication against Okta
+     * Performs primary authentication and parses the response.
+     *
      * @param username The username of the user
      * @param password The password of the user
-     * @param oktaOrg The org to perform auth against
+     * @param oktaOrg  The org to authenticate against
+     * @return The response of the authentication
+     * @throws IOException
+     */
+    private static String getPrimaryAuthResponse(String username, String password, String oktaOrg) throws IOException {
+        while (true) {
+            AuthResult response = primaryAuthentication(username, password, oktaOrg);
+            int requestStatus = response.statusLine.getStatusCode();
+            primaryAuthFailureHandler(requestStatus, oktaOrg);
+            if (requestStatus == HttpStatus.SC_OK) {
+                return response.responseContent;
+            }
+        }
+    }
+
+    /**
+     * Perform primary authentication against Okta
+     *
+     * @param username The username of the user
+     * @param password The password of the user
+     * @param oktaOrg  The org to perform auth against
      * @return The authentication result
      * @throws IOException
      */
-    private static AuthResult primaryAuthentication(String username, String password, String oktaOrg) throws IOException
-    {
+    private static AuthResult primaryAuthentication(String username, String password, String oktaOrg) throws IOException {
         HttpPost httpPost = new HttpPost("https://" + oktaOrg + "/api/v1/authn");
 
         httpPost.addHeader("Accept", "application/json");
@@ -70,25 +90,21 @@ public final class OktaAuthentication
         }
     }
 
-    private static String getPrimaryAuthResponse(String username, String password, String oktaOrg) throws IOException
-    {
-        while (true) {
-            AuthResult response = primaryAuthentication(username, password, oktaOrg);
-            int requestStatus = response.statusLine.getStatusCode();
-            primaryAuthFailureHandler(requestStatus, oktaOrg);
-            if (requestStatus == HttpStatus.SC_OK)
-                return response.responseContent;
-        }
-    }
-
-    private static void primaryAuthFailureHandler(int requestStatus, String oktaOrg) {
-        if (requestStatus == 400 || requestStatus == 401) {
+    /**
+     * Handles failures during the primary authentication flow
+     *
+     * @param responseStatus The status of the response
+     * @param oktaOrg        The org against which authentication was performed
+     */
+    private static void primaryAuthFailureHandler(int responseStatus, String oktaOrg) {
+        if (responseStatus == 400 || responseStatus == 401) {
             logger.error("Invalid username or password.");
-        } else if (requestStatus == 500) {
+        } else if (responseStatus == 500) {
             logger.error("\nUnable to establish connection with: " + oktaOrg +
                     " \nPlease verify that your Okta org url is correct and try again");
-        } else if (requestStatus != 200) {
-            throw new RuntimeException("Failed : HTTP error code : " + requestStatus);
+        }
+        if (responseStatus != 200) {
+            throw new RuntimeException("Failed : HTTP error code : " + responseStatus);
         }
     }
 }
