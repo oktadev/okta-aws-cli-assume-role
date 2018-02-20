@@ -26,6 +26,7 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
+import com.okta.tools.aws.settings.MultipleProfile;
 import com.okta.tools.saml.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
@@ -40,7 +41,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ini4j.Profile;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -75,7 +75,7 @@ final class OktaAwsCliAssumeRole {
         return new OktaAwsCliAssumeRole(oktaOrg, oktaAWSAppURL, oktaAWSUsername, oktaAWSPassword,oktaProfile, oktaAWSRoleToAssume);
     }
 
-    private OktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaUsername, String oktaAWSPassword,String oktaProfile, String awsRoleToAssume) {
+    private OktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaUsername, String oktaAWSPassword, String oktaProfile, String awsRoleToAssume) {
         this.oktaOrg = oktaOrg;
         this.oktaAWSAppURL = oktaAWSAppURL;
         this.oktaUsername = oktaUsername;
@@ -94,18 +94,28 @@ final class OktaAwsCliAssumeRole {
 
     String run(Instant startInstant) throws Exception {
         Optional<Session> session = getCurrentSession();
-        if (session.isPresent() && sessionIsActive(startInstant, session.get()))
-            return session.get().profileName;
-        String oktaSessionToken = getOktaSessionToken();
-        String samlResponse = getSamlResponseForAws(oktaSessionToken);
-        AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
-        Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
-        AssumeRoleWithSAMLResult assumeResult = assumeChosenAwsRole(assumeRequest);
-        String profileName = createAwsProfile(assumeResult);
+        Path multiprofile = getMultipleProfilesIniPath();
+        FileReader reader = new FileReader(multiprofile.toFile());
+        MultipleProfile multipleProfile = new MultipleProfile(reader);
+        com.okta.tools.aws.settings.Profile profile = multipleProfile.getProfile(oktaProfile, multiprofile);
 
-        updateConfigFile(profileName, assumeRequest.getRoleArn());
-        updateCurrentSession(sessionExpiry, profileName);
-        return profileName;
+
+        if (session.isPresent() && sessionIsActive(startInstant, session.get()) && oktaProfile.isEmpty())
+            return session.get().profileName;
+        if (profile == null || startInstant.isAfter(profile.expiry)) {
+                String oktaSessionToken = getOktaSessionToken();
+                String samlResponse = getSamlResponseForAws(oktaSessionToken);
+                AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
+                Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
+                AssumeRoleWithSAMLResult assumeResult = assumeChosenAwsRole(assumeRequest);
+                String profileName = createAwsProfile(assumeResult);
+
+                updateConfigFile(profileName, assumeRequest.getRoleArn());
+                addOrUpdateProfile(profileName, assumeRequest.getRoleArn(), sessionExpiry);
+                updateCurrentSession(sessionExpiry, profileName);
+                return profileName;
+        }
+        return oktaProfile;
     }
 
     private static class Session
@@ -119,10 +129,21 @@ final class OktaAwsCliAssumeRole {
         }
     }
 
-    public static void logoutSession() throws IOException {
+    public void logoutSession() throws IOException {
+        if (oktaProfile != null) {
+            logoutMulti(oktaProfile);
+        }
         if (Files.exists(getSessionFilePath())) {
             Files.delete(getSessionFilePath());
         }
+    }
+
+    private void logoutMulti(String oktaProfile) throws IOException {
+        Path multiprofile = getMultipleProfilesIniPath();
+        String profilestore = multiprofile.toString();
+        FileReader reader = new FileReader(multiprofile.toFile());
+        MultipleProfile multipleProfile = new MultipleProfile(reader);
+        multipleProfile.deleteProfile(profilestore,oktaProfile);
     }
 
     private Optional<Session> getCurrentSession() throws IOException {
@@ -136,6 +157,7 @@ final class OktaAwsCliAssumeRole {
         }
         return Optional.empty();
     }
+
     private boolean sessionIsActive(Instant startInstant, Session session) {
         return startInstant.isBefore(session.expiry);
     }
@@ -147,6 +169,19 @@ final class OktaAwsCliAssumeRole {
         } else {
             return authnResult.getString("sessionToken");
         }
+    }
+
+    private static Path getMultipleProfilesIniPath() throws IOException {
+        Path userHome = Paths.get(System.getProperty("user.home"));
+        Path oktaDir = userHome.resolve(".okta");
+        Path profileIni = oktaDir.resolve("profiles");
+        if (!Files.exists(oktaDir)) {
+            Files.createDirectory(oktaDir);
+        }
+        if(!Files.exists(profileIni)) {
+            Files.createFile(profileIni);
+        }
+        return profileIni;
     }
 
     private void updateCurrentSession(Instant expiryInstant, String profileName) throws IOException {
@@ -439,6 +474,17 @@ final class OktaAwsCliAssumeRole {
             }
         }
     }
+
+    private void addOrUpdateProfile(String profileName,String oktaSession ,Instant start) throws IOException {
+        String profileStore = getMultipleProfilesIniPath().toString();
+        Reader reader = new FileReader(profileStore);
+        MultipleProfile multipleProfile = new MultipleProfile(reader);
+        multipleProfile.addOrUpdateProfile(profileName, oktaSession, start);
+        try (final FileWriter fileWriter = new FileWriter(profileStore)) {
+            multipleProfile.save(fileWriter);
+        }
+    }
+
 
     private void updateConfigFile(String profileName, String roleToAssume) throws IOException {
         String configLocation = System.getProperty("user.home") + "/.aws/config";
