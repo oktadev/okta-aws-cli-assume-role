@@ -1,1 +1,7 @@
+sudo: false
 language: java
+services:
+- docker
+cache:
+  directories:
+  - "$HOME/.cache"
