@@ -127,11 +127,11 @@
     <distributionManagement>
         <repository>
             <id>packagecloud-travis</id>
-            <url>packagecloud+https://packagecloud.io/oktadeveloper/okta-aws-cli-assume-role</url>
+            <url>packagecloud+https://packagecloud.io/oktadev/okta-aws-cli-assume-role</url>
         </repository>
         <snapshotRepository>
             <id>packagecloud-travis</id>
-            <url>packagecloud+https://packagecloud.io/oktadeveloper/okta-aws-cli-assume-role</url>
+            <url>packagecloud+https://packagecloud.io/oktadev/okta-aws-cli-assume-role</url>
         </snapshotRepository>
     </distributionManagement>
 
