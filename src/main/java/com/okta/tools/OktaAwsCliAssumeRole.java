@@ -27,6 +27,7 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.authentication.OktaAuthentication;
 import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
+import com.okta.tools.aws.settings.MultipleProfile;
 import com.okta.tools.models.Session;
 import com.okta.tools.saml.*;
 import com.okta.tools.helpers.*;
@@ -74,7 +75,7 @@ final class OktaAwsCliAssumeRole {
         return new OktaAwsCliAssumeRole(oktaOrg, oktaAWSAppURL, oktaAWSUsername, oktaAWSPassword,oktaProfile, oktaAWSRoleToAssume);
     }
 
-    private OktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaUsername, String oktaAWSPassword,String oktaProfile, String awsRoleToAssume) {
+    private OktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaUsername, String oktaAWSPassword, String oktaProfile, String awsRoleToAssume) {
         this.oktaOrg = oktaOrg;
         this.oktaAWSAppURL = oktaAWSAppURL;
         this.oktaUsername = oktaUsername;
@@ -84,22 +85,112 @@ final class OktaAwsCliAssumeRole {
     }
 
     String run(Instant startInstant) throws Exception {
-        Optional<Session> session = AwsSessionHelper.getCurrentSession();
+        Optional<Session> session = getCurrentSession();
+        Path multiprofile = getMultipleProfilesIniPath();
+        FileReader reader = new FileReader(multiprofile.toFile());
+        MultipleProfile multipleProfile = new MultipleProfile(reader);
+        com.okta.tools.aws.settings.Profile profile = multipleProfile.getProfile(oktaProfile, multiprofile);
 
-        if (session.isPresent() && AwsSessionHelper.sessionIsActive(startInstant, session.get())) {
+
+        if (session.isPresent() && sessionIsActive(startInstant, session.get()) && oktaProfile.isEmpty())
             return session.get().profileName;
+        if (profile == null || startInstant.isAfter(profile.expiry)) {
+                String oktaSessionToken = getOktaSessionToken();
+                String samlResponse = getSamlResponseForAws(oktaSessionToken);
+                AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
+                Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
+                AssumeRoleWithSAMLResult assumeResult = assumeChosenAwsRole(assumeRequest);
+                String profileName = createAwsProfile(assumeResult);
+
+                updateConfigFile(profileName, assumeRequest.getRoleArn());
+                addOrUpdateProfile(profileName, assumeRequest.getRoleArn(), sessionExpiry);
+                updateCurrentSession(sessionExpiry, profileName);
+                return profileName;
         }
+        return oktaProfile;
+    }
 
-        String oktaSessionToken = OktaAuthentication.getOktaSessionToken(getUsername(), getPassword(), oktaOrg);
-        String samlResponse = OktaSaml.getSamlResponseForAws(oktaAWSAppURL, oktaSessionToken);
-        AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
-        Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
-        AssumeRoleWithSAMLResult assumeResult = assumeChosenAwsRole(assumeRequest);
-        String profileName = createAwsProfile(assumeResult);
+    private static class Session
+    {
+        final String profileName;
+        final Instant expiry;
 
-        updateConfigFile(profileName, assumeRequest.getRoleArn());
-        AwsSessionHelper.updateCurrentSession(sessionExpiry, profileName);
-        return profileName;
+        private Session(String profileName, Instant expiry) {
+            this.profileName = profileName;
+            this.expiry = expiry;
+        }
+    }
+
+    public void logoutSession() throws IOException {
+        if (oktaProfile != null) {
+            logoutMulti(oktaProfile);
+        }
+        if (Files.exists(getSessionFilePath())) {
+            Files.delete(getSessionFilePath());
+        }
+    }
+
+    private void logoutMulti(String oktaProfile) throws IOException {
+        Path multiprofile = getMultipleProfilesIniPath();
+        String profilestore = multiprofile.toString();
+        FileReader reader = new FileReader(multiprofile.toFile());
+        MultipleProfile multipleProfile = new MultipleProfile(reader);
+        multipleProfile.deleteProfile(profilestore,oktaProfile);
+    }
+
+    private Optional<Session> getCurrentSession() throws IOException {
+        if (Files.exists(getSessionFilePath())) {
+            Properties properties = new Properties();
+            properties.load(new FileReader(getSessionFile()));
+            String expiry = properties.getProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY);
+            String profileName = properties.getProperty(OKTA_AWS_CLI_PROFILE_PROPERTY);
+            Instant expiryInstant = Instant.parse(expiry);
+            return Optional.of(new Session(profileName, expiryInstant));
+        }
+        return Optional.empty();
+    }
+
+    private boolean sessionIsActive(Instant startInstant, Session session) {
+        return startInstant.isBefore(session.expiry);
+    }
+
+    private String getOktaSessionToken() throws IOException {
+        JSONObject authnResult = new JSONObject(getAuthnResponse());
+        if (authnResult.getString("status").equals("MFA_REQUIRED")) {
+            return promptForFactor(authnResult);
+        } else {
+            return authnResult.getString("sessionToken");
+        }
+    }
+
+    private static Path getMultipleProfilesIniPath() throws IOException {
+        Path userHome = Paths.get(System.getProperty("user.home"));
+        Path oktaDir = userHome.resolve(".okta");
+        Path profileIni = oktaDir.resolve("profiles");
+        if (!Files.exists(oktaDir)) {
+            Files.createDirectory(oktaDir);
+        }
+        if(!Files.exists(profileIni)) {
+            Files.createFile(profileIni);
+        }
+        return profileIni;
+    }
+
+    private void updateCurrentSession(Instant expiryInstant, String profileName) throws IOException {
+        Properties properties = new Properties();
+        properties.setProperty(OKTA_AWS_CLI_PROFILE_PROPERTY, profileName);
+        properties.setProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY, expiryInstant.toString());
+        properties.store(new FileWriter(getSessionFile()), "Saved at: " + Instant.now().toString());
+    }
+
+    private String getAuthnResponse() throws IOException {
+        while (true) {
+            LoginResult response = logInToOkta(getUsername(), getPassword());
+            int requestStatus = response.statusLine.getStatusCode();
+            authnFailHandler(requestStatus);
+            if (requestStatus == HttpStatus.SC_OK)
+                return response.responseContent;
+        }
     }
 
     private String getUsername() {
@@ -129,6 +220,43 @@ final class OktaAwsCliAssumeRole {
         }
     }
 
+    private static final class LoginResult {
+        final StatusLine statusLine;
+        final String responseContent;
+
+        private LoginResult(StatusLine statusLine, String responseContent) {
+            this.statusLine = statusLine;
+            this.responseContent = responseContent;
+        }
+    }
+    /**
+     * Uses user's credentials to obtain Okta session Token
+     */
+    private LoginResult logInToOkta(String username, String password) throws JSONException, IOException {
+        HttpPost httpPost = new HttpPost("https://" + oktaOrg + "/api/v1/authn");
+
+        httpPost.addHeader("Accept", "application/json");
+        httpPost.addHeader("Content-Type", "application/json");
+        httpPost.addHeader("Cache-Control", "no-cache");
+
+        JSONObject authnRequest = new JSONObject();
+        authnRequest.put("username", username);
+        authnRequest.put("password", password);
+
+        StringEntity entity = new StringEntity(authnRequest.toString(), StandardCharsets.UTF_8);
+        entity.setContentType("application/json");
+        httpPost.setEntity(entity);
+
+        try (CloseableHttpClient httpClient = HttpClients.createSystem()) {
+            CloseableHttpResponse authnResponse = httpClient.execute(httpPost);
+
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(65536);
+            authnResponse.getEntity().writeTo(byteArrayOutputStream);
+
+            return new LoginResult(authnResponse.getStatusLine(), byteArrayOutputStream.toString());
+        }
+    }
+
     private AssumeRoleWithSAMLResult assumeChosenAwsRole(AssumeRoleWithSAMLRequest assumeRequest) {
         BasicAWSCredentials nullCredentials = new BasicAWSCredentials("", "");
         AWSCredentialsProvider nullCredentialsProvider = new AWSStaticCredentialsProvider(nullCredentials);
@@ -138,6 +266,73 @@ final class OktaAwsCliAssumeRole {
                 .withCredentials(nullCredentialsProvider)
                 .build();
         return sts.assumeRoleWithSAML(assumeRequest);
+    }
+
+    private void authnFailHandler(int requestStatus) {
+        if (requestStatus == 400 || requestStatus == 401) {
+            logger.error("Invalid username or password.");
+        } else if (requestStatus == 500) {
+            logger.error("\nUnable to establish connection with: " + oktaOrg +
+                    " \nPlease verify that your Okta org url is correct and try again");
+        } else if (requestStatus != 200) {
+            throw new RuntimeException("Failed : HTTP error code : " + requestStatus);
+        }
+    }
+
+    private int promptForMenuSelection(int max) {
+        if (max == 1) return 0;
+        Scanner scanner = new Scanner(System.in);
+
+        int selection = -1;
+        while (selection == -1) {
+            //prompt user for selection
+            System.out.print("Selection: ");
+            String selectInput = scanner.nextLine();
+            try {
+                selection = Integer.parseInt(selectInput) - 1;
+                if (selection < 0 || selection >= max) {
+                    throw new InputMismatchException();
+                }
+            } catch (InputMismatchException e) {
+                logger.error("Invalid input: Please enter a valid selection\n");
+                selection = -1;
+            } catch (NumberFormatException e) {
+                logger.error("Invalid input: Please enter in a number \n");
+                selection = -1;
+            }
+        }
+        return selection;
+    }
+
+    private String getSamlResponseForAws(String oktaSessionToken) throws IOException {
+        Document document = launchOktaAwsApp(oktaSessionToken);
+        Elements samlResponseInputElement = document.select("form input[name=SAMLResponse]");
+        if (samlResponseInputElement.isEmpty()) {
+            throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
+        }
+        return samlResponseInputElement.attr("value");
+    }
+
+    private Document launchOktaAwsApp(String oktaSessionToken) throws IOException {
+
+        HttpGet httpget = new HttpGet(oktaAWSAppURL + "?onetimetoken=" + oktaSessionToken);
+        try (CloseableHttpClient httpClient = HttpClients.createSystem();
+             CloseableHttpResponse responseSAML = httpClient.execute(httpget)) {
+
+            if (responseSAML.getStatusLine().getStatusCode() >= 500) {
+                throw new RuntimeException("Server error when loading Okta AWS App: "
+                        + responseSAML.getStatusLine().getStatusCode());
+            } else if (responseSAML.getStatusLine().getStatusCode() >= 400) {
+                throw new RuntimeException("Client error when loading Okta AWS App: "
+                        + responseSAML.getStatusLine().getStatusCode());
+            }
+
+            return Jsoup.parse(
+                    responseSAML.getEntity().getContent(),
+                    StandardCharsets.UTF_8.name(),
+                    oktaAWSAppURL
+            );
+        }
     }
 
     private AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse) throws IOException {
@@ -272,6 +467,17 @@ final class OktaAwsCliAssumeRole {
             }
         }
     }
+
+    private void addOrUpdateProfile(String profileName,String oktaSession ,Instant start) throws IOException {
+        String profileStore = getMultipleProfilesIniPath().toString();
+        Reader reader = new FileReader(profileStore);
+        MultipleProfile multipleProfile = new MultipleProfile(reader);
+        multipleProfile.addOrUpdateProfile(profileName, oktaSession, start);
+        try (final FileWriter fileWriter = new FileWriter(profileStore)) {
+            multipleProfile.save(fileWriter);
+        }
+    }
+
 
     private void updateConfigFile(String profileName, String roleToAssume) throws IOException {
         try (Reader reader = AwsConfigHelper.getConfigReader()) {

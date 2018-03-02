@@ -18,7 +18,6 @@ import java.time.Instant;
  * limitations under the License.
  */
 
-
 public class WithOkta {
     public static void main(String[] args) throws Exception {
         OktaAwsConfig.createAwscli().run(Instant.now());
@@ -29,4 +28,3 @@ public class WithOkta {
     }
 
 }
-
