@@ -28,9 +28,8 @@ public class awscli {
             System.exit(0);
             return;
         }
-
-        String profileName = OktaAwsConfig.createAwscli().run(Instant.now());
         List<String> awsCommand = new ArrayList<>();
+        String profileName = OktaAwsConfig.createAwscli().run(Instant.now());
         awsCommand.add("aws");
         awsCommand.add("--profile");
         awsCommand.add(profileName);
