@@ -36,3 +36,4 @@ target/classes/log4j2.xml
 dependency-reduced-pom.xml
 .idea
 *.iml
+move.bat

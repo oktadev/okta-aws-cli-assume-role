@@ -1,5 +1,7 @@
 package com.okta.tools.helpers;
 
+import com.okta.tools.aws.settings.Credentials;
+
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,5 +30,32 @@ public final class AwsCredentialsHelper {
     public static FileWriter getCredsWriter() throws IOException
     {
         return AwsFileHelper.getWriter(AwsFileHelper.getAwsDirectory().toString() + "/credentials");
+    }
+
+    /**
+     * Updates the credentials file
+     * @param profileName The profile to use
+     * @param awsAccessKey The access key to use
+     * @param awsSecretKey The secret key to use
+     * @param awsSessionToken The session token to use
+     * @throws IOException
+     */
+    public static void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
+            throws IOException {
+
+        try (Reader reader = AwsCredentialsHelper.getCredsReader())
+        {
+            // Create the credentials object with the data read from the credentials file
+            Credentials credentials = new Credentials(reader);
+
+            // Write the given profile data
+            credentials.addOrUpdateProfile(profileName, awsAccessKey, awsSecretKey, awsSessionToken);
+
+            // Write the updated profile
+            try (FileWriter fileWriter = AwsCredentialsHelper.getCredsWriter())
+            {
+                credentials.save(fileWriter);
+            }
+        }
     }
 }

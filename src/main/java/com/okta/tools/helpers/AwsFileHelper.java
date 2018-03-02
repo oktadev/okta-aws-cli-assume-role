@@ -10,7 +10,7 @@ public final class AwsFileHelper {
     /**
      * Gets a directory with the given path, creating it if it doesn't exist
      * @author Andrei Hava
-     * @since 02/14/2019
+     * @since 02/14/2018
      * @param path The path of the directory to be returned
      * @return The path of the directory
      */
@@ -25,13 +25,21 @@ public final class AwsFileHelper {
     /**
      * Gets the path of the AWS directory (USER_HOME/.aws)
      * @author Andrei Hava
-     * @since 02/14/2019
+     * @since 02/14/2018
      * @return The path of the AWS directory
      */
     public static Path getAwsDirectory()
     {
         return getDirectory(USER_HOME + "/.aws/");
     }
+
+    /**
+     * Gets the path of the Okta directory within AWS (USER_HOME/.aws/.okta)
+     * @author Andrei Hava
+     * @since 03/02/2018
+     * @return The path of the Okta directory
+     */
+    public static Path getOktaDirectory() { return getDirectory(getAwsDirectory().toString() + "/.okta/"); }
 
     /**
      * Gets a reader for the given file. Creates a StringReader if the file is not found
