@@ -30,6 +30,7 @@ out/config.properties
 
 target/classes/log4j2.xml
 /target/
+/out/oktaawscli.jar
 .classpath
 .settings
 .project
