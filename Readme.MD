@@ -4,6 +4,33 @@ This readme file is an excerpt of the [Okta-AWS Integration Guide](https://suppo
 
 Important Note: This tool has been verified to work on Mac OS X El Capitan and Windows Server 2012 R2 and is expected to work on Linux and Unix as well.
 
+## Installation
+
+Create a **~/.okta/** directory and put the JAR in there.
+
+Download the latest release JAR and put it in **~/.okta/**:
+https://github.com/oktadeveloper/okta-aws-cli-assume-role/releases
+
+Copy **config.properties** to **~/.okta/config.properties** and set
+**OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately.
+
+Copy scripts from **bin** to somewhere on your **PATH**. 
+
+Verify your setup with a simple command:
+
+```bash
+awscli sts get-caller-identity
+```
+
+You should see a username and password prompt and (optionally) an MFA
+prompt if you require it.
+
+If you have a single AWS role assigned in the Okta AWS app, the command
+`aws sts get-caller-identity` will run with that role at this point.
+
+If you multiple AWS roles assigned in the Okta AWS app, you will be
+presented with a role-selection menu and then your command will run.
+
 ### Wrap AWS CLI with session resumption (2017/12/5 update)
 Stored IAM credentials are no longer used: you no longer need to distribute or rotate these credentials.
 
