@@ -86,7 +86,6 @@ __Important note__: please note that this tool only supports Okta MFA set up at 
 ## Setup
 
 - Use ```git clone https://github.com/oktadeveloper/okta-aws-cli-assume-role.git``` to clone the repository locally.
-- In Terminal, run ```defaults write com.apple.finder AppleShowAllFiles YES``` if you want to be able to inspect the ```~/.aws/credentials``` and ```~/.aws/config``` files.
 
 ## Build and run
 
