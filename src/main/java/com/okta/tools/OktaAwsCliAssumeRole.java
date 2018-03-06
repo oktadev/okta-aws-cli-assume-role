@@ -541,10 +541,8 @@ final class OktaAwsCliAssumeRole {
 
     private void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
             throws IOException {
-        File credentialsLocation = Paths.get(System.getProperty("user.home"))
-                .resolve(".aws").resolve("credentials").toFile();
-        try (final Reader reader = credentialsLocation.isFile() ?
-                new FileReader(credentialsLocation) : new StringReader("")) {
+        File credentialsLocation = getAwsCredentialsFile().toFile();
+        try (Reader reader = new FileReader(credentialsLocation)) {
             // Create the credentials object with the data read from credentialsLocation
             Credentials credentials = new Credentials(reader);
 
@@ -557,6 +555,36 @@ final class OktaAwsCliAssumeRole {
         }
     }
 
+    private Path getAwsCredentialsFile() throws IOException {
+        Path credentialsFile = getAwsDirectory().resolve("credentials");
+        if (!Files.exists(credentialsFile)) {
+            Files.createFile(credentialsFile);
+        } else if (!Files.isRegularFile(credentialsFile)) {
+            throw new IllegalStateException(credentialsFile + " exists, but is not a regular file. Please rename it");
+        }
+        return credentialsFile;
+    }
+
+    private Path getAwsConfigFile() throws IOException {
+        Path configFile = getAwsDirectory().resolve("config");
+        if (!Files.exists(configFile)) {
+            Files.createFile(configFile);
+        } else if (!Files.isRegularFile(configFile)) {
+            throw new IllegalStateException(configFile + " exists, but is not a regular file. Please rename it");
+        }
+        return configFile;
+    }
+
+    private Path getAwsDirectory() throws IOException {
+        Path awsPath = Paths.get(System.getProperty("user.home")).resolve(".aws");
+        if (!Files.exists(awsPath)) {
+            Files.createDirectory(awsPath);
+        } else if (!Files.isDirectory(awsPath)) {
+            throw new IllegalStateException(awsPath + " exists, but is not a directory. Please rename it");
+        }
+        return awsPath;
+    }
+
     private void addOrUpdateProfile(String profileName,String oktaSession ,Instant start) throws IOException {
         String profileStore = getMultipleProfilesIniPath().toString();
         Reader reader = new FileReader(profileStore);
@@ -567,12 +595,10 @@ final class OktaAwsCliAssumeRole {
         }
     }
 
-
     private void updateConfigFile(String profileName, String roleToAssume) throws IOException {
-        String configLocation = System.getProperty("user.home") + "/.aws/config";
-        boolean newConfiguration = !new File(configLocation).isFile();
-        try (Reader reader = newConfiguration ?
-                new StringReader("") : new FileReader(configLocation)) {
+        Path configFile = getAwsConfigFile();
+        File configLocation = configFile.toFile();
+        try (Reader reader = new FileReader(configLocation)) {
             // Create the configuration object with the data read from configLocation
             Configuration configuration = new Configuration(reader);
             // Write the given profile data
