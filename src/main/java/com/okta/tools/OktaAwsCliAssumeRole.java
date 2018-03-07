@@ -106,7 +106,7 @@ final class OktaAwsCliAssumeRole {
         Optional<Profile> profile = multipleProfile.getProfile(oktaProfile, multiprofile);
         awsRoleToAssume = profile.map(profile1 -> profile1.roleArn).orElse(null);
 
-        if (session.isPresent() && sessionIsActive(startInstant, session.get()) && oktaProfile.isEmpty())
+        if (session.isPresent() && sessionIsActive(startInstant, session.get()) && StringUtils.isBlank(oktaProfile))
             return session.get().profileName;
         String samlResponse = getSamlResponse();
         AssumeRoleWithSAMLRequest assumeRequest = chooseAwsRoleToAssume(samlResponse);
