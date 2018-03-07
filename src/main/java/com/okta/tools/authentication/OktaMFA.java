@@ -45,6 +45,7 @@ public class OktaMFA {
                     return handleTimeoutsAndChanges(sessionToken, primaryAuthResponse);
 
                 }
+                case ("token"):
                 case ("token:hardware"):
                 case ("token:software:totp"): {
                     // Token handler
@@ -114,6 +115,7 @@ public class OktaMFA {
                 case "sms":
                     factorType = "SMS Verification";
                     break;
+                case "token":
                 case "token:software:totp":
                     String provider = factor.getString("provider");
                     if (provider.equals("GOOGLE")) {
