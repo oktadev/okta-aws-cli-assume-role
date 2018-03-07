@@ -17,12 +17,11 @@ package com.okta.tools;
 
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
-import com.okta.tools.authentication.OktaAuthentication;
-import com.okta.tools.models.Profile;
 import com.okta.tools.helpers.ConfigHelper;
 import com.okta.tools.helpers.ProfileHelper;
 import com.okta.tools.helpers.RoleHelper;
 import com.okta.tools.helpers.SessionHelper;
+import com.okta.tools.models.Profile;
 import com.okta.tools.models.Session;
 import com.okta.tools.saml.OktaSaml;
 import org.apache.logging.log4j.LogManager;
