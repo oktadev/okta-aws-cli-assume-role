@@ -21,6 +21,7 @@ import org.ini4j.Profile;
 import java.io.*;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 
 public class MultipleProfile extends Settings {
@@ -29,16 +30,16 @@ public class MultipleProfile extends Settings {
     static final String PROFILE_EXPIRY = "profile_expiry";
     static final String OKTA_SESSION = "okta_roleArn";
 
-    public com.okta.tools.aws.settings.Profile getProfile(String oktaprofile, Path profileIni) throws IOException {
+    public Optional<com.okta.tools.aws.settings.Profile> getProfile(String oktaprofile, Path profileIni) throws IOException {
 
         Ini ini = new Ini(new File(profileIni.toString()));
         Set<String> activeSessions = ini.keySet();
         if (activeSessions.contains(oktaprofile)) {
             Instant expiry = getExpiry(oktaprofile, ini);
             String roleArn = getRoleArn(oktaprofile, ini);
-            return new com.okta.tools.aws.settings.Profile(expiry, roleArn);
+            return Optional.of(new com.okta.tools.aws.settings.Profile(expiry, roleArn));
         }
-        return null;
+        return Optional.empty();
     }
 
     public void deleteProfile(String profilestore, String oktaProfile) throws IOException {
@@ -57,8 +58,8 @@ public class MultipleProfile extends Settings {
     }
 
     private String getRoleArn(String oktaprofile, Ini ini) {
-        Ini.Section profilesection = ini.get(oktaprofile);
-        String roleArn = profilesection.get("okta_expiry");
+        Ini.Section profileSection = ini.get(oktaprofile);
+        String roleArn = profileSection.get("okta_roleArn");
         return roleArn;
     }
 

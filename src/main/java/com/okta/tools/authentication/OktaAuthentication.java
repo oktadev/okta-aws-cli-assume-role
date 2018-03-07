@@ -2,33 +2,38 @@ package com.okta.tools.authentication;
 
 import com.okta.tools.models.AuthResult;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
 public final class OktaAuthentication {
     private static final Logger logger = LogManager.getLogger(OktaAuthentication.class);
 
+    public static String oktaOrg;
+    public static String oktaUsername;
+    public static String oktaPassword;
+
     /**
      * Performs primary and secondary (2FA) authentication, then returns a session token
      *
-     * @param username The username of the user
-     * @param password The password of the user
-     * @param oktaOrg  The org to authenticate against
      * @return The session token
      * @throws IOException
      */
-    public static String getOktaSessionToken(String username, String password, String oktaOrg) throws IOException {
-        JSONObject primaryAuthResult = new JSONObject(getPrimaryAuthResponse(username, password, oktaOrg));
+    public static String getOktaSessionToken() throws IOException {
+        JSONObject primaryAuthResult = new JSONObject(getPrimaryAuthResponse(getUsername(), getPassword(), oktaOrg));
         if (primaryAuthResult.getString("status").equals("MFA_REQUIRED")) {
             return OktaMFA.promptForFactor(primaryAuthResult);
         } else {
@@ -105,6 +110,33 @@ public final class OktaAuthentication {
         }
         if (responseStatus != 200) {
             throw new RuntimeException("Failed : HTTP error code : " + responseStatus);
+        }
+    }
+
+    private static String getUsername() {
+        if (oktaUsername == null || oktaUsername.isEmpty()) {
+            System.out.print("Username: ");
+            return new Scanner(System.in).next();
+        } else {
+            System.out.println("Username: " + oktaUsername);
+            return oktaUsername;
+        }
+    }
+
+    private static String getPassword() {
+        if (oktaPassword == null || oktaPassword.isEmpty()) {
+            return promptForPassword();
+        } else {
+            return oktaPassword;
+        }
+    }
+
+    private static String promptForPassword() {
+        if (System.console() == null) { // hack to be able to debug in an IDE
+            System.out.print("Password: ");
+            return new Scanner(System.in).next();
+        } else {
+            return new String(System.console().readPassword("Password: "));
         }
     }
 }

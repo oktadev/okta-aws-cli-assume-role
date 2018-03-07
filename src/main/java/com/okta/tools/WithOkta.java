@@ -26,5 +26,4 @@ public class WithOkta {
         int exitCode = awsSubProcess.waitFor();
         System.exit(exitCode);
     }
-
 }

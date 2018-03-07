@@ -1,6 +1,7 @@
 package com.okta.tools.helpers;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -83,7 +84,13 @@ public final class FileHelper {
      * @param fileName        The file name
      * @return The Path of the file
      */
-    public static Path getFilePath(String parentDirectory, String fileName) {
-        return Paths.get(parentDirectory, fileName);
+    public static Path getFilePath(String parentDirectory, String fileName) throws IOException {
+        Path filePath = Paths.get(parentDirectory, fileName);
+
+        if (!Files.exists(filePath)) {
+            Files.createFile(filePath);
+        }
+
+        return filePath;
     }
 }

@@ -3,11 +3,9 @@ package com.okta.tools.helpers;
 import com.okta.tools.aws.settings.MultipleProfile;
 import com.okta.tools.aws.settings.Profile;
 import com.okta.tools.models.Session;
+import org.json.JSONException;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -25,7 +23,7 @@ public final class SessionHelper {
      * @author Andrei Hava
      * @since 02/14/2018
      */
-    private static Path getSessionPath() {
+    private static Path getSessionPath() throws IOException {
         return FileHelper.getFilePath(FileHelper.getOktaDirectory().toString(), "/.current-session");
     }
 
@@ -68,7 +66,7 @@ public final class SessionHelper {
         properties.store(new FileWriter(getSessionPath().toString()), "Saved at: " + Instant.now().toString());
     }
 
-    public static Profile getFromMultipleProfiles(String profileName) throws IOException {
+    public static Optional<Profile> getFromMultipleProfiles(String profileName) throws IOException {
         return getMultipleProfile().getProfile(profileName, getMultipleProfilesPath());
     }
 
@@ -86,6 +84,9 @@ public final class SessionHelper {
     }
 
     private static void logoutMultipleAccounts(String profileName) throws IOException {
+        File cookieStore = CookieHelper.getCookies().toFile();
+        cookieStore.deleteOnExit();
+
         getMultipleProfile().deleteProfile(getMultipleProfilesPath().toString(), profileName);
     }
 

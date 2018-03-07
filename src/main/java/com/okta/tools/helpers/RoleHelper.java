@@ -39,7 +39,10 @@ public class RoleHelper {
         String principalArn;
         String roleArn;
 
-        if (roleIdpPairs.size() > 1) {
+        if (roleIdpPairs.containsKey(awsRoleToAssume)) {
+            principalArn = roleIdpPairs.get(awsRoleToAssume);
+            roleArn = awsRoleToAssume;
+        } else if (roleIdpPairs.size() > 1) {
             List<AccountOption> accountOptions = getAvailableRoles(samlResponse);
 
             System.out.println("\nPlease choose the role you would like to assume: ");

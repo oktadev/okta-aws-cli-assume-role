@@ -24,6 +24,26 @@ import com.okta.tools.helpers.ProfileHelper;
 import com.okta.tools.helpers.RoleHelper;
 import com.okta.tools.helpers.SessionHelper;
 import com.okta.tools.saml.OktaSaml;
+import com.okta.tools.aws.settings.Configuration;
+import com.okta.tools.aws.settings.Credentials;
+import com.okta.tools.aws.settings.MultipleProfile;
+import com.okta.tools.aws.settings.Profile;
+import com.okta.tools.saml.*;
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.CookieStore;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.cookie.BasicClientCookie;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,16 +52,14 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.*;
+import java.util.stream.Collectors;
 
 final class OktaAwsCliAssumeRole {
 
     private static final Logger logger = LogManager.getLogger(OktaAwsCliAssumeRole.class);
 
-    private final String oktaOrg;
-    private final String oktaAWSAppURL;
-    private final String oktaUsername;
-    private final String oktaPassword;
-    private final String awsRoleToAssume;
+    private String awsRoleToAssume;
     private final String oktaProfile;
 
     static OktaAwsCliAssumeRole createOktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaAWSUsername, String oktaAWSPassword, String oktaProfile, String oktaAWSRoleToAssume) {
@@ -49,65 +67,34 @@ final class OktaAwsCliAssumeRole {
     }
 
     private OktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaUsername, String oktaAWSPassword, String oktaProfile, String awsRoleToAssume) {
-        this.oktaOrg = oktaOrg;
-        this.oktaAWSAppURL = oktaAWSAppURL;
-        this.oktaUsername = oktaUsername;
-        this.oktaPassword = oktaAWSPassword;
+        OktaAuthentication.oktaOrg = oktaOrg;
+        OktaSaml.awsAppUrl = oktaAWSAppURL;
+        OktaAuthentication.oktaUsername = oktaUsername;
+        OktaAuthentication.oktaPassword = oktaAWSPassword;
         this.oktaProfile = oktaProfile;
         this.awsRoleToAssume = awsRoleToAssume;
     }
 
     String run(Instant startInstant) throws Exception {
         Optional<com.okta.tools.models.Session> session = SessionHelper.getCurrentSession();
-        Profile profile = SessionHelper.getFromMultipleProfiles(oktaProfile);
+        Optional<Profile> profile = SessionHelper.getFromMultipleProfiles(oktaProfile);
+        awsRoleToAssume = profile.map(profile1 -> profile1.roleArn).orElse(null);
 
         if (session.isPresent() && SessionHelper.sessionIsActive(startInstant, session.get()) && oktaProfile.isEmpty())
             return session.get().profileName;
 
-        if (profile == null || startInstant.isAfter(profile.expiry)) {
-            String oktaSessionToken = OktaAuthentication.getOktaSessionToken(getUsername(), getPassword(), oktaOrg);
-            String samlResponse = OktaSaml.getSamlResponseForAws(oktaAWSAppURL, oktaSessionToken);
-            AssumeRoleWithSAMLRequest assumeRequest = RoleHelper.chooseAwsRoleToAssume(samlResponse, awsRoleToAssume);
-            Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
-            AssumeRoleWithSAMLResult assumeResult = RoleHelper.assumeChosenAwsRole(assumeRequest);
-            String profileName = ProfileHelper.createAwsProfile(assumeResult, oktaProfile);
-
-            ConfigHelper.updateConfigFile(profileName, assumeRequest.getRoleArn());
-            SessionHelper.addOrUpdateProfile(profileName, assumeRequest.getRoleArn(), sessionExpiry);
-            SessionHelper.updateCurrentSession(sessionExpiry, profileName);
-            return profileName;
-        }
-        return oktaProfile;
+        String samlResponse = OktaSaml.getSamlResponse();
+        AssumeRoleWithSAMLRequest assumeRequest = RoleHelper.chooseAwsRoleToAssume(samlResponse, awsRoleToAssume);
+        Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
+        AssumeRoleWithSAMLResult assumeResult = RoleHelper.assumeChosenAwsRole(assumeRequest);
+        String profileName = ProfileHelper.createAwsProfile(assumeResult, oktaProfile);
+        ConfigHelper.updateConfigFile(profileName, assumeRequest.getRoleArn());
+        SessionHelper.addOrUpdateProfile(profileName, assumeRequest.getRoleArn(), sessionExpiry);
+        SessionHelper.updateCurrentSession(sessionExpiry, profileName);
+        return profileName;
     }
 
     public void logoutSession() throws IOException {
         SessionHelper.logoutCurrentSession(oktaProfile);
-    }
-
-    private String getUsername() {
-        if (this.oktaUsername == null || this.oktaUsername.isEmpty()) {
-            System.out.print("Username: ");
-            return new Scanner(System.in).next();
-        } else {
-            System.out.println("Username: " + oktaUsername);
-            return this.oktaUsername;
-        }
-    }
-
-    private String getPassword() {
-        if (this.oktaPassword == null || this.oktaPassword.isEmpty()) {
-            return promptForPassword();
-        } else {
-            return this.oktaPassword;
-        }
-    }
-
-    private String promptForPassword() {
-        if (System.console() == null) { // hack to be able to debug in an IDE
-            System.out.print("Password: ");
-            return new Scanner(System.in).next();
-        } else {
-            return new String(System.console().readPassword("Password: "));
-        }
     }
 }
