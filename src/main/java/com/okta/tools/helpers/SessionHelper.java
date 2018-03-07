@@ -1,9 +1,8 @@
 package com.okta.tools.helpers;
 
 import com.okta.tools.aws.settings.MultipleProfile;
-import com.okta.tools.aws.settings.Profile;
+import com.okta.tools.models.Profile;
 import com.okta.tools.models.Session;
-import org.json.JSONException;
 
 import java.io.*;
 import java.nio.file.Files;

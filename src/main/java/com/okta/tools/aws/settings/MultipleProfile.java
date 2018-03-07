@@ -30,14 +30,14 @@ public class MultipleProfile extends Settings {
     static final String PROFILE_EXPIRY = "profile_expiry";
     static final String OKTA_SESSION = "okta_roleArn";
 
-    public Optional<com.okta.tools.aws.settings.Profile> getProfile(String oktaprofile, Path profileIni) throws IOException {
+    public Optional<com.okta.tools.models.Profile> getProfile(String oktaprofile, Path profileIni) throws IOException {
 
         Ini ini = new Ini(new File(profileIni.toString()));
         Set<String> activeSessions = ini.keySet();
         if (activeSessions.contains(oktaprofile)) {
             Instant expiry = getExpiry(oktaprofile, ini);
             String roleArn = getRoleArn(oktaprofile, ini);
-            return Optional.of(new com.okta.tools.aws.settings.Profile(expiry, roleArn));
+            return Optional.of(new com.okta.tools.models.Profile(expiry, roleArn));
         }
         return Optional.empty();
     }

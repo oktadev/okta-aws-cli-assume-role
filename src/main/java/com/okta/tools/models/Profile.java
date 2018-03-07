@@ -1,4 +1,4 @@
-package com.okta.tools.aws.settings;
+package com.okta.tools.models;
 
 import java.time.Instant;
 

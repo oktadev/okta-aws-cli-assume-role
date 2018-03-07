@@ -18,33 +18,13 @@ package com.okta.tools;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.authentication.OktaAuthentication;
-import com.okta.tools.aws.settings.Profile;
+import com.okta.tools.models.Profile;
 import com.okta.tools.helpers.ConfigHelper;
 import com.okta.tools.helpers.ProfileHelper;
 import com.okta.tools.helpers.RoleHelper;
 import com.okta.tools.helpers.SessionHelper;
 import com.okta.tools.models.Session;
 import com.okta.tools.saml.OktaSaml;
-import com.okta.tools.aws.settings.Configuration;
-import com.okta.tools.aws.settings.Credentials;
-import com.okta.tools.aws.settings.MultipleProfile;
-import com.okta.tools.aws.settings.Profile;
-import com.okta.tools.saml.*;
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.cookie.Cookie;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.cookie.BasicClientCookie;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,9 +32,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
-import java.util.Scanner;
-import java.util.*;
-import java.util.stream.Collectors;
 
 final class OktaAwsCliAssumeRole {
 
