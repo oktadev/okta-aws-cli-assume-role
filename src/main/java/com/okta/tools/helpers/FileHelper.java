@@ -85,12 +85,6 @@ public final class FileHelper {
      * @return The Path of the file
      */
     public static Path getFilePath(String parentDirectory, String fileName) throws IOException {
-        Path filePath = Paths.get(parentDirectory, fileName);
-
-        if (!Files.exists(filePath)) {
-            Files.createFile(filePath);
-        }
-
-        return filePath;
+        return Paths.get(parentDirectory, fileName);
     }
 }

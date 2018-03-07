@@ -23,6 +23,7 @@ import com.okta.tools.helpers.ConfigHelper;
 import com.okta.tools.helpers.ProfileHelper;
 import com.okta.tools.helpers.RoleHelper;
 import com.okta.tools.helpers.SessionHelper;
+import com.okta.tools.models.Session;
 import com.okta.tools.saml.OktaSaml;
 import com.okta.tools.aws.settings.Configuration;
 import com.okta.tools.aws.settings.Credentials;
@@ -95,6 +96,11 @@ final class OktaAwsCliAssumeRole {
     }
 
     public void logoutSession() throws IOException {
-        SessionHelper.logoutCurrentSession(oktaProfile);
+        Optional<Session> currentSession = SessionHelper.getCurrentSession();
+        if (currentSession.isPresent()) {
+            SessionHelper.logoutCurrentSession(currentSession.get().profileName);
+        } else {
+            SessionHelper.logoutCurrentSession(null);
+        }
     }
 }
