@@ -1,5 +1,6 @@
 package com.okta.tools.saml;
 
+import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.authentication.OktaAuthentication;
 import com.okta.tools.helpers.CookieHelper;
 import org.apache.http.HttpStatus;
@@ -27,8 +28,6 @@ import java.util.stream.Collectors;
 
 public class OktaSaml {
 
-    public static String awsAppUrl;
-
     public static String getSamlResponse() throws IOException {
         if (!reuseSession()) {
             String oktaSessionToken = OktaAuthentication.getOktaSessionToken();
@@ -39,7 +38,7 @@ public class OktaSaml {
     }
 
     private static String getSamlResponseForAws(String oktaSessionToken) throws IOException {
-        Document document = launchOktaAwsAppWithSessionToken(awsAppUrl, oktaSessionToken);
+        Document document = launchOktaAwsAppWithSessionToken(OktaAwsCliEnvironment.oktaAwsAppUrl, oktaSessionToken);
         Elements samlResponseInputElement = document.select("form input[name=SAMLResponse]");
         if (samlResponseInputElement.isEmpty()) {
             throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
@@ -48,7 +47,7 @@ public class OktaSaml {
     }
 
     private static String getSamlResponseForAwsRefresh() throws IOException {
-        Document document = launchOktaAwsApp(awsAppUrl);
+        Document document = launchOktaAwsApp(OktaAwsCliEnvironment.oktaAwsAppUrl);
         Elements samlResponseInputElement = document.select("form input[name=SAMLResponse]");
         if (samlResponseInputElement.isEmpty()) {
             throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
@@ -68,7 +67,7 @@ public class OktaSaml {
         loadedProperties.load(new FileReader(CookieHelper.getCookies().toFile()));
         loadedProperties.entrySet().stream().map(entry -> {
             BasicClientCookie basicClientCookie = new BasicClientCookie(entry.getKey().toString(), entry.getValue().toString());
-            basicClientCookie.setDomain(OktaAuthentication.oktaOrg);
+            basicClientCookie.setDomain(OktaAwsCliEnvironment.oktaOrg);
 
             return basicClientCookie;
         }).forEach(cookieStore::addCookie);
@@ -103,7 +102,7 @@ public class OktaSaml {
         loadedProperties.load(new FileReader(CookieHelper.getCookies().toFile()));
         loadedProperties.entrySet().stream().map(entry -> {
             BasicClientCookie basicClientCookie = new BasicClientCookie(entry.getKey().toString(), entry.getValue().toString());
-            basicClientCookie.setDomain(OktaAuthentication.oktaOrg);
+            basicClientCookie.setDomain(OktaAwsCliEnvironment.oktaOrg);
 
             return basicClientCookie;
         }).forEach(cookieStore::addCookie);
@@ -114,7 +113,7 @@ public class OktaSaml {
             return false;
         }
 
-        HttpPost httpPost = new HttpPost("https://" + OktaAuthentication.oktaOrg + "/api/v1/sessions/me/lifecycle/refresh");
+        HttpPost httpPost = new HttpPost("https://" + OktaAwsCliEnvironment.oktaOrg + "/api/v1/sessions/me/lifecycle/refresh");
         httpPost.addHeader("Accept", "application/json");
         httpPost.addHeader("Content-Type", "application/json");
         httpPost.addHeader("Cookie", "sid=" + sidCookie.get());

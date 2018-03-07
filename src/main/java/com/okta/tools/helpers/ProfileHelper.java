@@ -2,13 +2,14 @@ package com.okta.tools.helpers;
 
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
+import com.okta.tools.OktaAwsCliEnvironment;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 
 public class ProfileHelper {
 
-    public static String createAwsProfile(AssumeRoleWithSAMLResult assumeResult, String oktaProfile) throws IOException {
+    public static String createAwsProfile(AssumeRoleWithSAMLResult assumeResult) throws IOException {
         BasicSessionCredentials temporaryCredentials =
                 new BasicSessionCredentials(
                         assumeResult.getCredentials().getAccessKeyId(),
@@ -19,7 +20,7 @@ public class ProfileHelper {
         String awsSecretKey = temporaryCredentials.getAWSSecretKey();
         String awsSessionToken = temporaryCredentials.getSessionToken();
 
-        String credentialsProfileName = getProfileName(assumeResult, oktaProfile);
+        String credentialsProfileName = getProfileName(assumeResult, OktaAwsCliEnvironment.oktaProfile);
         CredentialsHelper.updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
         return credentialsProfileName;
     }

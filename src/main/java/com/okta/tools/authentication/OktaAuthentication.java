@@ -1,5 +1,6 @@
 package com.okta.tools.authentication;
 
+import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.models.AuthResult;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.CookieStore;
@@ -22,10 +23,6 @@ import java.util.Scanner;
 public final class OktaAuthentication {
     private static final Logger logger = LogManager.getLogger(OktaAuthentication.class);
 
-    public static String oktaOrg;
-    public static String oktaUsername;
-    public static String oktaPassword;
-
     /**
      * Performs primary and secondary (2FA) authentication, then returns a session token
      *
@@ -33,7 +30,7 @@ public final class OktaAuthentication {
      * @throws IOException
      */
     public static String getOktaSessionToken() throws IOException {
-        JSONObject primaryAuthResult = new JSONObject(getPrimaryAuthResponse(getUsername(), getPassword(), oktaOrg));
+        JSONObject primaryAuthResult = new JSONObject(getPrimaryAuthResponse(getUsername(), getPassword(), OktaAwsCliEnvironment.oktaOrg));
         if (primaryAuthResult.getString("status").equals("MFA_REQUIRED")) {
             return OktaMFA.promptForFactor(primaryAuthResult);
         } else {
@@ -114,20 +111,20 @@ public final class OktaAuthentication {
     }
 
     private static String getUsername() {
-        if (oktaUsername == null || oktaUsername.isEmpty()) {
+        if (OktaAwsCliEnvironment.oktaUsername == null || OktaAwsCliEnvironment.oktaUsername.isEmpty()) {
             System.out.print("Username: ");
             return new Scanner(System.in).next();
         } else {
-            System.out.println("Username: " + oktaUsername);
-            return oktaUsername;
+            System.out.println("Username: " + OktaAwsCliEnvironment.oktaUsername);
+            return OktaAwsCliEnvironment.oktaUsername;
         }
     }
 
     private static String getPassword() {
-        if (oktaPassword == null || oktaPassword.isEmpty()) {
+        if (OktaAwsCliEnvironment.oktaPassword == null || OktaAwsCliEnvironment.oktaPassword.isEmpty()) {
             return promptForPassword();
         } else {
-            return oktaPassword;
+            return OktaAwsCliEnvironment.oktaPassword;
         }
     }
 

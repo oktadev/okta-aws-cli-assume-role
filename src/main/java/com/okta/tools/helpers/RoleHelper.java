@@ -8,6 +8,7 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
+import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.models.AccountOption;
 import com.okta.tools.models.RoleOption;
 import com.okta.tools.saml.AwsSamlRoleUtils;
@@ -32,16 +33,16 @@ public class RoleHelper {
         return sts.assumeRoleWithSAML(assumeRequest);
     }
 
-    public static AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse, String awsRoleToAssume) throws IOException {
+    public static AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse) throws IOException {
         Map<String, String> roleIdpPairs = AwsSamlRoleUtils.getRoles(samlResponse);
         List<String> roleArns = new ArrayList<>();
 
         String principalArn;
         String roleArn;
 
-        if (roleIdpPairs.containsKey(awsRoleToAssume)) {
-            principalArn = roleIdpPairs.get(awsRoleToAssume);
-            roleArn = awsRoleToAssume;
+        if (roleIdpPairs.containsKey(OktaAwsCliEnvironment.awsRoleToAssume)) {
+            principalArn = roleIdpPairs.get(OktaAwsCliEnvironment.awsRoleToAssume);
+            roleArn = OktaAwsCliEnvironment.awsRoleToAssume;
         } else if (roleIdpPairs.size() > 1) {
             List<AccountOption> accountOptions = getAvailableRoles(samlResponse);
 
@@ -57,14 +58,14 @@ public class RoleHelper {
                 for (RoleOption roleOption : accountOption.roleOptions) {
                     roleArns.add(roleOption.roleArn);
                     System.out.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
-                    if (roleOption.roleArn.equals(awsRoleToAssume)) {
+                    if (roleOption.roleArn.equals(OktaAwsCliEnvironment.awsRoleToAssume)) {
                         j = i;
                     }
                     i++;
                 }
             }
-            if ((awsRoleToAssume != null && !awsRoleToAssume.isEmpty()) && j == -1) {
-                System.out.println("No match for role " + awsRoleToAssume);
+            if ((OktaAwsCliEnvironment.awsRoleToAssume != null && !OktaAwsCliEnvironment.awsRoleToAssume.isEmpty()) && j == -1) {
+                System.out.println("No match for role " + OktaAwsCliEnvironment.awsRoleToAssume);
             }
 
             // Default to no selection

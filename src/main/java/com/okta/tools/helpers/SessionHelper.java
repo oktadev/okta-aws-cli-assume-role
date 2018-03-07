@@ -1,5 +1,6 @@
 package com.okta.tools.helpers;
 
+import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.aws.settings.MultipleProfile;
 import com.okta.tools.models.Profile;
 import com.okta.tools.models.Session;
@@ -65,8 +66,8 @@ public final class SessionHelper {
         properties.store(new FileWriter(getSessionPath().toString()), "Saved at: " + Instant.now().toString());
     }
 
-    public static Optional<Profile> getFromMultipleProfiles(String profileName) throws IOException {
-        return getMultipleProfile().getProfile(profileName, getMultipleProfilesPath());
+    public static Optional<Profile> getFromMultipleProfiles() throws IOException {
+        return getMultipleProfile().getProfile(OktaAwsCliEnvironment.oktaProfile, getMultipleProfilesPath());
     }
 
     public static void addOrUpdateProfile(String profileName, String oktaSession, Instant start) throws IOException {
