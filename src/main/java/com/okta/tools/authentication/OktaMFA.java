@@ -155,7 +155,7 @@ public class OktaMFA {
     /**
      * Handles the Security Question factor
      *
-     * @param factor A {@link JSONObject} representing the user's factor
+     * @param factor     A {@link JSONObject} representing the user's factor
      * @param stateToken The current state token
      * @return The session token
      * @throws JSONException
@@ -192,7 +192,7 @@ public class OktaMFA {
     /**
      * Handles the SMS Verification factor
      *
-     * @param factor A {@link JSONObject} representing the user's factor
+     * @param factor     A {@link JSONObject} representing the user's factor
      * @param stateToken The current state token
      * @return The session token
      * @throws JSONException
@@ -236,7 +236,7 @@ public class OktaMFA {
     /**
      * Handles Token Factor verification
      *
-     * @param factor A {@link JSONObject} representing the user's factor
+     * @param factor     A {@link JSONObject} representing the user's factor
      * @param stateToken The current state token
      * @return The session token
      * @throws JSONException
@@ -273,7 +273,7 @@ public class OktaMFA {
     /**
      * Handles Push verification
      *
-     * @param factor A {@link JSONObject} representing the user's factor
+     * @param factor     A {@link JSONObject} representing the user's factor
      * @param stateToken The current state token
      * @return The session token
      * @throws JSONException
@@ -301,8 +301,8 @@ public class OktaMFA {
     /**
      * Handles verification for all factor types
      *
-     * @param answer The answer to the factor
-     * @param factor A {@link JSONObject} representing the factor to be verified
+     * @param answer     The answer to the factor
+     * @param factor     A {@link JSONObject} representing the factor to be verified
      * @param stateToken The current state token
      * @param factorType The factor type
      * @return The session token

@@ -15,12 +15,22 @@
  */
 package com.okta.tools.saml;
 
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.opensaml.core.xml.io.UnmarshallingException;
 import org.opensaml.saml.saml2.core.Assertion;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,10 +40,10 @@ public final class AwsSamlRoleUtils {
 
     public static Map<String, String> getRoles(String samlResponse) {
         Map<String, String> roles = new LinkedHashMap<>();
-        for (String roleIdpPair: getRoleIdpPairs(samlResponse)) {
+        for (String roleIdpPair : getRoleIdpPairs(samlResponse)) {
             String[] parts = roleIdpPair.split(",");
             String principalArn = parts[0];
-            String roleArn  = parts[1];
+            String roleArn = parts[1];
             roles.put(roleArn, principalArn);
         }
         return roles;
@@ -45,6 +55,23 @@ public final class AwsSamlRoleUtils {
             return AssertionUtils.getAttributeValues(assertion, AWS_ROLE_SAML_ATTRIBUTE);
         } catch (ParserConfigurationException | UnmarshallingException | SAXException | IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static Document getSigninPageDocument(String samlResponse) throws IOException {
+        HttpPost httpPost = new HttpPost("https://signin.aws.amazon.com/saml");
+        UrlEncodedFormEntity samlForm = new UrlEncodedFormEntity(Arrays.asList(
+                new BasicNameValuePair("SAMLResponse", samlResponse),
+                new BasicNameValuePair("RelayState", "")
+        ), StandardCharsets.UTF_8);
+        httpPost.setEntity(samlForm);
+        try (CloseableHttpClient httpClient = HttpClients.createSystem();
+             CloseableHttpResponse samlSigninResponse = httpClient.execute(httpPost)) {
+            return Jsoup.parse(
+                    samlSigninResponse.getEntity().getContent(),
+                    StandardCharsets.UTF_8.name(),
+                    "https://signin.aws.amazon.com/saml"
+            );
         }
     }
 }

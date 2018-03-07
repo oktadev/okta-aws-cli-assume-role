@@ -22,7 +22,6 @@ import org.opensaml.core.xml.io.UnmarshallingException;
 import org.opensaml.saml.saml2.core.Assertion;
 import org.opensaml.saml.saml2.core.Response;
 import org.opensaml.saml.saml2.core.impl.ResponseUnmarshaller;
-
 import org.opensaml.xmlsec.config.JavaCryptoValidationInitializer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

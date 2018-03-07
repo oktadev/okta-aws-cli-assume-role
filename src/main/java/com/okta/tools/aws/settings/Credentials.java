@@ -45,9 +45,10 @@ public class Credentials extends Settings {
 
     /**
      * Add or update a profile to an AWS credentials file based on {@code name}.
-     * @param name The name of the profile.
-     * @param awsAccessKey The access key to use for the profile.
-     * @param awsSecretKey The secret key to use for the profile.
+     *
+     * @param name            The name of the profile.
+     * @param awsAccessKey    The access key to use for the profile.
+     * @param awsSecretKey    The secret key to use for the profile.
      * @param awsSessionToken The session token to use for the profile.
      */
     public void addOrUpdateProfile(String name, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
@@ -58,9 +59,10 @@ public class Credentials extends Settings {
 
     /**
      * Create a new profile in this credentials object.
-     * @param awsProfile A reference to the profile in the credentials.
-     * @param awsAccessKey The AWS access key to use in the profile.
-     * @param awsSecretKey The AWS secret access key to use in the profile.
+     *
+     * @param awsProfile      A reference to the profile in the credentials.
+     * @param awsAccessKey    The AWS access key to use in the profile.
+     * @param awsSecretKey    The AWS secret access key to use in the profile.
      * @param awsSessionToken The AWS session token to use in the profile.
      */
     private void writeCredentialsProfile(Profile.Section awsProfile, String awsAccessKey, String awsSecretKey, String awsSessionToken) {

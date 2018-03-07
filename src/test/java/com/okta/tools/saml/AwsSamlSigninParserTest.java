@@ -15,6 +15,8 @@
  */
 package com.okta.tools.saml;
 
+import com.okta.tools.models.AccountOption;
+import com.okta.tools.models.RoleOption;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.Test;

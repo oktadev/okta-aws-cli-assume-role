@@ -6,8 +6,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
-public class MenuHelper
-{
+public class MenuHelper {
     private static final Logger logger = LogManager.getLogger(MenuHelper.class);
 
     public static int promptForMenuSelection(int max) {

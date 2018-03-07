@@ -2,8 +2,7 @@ package com.okta.tools.models;
 
 import java.time.Instant;
 
-public class Session
-{
+public class Session {
     public final String profileName;
     public final Instant expiry;
 

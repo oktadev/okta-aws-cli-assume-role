@@ -11,8 +11,7 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public class OktaSaml
-{
+public class OktaSaml {
     public static String getSamlResponseForAws(String appUrl, String oktaSessionToken) throws IOException {
         Document document = launchOktaAwsApp(appUrl, oktaSessionToken);
         Elements samlResponseInputElement = document.select("form input[name=SAMLResponse]");

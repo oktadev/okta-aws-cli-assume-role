@@ -15,10 +15,10 @@
  */
 package com.okta.tools;
 
-import com.okta.tools.helpers.AwsSessionHelper;
-
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class awscli {
     public static void main(String[] args) throws Exception {
