@@ -28,17 +28,27 @@ import java.util.stream.Collectors;
 
 public class OktaSaml {
 
-    public static String getSamlResponse() throws IOException {
+    private OktaAwsCliEnvironment environment;
+
+    private OktaAuthentication authentication;
+
+    public OktaSaml(OktaAwsCliEnvironment environment) {
+        this.environment = environment;
+    }
+
+    public String getSamlResponse() throws IOException {
+        authentication = new OktaAuthentication(environment);
+
         if (!reuseSession()) {
-            String oktaSessionToken = OktaAuthentication.getOktaSessionToken();
+            String oktaSessionToken = authentication.getOktaSessionToken();
             return getSamlResponseForAws(oktaSessionToken);
         } else {
             return getSamlResponseForAwsRefresh();
         }
     }
 
-    private static String getSamlResponseForAws(String oktaSessionToken) throws IOException {
-        Document document = launchOktaAwsAppWithSessionToken(OktaAwsCliEnvironment.oktaAwsAppUrl, oktaSessionToken);
+    private String getSamlResponseForAws(String oktaSessionToken) throws IOException {
+        Document document = launchOktaAwsAppWithSessionToken(environment.oktaAwsAppUrl, oktaSessionToken);
         Elements samlResponseInputElement = document.select("form input[name=SAMLResponse]");
         if (samlResponseInputElement.isEmpty()) {
             throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
@@ -46,8 +56,8 @@ public class OktaSaml {
         return samlResponseInputElement.attr("value");
     }
 
-    private static String getSamlResponseForAwsRefresh() throws IOException {
-        Document document = launchOktaAwsApp(OktaAwsCliEnvironment.oktaAwsAppUrl);
+    private String getSamlResponseForAwsRefresh() throws IOException {
+        Document document = launchOktaAwsApp(environment.oktaAwsAppUrl);
         Elements samlResponseInputElement = document.select("form input[name=SAMLResponse]");
         if (samlResponseInputElement.isEmpty()) {
             throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
@@ -55,11 +65,11 @@ public class OktaSaml {
         return samlResponseInputElement.attr("value");
     }
 
-    private static Document launchOktaAwsAppWithSessionToken(String appUrl, String oktaSessionToken) throws IOException {
+    private Document launchOktaAwsAppWithSessionToken(String appUrl, String oktaSessionToken) throws IOException {
         return launchOktaAwsApp(appUrl + "?onetimetoken=" + oktaSessionToken);
     }
 
-    private static Document launchOktaAwsApp(String appUrl) throws IOException {
+    private Document launchOktaAwsApp(String appUrl) throws IOException {
         CookieStore cookieStore = new BasicCookieStore();
         Properties loadedProperties = new Properties();
 
@@ -67,7 +77,7 @@ public class OktaSaml {
         loadedProperties.load(new FileReader(CookieHelper.getCookies().toFile()));
         loadedProperties.entrySet().stream().map(entry -> {
             BasicClientCookie basicClientCookie = new BasicClientCookie(entry.getKey().toString(), entry.getValue().toString());
-            basicClientCookie.setDomain(OktaAwsCliEnvironment.oktaOrg);
+            basicClientCookie.setDomain(environment.oktaOrg);
 
             return basicClientCookie;
         }).forEach(cookieStore::addCookie);
@@ -96,13 +106,13 @@ public class OktaSaml {
         }
     }
 
-    private static boolean reuseSession() throws JSONException, IOException {
+    private boolean reuseSession() throws JSONException, IOException {
         CookieStore cookieStore = new BasicCookieStore();
         Properties loadedProperties = new Properties();
         loadedProperties.load(new FileReader(CookieHelper.getCookies().toFile()));
         loadedProperties.entrySet().stream().map(entry -> {
             BasicClientCookie basicClientCookie = new BasicClientCookie(entry.getKey().toString(), entry.getValue().toString());
-            basicClientCookie.setDomain(OktaAwsCliEnvironment.oktaOrg);
+            basicClientCookie.setDomain(environment.oktaOrg);
 
             return basicClientCookie;
         }).forEach(cookieStore::addCookie);
@@ -113,7 +123,7 @@ public class OktaSaml {
             return false;
         }
 
-        HttpPost httpPost = new HttpPost("https://" + OktaAwsCliEnvironment.oktaOrg + "/api/v1/sessions/me/lifecycle/refresh");
+        HttpPost httpPost = new HttpPost("https://" + environment.oktaOrg + "/api/v1/sessions/me/lifecycle/refresh");
         httpPost.addHeader("Accept", "application/json");
         httpPost.addHeader("Content-Type", "application/json");
         httpPost.addHeader("Cookie", "sid=" + sidCookie.get());

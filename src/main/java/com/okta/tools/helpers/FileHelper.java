@@ -1,6 +1,9 @@
 package com.okta.tools.helpers;
 
-import java.io.*;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,6 +14,7 @@ public final class FileHelper {
 
     /**
      * Gets the path of a directory in the user home directory
+     *
      * @param name The name of the directory
      * @return The {@link Path} of the directory
      * @throws IOException
@@ -49,7 +53,7 @@ public final class FileHelper {
      * Gets a reader for the given file. Creates a StringReader if the file is not found
      *
      * @param directoryPath The {@link Path} of the file's parent directory
-     * @param fileName The name of the file
+     * @param fileName      The name of the file
      * @return The reader for the given file
      * @throws IOException
      */
@@ -61,7 +65,7 @@ public final class FileHelper {
      * Get a FileWriter for a given path
      *
      * @param directoryPath The {@link Path} of the file's parent directory
-     * @param fileName The name of the file
+     * @param fileName      The name of the file
      * @return The FileReader for the given path
      * @throws IOException
      */
@@ -73,7 +77,7 @@ public final class FileHelper {
      * Gets the Path of a specified file
      *
      * @param directoryPath The {@link Path} of the file's parent directory
-     * @param fileName The name of the file
+     * @param fileName      The name of the file
      * @return The Path of the file
      * @throws IOException
      */
@@ -93,7 +97,7 @@ public final class FileHelper {
      * Gets the Path of a specified file, without creating it
      *
      * @param directoryPath The {@link Path} of the file's parent directory
-     * @param fileName The name of the file
+     * @param fileName      The name of the file
      * @return The Path of the file
      * @throws IOException
      */

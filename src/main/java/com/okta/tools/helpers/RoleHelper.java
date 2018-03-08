@@ -22,7 +22,13 @@ import java.util.Map;
 
 public class RoleHelper {
 
-    public static AssumeRoleWithSAMLResult assumeChosenAwsRole(AssumeRoleWithSAMLRequest assumeRequest) {
+    private OktaAwsCliEnvironment environment;
+
+    public RoleHelper(OktaAwsCliEnvironment environment) {
+        this.environment = environment;
+    }
+
+    public AssumeRoleWithSAMLResult assumeChosenAwsRole(AssumeRoleWithSAMLRequest assumeRequest) {
         BasicAWSCredentials nullCredentials = new BasicAWSCredentials("", "");
         AWSCredentialsProvider nullCredentialsProvider = new AWSStaticCredentialsProvider(nullCredentials);
         AWSSecurityTokenService sts = AWSSecurityTokenServiceClientBuilder
@@ -33,16 +39,16 @@ public class RoleHelper {
         return sts.assumeRoleWithSAML(assumeRequest);
     }
 
-    public static AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse) throws IOException {
+    public AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse) throws IOException {
         Map<String, String> roleIdpPairs = AwsSamlRoleUtils.getRoles(samlResponse);
         List<String> roleArns = new ArrayList<>();
 
         String principalArn;
         String roleArn;
 
-        if (roleIdpPairs.containsKey(OktaAwsCliEnvironment.awsRoleToAssume)) {
-            principalArn = roleIdpPairs.get(OktaAwsCliEnvironment.awsRoleToAssume);
-            roleArn = OktaAwsCliEnvironment.awsRoleToAssume;
+        if (roleIdpPairs.containsKey(environment.awsRoleToAssume)) {
+            principalArn = roleIdpPairs.get(environment.awsRoleToAssume);
+            roleArn = environment.awsRoleToAssume;
         } else if (roleIdpPairs.size() > 1) {
             List<AccountOption> accountOptions = getAvailableRoles(samlResponse);
 
@@ -58,14 +64,14 @@ public class RoleHelper {
                 for (RoleOption roleOption : accountOption.roleOptions) {
                     roleArns.add(roleOption.roleArn);
                     System.out.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
-                    if (roleOption.roleArn.equals(OktaAwsCliEnvironment.awsRoleToAssume)) {
+                    if (roleOption.roleArn.equals(environment.awsRoleToAssume)) {
                         j = i;
                     }
                     i++;
                 }
             }
-            if ((OktaAwsCliEnvironment.awsRoleToAssume != null && !OktaAwsCliEnvironment.awsRoleToAssume.isEmpty()) && j == -1) {
-                System.out.println("No match for role " + OktaAwsCliEnvironment.awsRoleToAssume);
+            if ((environment.awsRoleToAssume != null && !environment.awsRoleToAssume.isEmpty()) && j == -1) {
+                System.out.println("No match for role " + environment.awsRoleToAssume);
             }
 
             // Default to no selection
@@ -96,7 +102,7 @@ public class RoleHelper {
                 .withDurationSeconds(3600);
     }
 
-    private static List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {
+    private List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {
         Document document = AwsSamlRoleUtils.getSigninPageDocument(samlResponse);
         return AwsSamlSigninParser.parseAccountOptions(document);
     }

@@ -15,13 +15,6 @@
  */
 package com.okta.tools;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.helpers.ConfigHelper;
@@ -44,42 +37,71 @@ final class OktaAwsCliAssumeRole {
 
     private static final Logger logger = LogManager.getLogger(OktaAwsCliAssumeRole.class);
 
+    private OktaAwsCliEnvironment environment;
+
+    private SessionHelper sessionHelper;
+    private ConfigHelper configHelper;
+    private RoleHelper roleHelper;
+    private ProfileHelper profileHelper;
+
+    private OktaSaml oktaSaml;
+
+    private Optional<Session> currentSession;
+    private Optional<Profile> currentProfile;
+
     static OktaAwsCliAssumeRole createOktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaAWSUsername, String oktaAWSPassword, String oktaProfile, String oktaAWSRoleToAssume) {
         return new OktaAwsCliAssumeRole(oktaOrg, oktaAWSAppURL, oktaAWSUsername, oktaAWSPassword, oktaProfile, oktaAWSRoleToAssume);
     }
 
     private OktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaUsername, String oktaAWSPassword, String oktaProfile, String awsRoleToAssume) {
-        OktaAwsCliEnvironment.oktaOrg = oktaOrg;
-        OktaAwsCliEnvironment.oktaAwsAppUrl = oktaAWSAppURL;
-        OktaAwsCliEnvironment.oktaUsername = oktaUsername;
-        OktaAwsCliEnvironment.oktaPassword = oktaAWSPassword;
-        OktaAwsCliEnvironment.oktaProfile = oktaProfile;
-        OktaAwsCliEnvironment.awsRoleToAssume = awsRoleToAssume;
+        environment = new OktaAwsCliEnvironment(oktaOrg, oktaUsername, oktaAWSPassword, oktaProfile, oktaAWSAppURL, awsRoleToAssume);
+    }
+
+    private void init() throws Exception {
+        sessionHelper = new SessionHelper(environment);
+        configHelper = new ConfigHelper(environment);
+        roleHelper = new RoleHelper(environment);
+        profileHelper = new ProfileHelper(environment);
+
+        oktaSaml = new OktaSaml(environment);
+
+        currentSession = sessionHelper.getCurrentSession();
+
+        if (currentSession.isPresent()) {
+            environment.oktaProfile = currentSession.get().profileName;
+        }
+
+        currentProfile = sessionHelper.getFromMultipleProfiles();
     }
 
     String run(Instant startInstant) throws Exception {
-        Optional<com.okta.tools.models.Session> session = SessionHelper.getCurrentSession();
-        Optional<Profile> profile = SessionHelper.getFromMultipleProfiles();
-        OktaAwsCliEnvironment.awsRoleToAssume = profile.map(profile1 -> profile1.roleArn).orElse(null);
+        init();
 
-        if (session.isPresent() && SessionHelper.sessionIsActive(startInstant, session.get()) &&
-                StringUtils.isBlank(OktaAwsCliEnvironment.oktaProfile)) {
-            return session.get().profileName;
+        environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
+
+        if (currentSession.isPresent() && sessionHelper.sessionIsActive(startInstant, currentSession.get()) &&
+                StringUtils.isBlank(environment.oktaProfile)) {
+            return currentSession.get().profileName;
         }
 
-        String samlResponse = OktaSaml.getSamlResponse();
-        AssumeRoleWithSAMLRequest assumeRequest = RoleHelper.chooseAwsRoleToAssume(samlResponse);
+        String samlResponse = oktaSaml.getSamlResponse();
+        AssumeRoleWithSAMLRequest assumeRequest = roleHelper.chooseAwsRoleToAssume(samlResponse);
         Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
-        AssumeRoleWithSAMLResult assumeResult = RoleHelper.assumeChosenAwsRole(assumeRequest);
-        String profileName = ProfileHelper.createAwsProfile(assumeResult);
-        ConfigHelper.updateConfigFile(profileName, assumeRequest.getRoleArn());
-        SessionHelper.addOrUpdateProfile(profileName, assumeRequest.getRoleArn(), sessionExpiry);
-        SessionHelper.updateCurrentSession(sessionExpiry, profileName);
+        AssumeRoleWithSAMLResult assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
+        String profileName = profileHelper.createAwsProfile(assumeResult);
+
+        environment.oktaProfile = profileName;
+        environment.awsRoleToAssume = assumeRequest.getRoleArn();
+        configHelper.updateConfigFile();
+        sessionHelper.addOrUpdateProfile(sessionExpiry);
+        sessionHelper.updateCurrentSession(sessionExpiry, profileName);
 
         return profileName;
     }
 
-    public void logoutSession() throws IOException {
-        SessionHelper.logoutCurrentSession(OktaAwsCliEnvironment.oktaProfile);
+    public void logoutSession() throws Exception {
+        init();
+
+        sessionHelper.logoutCurrentSession();
     }
 }

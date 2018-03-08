@@ -1,12 +1,22 @@
 package com.okta.tools;
 
 public class OktaAwsCliEnvironment {
-    public static String oktaOrg;
-    public static String oktaUsername;
-    public static String oktaPassword;
-    public static String oktaProfile;
+    public String oktaOrg;
+    public String oktaUsername;
+    public String oktaPassword;
+    public String oktaProfile;
 
-    public static String oktaAwsAppUrl;
+    public String oktaAwsAppUrl;
 
-    public static String awsRoleToAssume;
+    public String awsRoleToAssume;
+
+    public OktaAwsCliEnvironment(String oktaOrg, String oktaUsername, String oktaPassword, String oktaProfile,
+                                 String oktaAwsAppUrl, String awsRoleToAssume) {
+        this.oktaOrg = oktaOrg;
+        this.oktaUsername = oktaUsername;
+        this.oktaPassword = oktaPassword;
+        this.oktaProfile = oktaProfile;
+        this.oktaAwsAppUrl = oktaAwsAppUrl;
+        this.awsRoleToAssume = awsRoleToAssume;
+    }
 }

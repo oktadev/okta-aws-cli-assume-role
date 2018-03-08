@@ -9,7 +9,13 @@ import java.io.IOException;
 
 public class ProfileHelper {
 
-    public static String createAwsProfile(AssumeRoleWithSAMLResult assumeResult) throws IOException {
+    private OktaAwsCliEnvironment environment;
+
+    public ProfileHelper(OktaAwsCliEnvironment environment) {
+        this.environment = environment;
+    }
+
+    public String createAwsProfile(AssumeRoleWithSAMLResult assumeResult) throws IOException {
         BasicSessionCredentials temporaryCredentials =
                 new BasicSessionCredentials(
                         assumeResult.getCredentials().getAccessKeyId(),
@@ -20,13 +26,13 @@ public class ProfileHelper {
         String awsSecretKey = temporaryCredentials.getAWSSecretKey();
         String awsSessionToken = temporaryCredentials.getSessionToken();
 
-        String credentialsProfileName = getProfileName(assumeResult, OktaAwsCliEnvironment.oktaProfile);
+        String credentialsProfileName = getProfileName(assumeResult, environment.oktaProfile);
         CredentialsHelper.updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
 
         return credentialsProfileName;
     }
 
-    private static String getProfileName(AssumeRoleWithSAMLResult assumeResult, String oktaProfile) {
+    private String getProfileName(AssumeRoleWithSAMLResult assumeResult, String oktaProfile) {
         String credentialsProfileName;
         if (StringUtils.isNotBlank(oktaProfile)) {
             credentialsProfileName = oktaProfile;

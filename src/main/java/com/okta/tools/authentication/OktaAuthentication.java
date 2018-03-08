@@ -20,14 +20,20 @@ import java.util.Scanner;
 public final class OktaAuthentication {
     private static final Logger logger = LogManager.getLogger(OktaAuthentication.class);
 
+    private OktaAwsCliEnvironment environment;
+
+    public OktaAuthentication(OktaAwsCliEnvironment environment) {
+        this.environment = environment;
+    }
+
     /**
      * Performs primary and secondary (2FA) authentication, then returns a session token
      *
      * @return The session token
      * @throws IOException
      */
-    public static String getOktaSessionToken() throws IOException {
-        JSONObject primaryAuthResult = new JSONObject(getPrimaryAuthResponse(OktaAwsCliEnvironment.oktaOrg));
+    public String getOktaSessionToken() throws IOException {
+        JSONObject primaryAuthResult = new JSONObject(getPrimaryAuthResponse(environment.oktaOrg));
         if (primaryAuthResult.getString("status").equals("MFA_REQUIRED")) {
             return OktaMFA.promptForFactor(primaryAuthResult);
         } else {
@@ -38,11 +44,11 @@ public final class OktaAuthentication {
     /**
      * Performs primary authentication and parses the response.
      *
-     * @param oktaOrg  The org to authenticate against
+     * @param oktaOrg The org to authenticate against
      * @return The response of the authentication
      * @throws IOException
      */
-    private static String getPrimaryAuthResponse(String oktaOrg) throws IOException {
+    private String getPrimaryAuthResponse(String oktaOrg) throws IOException {
         while (true) {
             AuthResult response = primaryAuthentication(getUsername(), getPassword(), oktaOrg);
             int requestStatus = response.statusLine.getStatusCode();
@@ -62,7 +68,7 @@ public final class OktaAuthentication {
      * @return The authentication result
      * @throws IOException
      */
-    private static AuthResult primaryAuthentication(String username, String password, String oktaOrg) throws IOException {
+    private AuthResult primaryAuthentication(String username, String password, String oktaOrg) throws IOException {
         HttpPost httpPost = new HttpPost("https://" + oktaOrg + "/api/v1/authn");
 
         httpPost.addHeader("Accept", "application/json");
@@ -93,7 +99,7 @@ public final class OktaAuthentication {
      * @param responseStatus The status of the response
      * @param oktaOrg        The org against which authentication was performed
      */
-    private static void primaryAuthFailureHandler(int responseStatus, String oktaOrg) {
+    private void primaryAuthFailureHandler(int responseStatus, String oktaOrg) {
         if (responseStatus == 400 || responseStatus == 401) {
             logger.error("Invalid username or password.");
         } else if (responseStatus == 500) {
@@ -104,25 +110,25 @@ public final class OktaAuthentication {
         }
     }
 
-    private static String getUsername() {
-        if (OktaAwsCliEnvironment.oktaUsername == null || OktaAwsCliEnvironment.oktaUsername.isEmpty()) {
+    private String getUsername() {
+        if (environment.oktaUsername == null || environment.oktaUsername.isEmpty()) {
             System.out.print("Username: ");
             return new Scanner(System.in).next();
         } else {
-            System.out.println("Username: " + OktaAwsCliEnvironment.oktaUsername);
-            return OktaAwsCliEnvironment.oktaUsername;
+            System.out.println("Username: " + environment.oktaUsername);
+            return environment.oktaUsername;
         }
     }
 
-    private static String getPassword() {
-        if (OktaAwsCliEnvironment.oktaPassword == null || OktaAwsCliEnvironment.oktaPassword.isEmpty()) {
+    private String getPassword() {
+        if (environment.oktaPassword == null || environment.oktaPassword.isEmpty()) {
             return promptForPassword();
         } else {
-            return OktaAwsCliEnvironment.oktaPassword;
+            return environment.oktaPassword;
         }
     }
 
-    private static String promptForPassword() {
+    private String promptForPassword() {
         if (System.console() == null) { // hack to be able to debug in an IDE
             System.out.print("Password: ");
             return new Scanner(System.in).next();
