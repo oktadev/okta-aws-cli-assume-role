@@ -27,7 +27,7 @@ public final class OktaAuthentication {
      * @throws IOException
      */
     public static String getOktaSessionToken() throws IOException {
-        JSONObject primaryAuthResult = new JSONObject(getPrimaryAuthResponse(getUsername(), getPassword(), OktaAwsCliEnvironment.oktaOrg));
+        JSONObject primaryAuthResult = new JSONObject(getPrimaryAuthResponse(OktaAwsCliEnvironment.oktaOrg));
         if (primaryAuthResult.getString("status").equals("MFA_REQUIRED")) {
             return OktaMFA.promptForFactor(primaryAuthResult);
         } else {
@@ -38,15 +38,13 @@ public final class OktaAuthentication {
     /**
      * Performs primary authentication and parses the response.
      *
-     * @param username The username of the user
-     * @param password The password of the user
      * @param oktaOrg  The org to authenticate against
      * @return The response of the authentication
      * @throws IOException
      */
-    private static String getPrimaryAuthResponse(String username, String password, String oktaOrg) throws IOException {
+    private static String getPrimaryAuthResponse(String oktaOrg) throws IOException {
         while (true) {
-            AuthResult response = primaryAuthentication(username, password, oktaOrg);
+            AuthResult response = primaryAuthentication(getUsername(), getPassword(), oktaOrg);
             int requestStatus = response.statusLine.getStatusCode();
             primaryAuthFailureHandler(requestStatus, oktaOrg);
             if (requestStatus == HttpStatus.SC_OK) {
@@ -101,8 +99,7 @@ public final class OktaAuthentication {
         } else if (responseStatus == 500) {
             logger.error("\nUnable to establish connection with: " + oktaOrg +
                     " \nPlease verify that your Okta org url is correct and try again");
-        }
-        if (responseStatus != 200) {
+        } else if (responseStatus != 200) {
             throw new RuntimeException("Failed : HTTP error code : " + responseStatus);
         }
     }
