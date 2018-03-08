@@ -8,13 +8,12 @@ import java.io.IOException;
 import java.io.Reader;
 
 public final class CredentialsHelper {
+
     /**
      * Gets a reader for the credentials file. If the file doesn't exist, it creates it
      *
      * @return The file reader for the credentials file
      * @throws FileNotFoundException
-     * @author Andrei Hava
-     * @since 02/14/2018
      */
     public static Reader getCredsReader() throws FileNotFoundException {
         return FileHelper.getReader(FileHelper.getAwsDirectory().toString() + "/credentials");
@@ -25,8 +24,6 @@ public final class CredentialsHelper {
      *
      * @return The FileWriter for the credentials file
      * @throws IOException
-     * @author Andrei Hava
-     * @since 02/14/2018
      */
     public static FileWriter getCredsWriter() throws IOException {
         return FileHelper.getWriter(FileHelper.getAwsDirectory().toString() + "/credentials");

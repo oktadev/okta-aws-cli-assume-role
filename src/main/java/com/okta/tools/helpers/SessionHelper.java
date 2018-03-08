@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 public final class SessionHelper {
+
     private static final String OKTA_AWS_CLI_EXPIRY_PROPERTY = "OKTA_AWS_CLI_EXPIRY";
     private static final String OKTA_AWS_CLI_PROFILE_PROPERTY = "OKTA_AWS_CLI_PROFILE";
 
@@ -20,8 +21,6 @@ public final class SessionHelper {
      * Get the current session file's Path
      *
      * @return The Path of the current session file
-     * @author Andrei Hava
-     * @since 02/14/2018
      */
     private static Path getSessionPath() throws IOException {
         return FileHelper.getFilePath(FileHelper.getOktaDirectory().toString(), "/.current-session");

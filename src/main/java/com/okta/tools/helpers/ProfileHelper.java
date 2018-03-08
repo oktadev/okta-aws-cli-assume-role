@@ -22,6 +22,7 @@ public class ProfileHelper {
 
         String credentialsProfileName = getProfileName(assumeResult, OktaAwsCliEnvironment.oktaProfile);
         CredentialsHelper.updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
+
         return credentialsProfileName;
     }
 
@@ -38,6 +39,7 @@ public class ProfileHelper {
                 credentialsProfileName = credentialsProfileName.replaceAll(":assumed-role", "");
             }
         }
+
         return credentialsProfileName;
     }
 }

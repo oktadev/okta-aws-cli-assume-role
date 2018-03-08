@@ -8,13 +8,12 @@ import java.io.IOException;
 import java.io.Reader;
 
 public final class ConfigHelper {
+
     /**
      * Gets a reader for the config file. If the file doesn't exist, it creates it
      *
      * @return The file reader for the config file
      * @throws FileNotFoundException
-     * @author Andrei Hava
-     * @since 02/14/2018
      */
     public static Reader getConfigReader() throws FileNotFoundException {
         return FileHelper.getReader(FileHelper.getAwsDirectory().toString() + "/config");
@@ -25,8 +24,6 @@ public final class ConfigHelper {
      *
      * @return The FileWriter for the config file
      * @throws IOException
-     * @author Andrei Hava
-     * @since 02/14/2018
      */
     public static FileWriter getConfigWriter() throws IOException {
         return FileHelper.getWriter(FileHelper.getAwsDirectory().toString() + "/config");

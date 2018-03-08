@@ -75,7 +75,7 @@ final class OktaAwsCliAssumeRole {
         ConfigHelper.updateConfigFile(profileName, assumeRequest.getRoleArn());
         SessionHelper.addOrUpdateProfile(profileName, assumeRequest.getRoleArn(), sessionExpiry);
         SessionHelper.updateCurrentSession(sessionExpiry, profileName);
-        
+
         return profileName;
     }
 
