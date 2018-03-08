@@ -4,6 +4,7 @@ import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.aws.settings.MultipleProfile;
 import com.okta.tools.models.Profile;
 import com.okta.tools.models.Session;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -18,18 +19,19 @@ public final class SessionHelper {
     private static final String OKTA_AWS_CLI_PROFILE_PROPERTY = "OKTA_AWS_CLI_PROFILE";
 
     /**
-     * Get the current session file's Path
+     * Gets the current session file's path
      *
-     * @return The Path of the current session file
+     * @return A {@link Path} for the current session file
+     * @throws IOException
      */
     private static Path getSessionPath() throws IOException {
-        return FileHelper.getFilePath(FileHelper.getOktaDirectory().toString(), "/.current-session");
+        return FileHelper.resolveFilePath(FileHelper.getOktaDirectory(), ".current-session");
     }
 
     /**
      * Gets the current session, if it exists
      *
-     * @return The current session
+     * @return The current {@link Session}
      * @throws IOException
      */
     public static Optional<Session> getCurrentSession() throws IOException {
@@ -47,10 +49,11 @@ public final class SessionHelper {
     /**
      * Deletes the current session, if it exists
      *
+     * @param oktaProfile The current Okta profile
      * @throws IOException
      */
     public static void logoutCurrentSession(String oktaProfile) throws IOException {
-        if (oktaProfile != null) {
+        if (StringUtils.isNotBlank(oktaProfile)) {
             logoutMultipleAccounts(oktaProfile);
         }
         if (Files.exists(getSessionPath())) {
@@ -73,7 +76,7 @@ public final class SessionHelper {
         MultipleProfile multipleProfile = getMultipleProfile();
         multipleProfile.addOrUpdateProfile(profileName, oktaSession, start);
 
-        try (final FileWriter fileWriter = new FileWriter(getMultipleProfilesPath().toFile())) {
+        try (final FileWriter fileWriter = FileHelper.getWriter(FileHelper.getOktaDirectory(), "profiles")) {
             multipleProfile.save(fileWriter);
         }
     }
@@ -90,19 +93,11 @@ public final class SessionHelper {
     }
 
     private static Path getMultipleProfilesPath() throws IOException {
-        Path oktaDir = FileHelper.getOktaDirectory();
-        Path profileIni = oktaDir.resolve("profiles");
-
-        if (!Files.exists(profileIni)) {
-            Files.createFile(profileIni);
-        }
-
-        return profileIni;
+        return FileHelper.getFilePath(FileHelper.getOktaDirectory(), "profiles");
     }
 
     private static MultipleProfile getMultipleProfile() throws IOException {
-        Path multiProfile = getMultipleProfilesPath();
-        Reader reader = FileHelper.getReader(multiProfile.toString());
+        Reader reader = FileHelper.getReader(FileHelper.getOktaDirectory(), "profiles");
 
         return new MultipleProfile(reader);
     }

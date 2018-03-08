@@ -10,6 +10,12 @@ public class MenuHelper {
 
     private static final Logger logger = LogManager.getLogger(MenuHelper.class);
 
+    /**
+     * Prompt the user to select an option from a menu of options
+     *
+     * @param max The maximum number of options
+     * @return The selected option
+     */
     public static int promptForMenuSelection(int max) {
         if (max == 1) return 0;
         Scanner scanner = new Scanner(System.in);

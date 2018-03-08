@@ -96,7 +96,7 @@ public class RoleHelper {
                 .withDurationSeconds(3600);
     }
 
-    public static List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {
+    private static List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {
         Document document = AwsSamlRoleUtils.getSigninPageDocument(samlResponse);
         return AwsSamlSigninParser.parseAccountOptions(document);
     }

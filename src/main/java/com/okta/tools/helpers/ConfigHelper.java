@@ -6,27 +6,28 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Path;
 
 public final class ConfigHelper {
 
     /**
      * Gets a reader for the config file. If the file doesn't exist, it creates it
      *
-     * @return The file reader for the config file
-     * @throws FileNotFoundException
+     * @return A {@link Reader} for the config file
+     * @throws IOException
      */
-    public static Reader getConfigReader() throws FileNotFoundException {
-        return FileHelper.getReader(FileHelper.getAwsDirectory().toString() + "/config");
+    public static Reader getConfigReader() throws IOException {
+        return FileHelper.getReader(FileHelper.getAwsDirectory(), "config");
     }
 
     /**
      * Gets a FileWriter for the config file
      *
-     * @return The FileWriter for the config file
+     * @return A {@link FileWriter} for the config file
      * @throws IOException
      */
     public static FileWriter getConfigWriter() throws IOException {
-        return FileHelper.getWriter(FileHelper.getAwsDirectory().toString() + "/config");
+        return FileHelper.getWriter(FileHelper.getAwsDirectory(), "config");
     }
 
     /**

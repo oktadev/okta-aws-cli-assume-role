@@ -80,11 +80,6 @@ final class OktaAwsCliAssumeRole {
     }
 
     public void logoutSession() throws IOException {
-        Optional<Session> currentSession = SessionHelper.getCurrentSession();
-        if (currentSession.isPresent()) {
-            SessionHelper.logoutCurrentSession(currentSession.get().profileName);
-        } else {
-            SessionHelper.logoutCurrentSession(null);
-        }
+        SessionHelper.logoutCurrentSession(OktaAwsCliEnvironment.oktaProfile);
     }
 }

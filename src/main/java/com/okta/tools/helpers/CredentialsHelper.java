@@ -12,21 +12,21 @@ public final class CredentialsHelper {
     /**
      * Gets a reader for the credentials file. If the file doesn't exist, it creates it
      *
-     * @return The file reader for the credentials file
-     * @throws FileNotFoundException
+     * @return A {@link Reader} for the credentials file
+     * @throws IOException
      */
-    public static Reader getCredsReader() throws FileNotFoundException {
-        return FileHelper.getReader(FileHelper.getAwsDirectory().toString() + "/credentials");
+    public static Reader getCredsReader() throws IOException {
+        return FileHelper.getReader(FileHelper.getAwsDirectory(), "credentials");
     }
 
     /**
      * Gets a FileWriter for the credentials file
      *
-     * @return The FileWriter for the credentials file
+     * @return A {@link FileWriter} for the credentials file
      * @throws IOException
      */
     public static FileWriter getCredsWriter() throws IOException {
-        return FileHelper.getWriter(FileHelper.getAwsDirectory().toString() + "/credentials");
+        return FileHelper.getWriter(FileHelper.getAwsDirectory(), "credentials");
     }
 
     /**
@@ -40,7 +40,6 @@ public final class CredentialsHelper {
      */
     public static void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
             throws IOException {
-
         try (Reader reader = CredentialsHelper.getCredsReader()) {
             // Create the credentials object with the data read from the credentials file
             Credentials credentials = new Credentials(reader);
