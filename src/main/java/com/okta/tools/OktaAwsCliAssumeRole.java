@@ -66,8 +66,10 @@ final class OktaAwsCliAssumeRole {
 
         currentSession = sessionHelper.getCurrentSession();
 
-        if (currentSession.isPresent()) {
-            environment.oktaProfile = currentSession.get().profileName;
+        if (StringUtils.isEmpty(environment.oktaProfile)) {
+            if (currentSession.isPresent()) {
+                environment.oktaProfile = currentSession.get().profileName;
+            }
         }
 
         currentProfile = sessionHelper.getFromMultipleProfiles();
