@@ -43,7 +43,8 @@ public class Configuration extends Settings {
      * Add or update a profile to an AWS config file based on {@code name}. This will be linked to a credential profile
      * of the same {@code name}, which should already be present in the credentials file.
      * The region for this new profile will be {@link Configuration#REGION_DEFAULT}.
-     * @param name The name of the profile.
+     *
+     * @param name         The name of the profile.
      * @param roleToAssume The ARN of the role to assume in this profile.
      */
     public void addOrUpdateProfile(String name, String roleToAssume) {

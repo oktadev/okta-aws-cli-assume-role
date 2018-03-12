@@ -15,6 +15,8 @@
  */
 package com.okta.tools.saml;
 
+import com.okta.tools.models.AccountOption;
+import com.okta.tools.models.RoleOption;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;

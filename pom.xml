@@ -24,7 +24,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <aws-java-sdk.version>1.11.238</aws-java-sdk.version>
+        <aws-java-sdk.version>1.11.277</aws-java-sdk.version>
         <okta-sdk.version>0.0.4</okta-sdk.version>
         <joda-time.version>2.9.9</joda-time.version>
         <json.version>20171018</json.version>
