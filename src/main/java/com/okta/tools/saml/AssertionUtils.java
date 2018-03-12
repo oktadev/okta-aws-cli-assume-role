@@ -37,12 +37,12 @@ final class AssertionUtils {
 
     private static String getAttributeValue(XMLObject attributeValue) {
         return
-            attributeValue == null ?
-                null :
-            attributeValue instanceof XSString ?
-                ((XSString) attributeValue).getValue() :
-            attributeValue instanceof XSAnyImpl ?
-                ((XSAnyImpl) attributeValue).getTextContent() :
-                attributeValue.toString();
+                attributeValue == null ?
+                        null :
+                        attributeValue instanceof XSString ?
+                                ((XSString) attributeValue).getValue() :
+                                attributeValue instanceof XSAnyImpl ?
+                                        ((XSAnyImpl) attributeValue).getTextContent() :
+                                        attributeValue.toString();
     }
 }

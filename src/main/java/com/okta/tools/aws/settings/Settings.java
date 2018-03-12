@@ -35,6 +35,7 @@ public abstract class Settings {
     /**
      * Create a Settings object from a given {@link java.io.Reader}. The data given by this {@link java.io.Reader} should
      * be INI-formatted.
+     *
      * @param reader The settings we want to work with. N.B.: The reader is consumed by the constructor.
      * @throws IOException Thrown when we cannot read or load from the given {@param reader}.
      */
@@ -46,6 +47,7 @@ public abstract class Settings {
 
     /**
      * Save the settings object to a given {@link java.io.Writer}. The caller is responsible for closing {@param writer}.
+     *
      * @param writer The writer we use to write the settings to.
      * @throws IOException Thrown when we cannot write to {@param writer}.
      */

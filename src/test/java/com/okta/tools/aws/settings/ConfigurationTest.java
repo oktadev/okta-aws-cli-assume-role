@@ -15,6 +15,7 @@
  */
 package com.okta.tools.aws.settings;
 
+import org.apache.commons.lang.StringUtils;
 import org.ini4j.Profile;
 import org.junit.jupiter.api.Test;
 
@@ -97,7 +98,10 @@ class ConfigurationTest {
         configuration.addOrUpdateProfile(profileName, role_arn);
         configuration.save(configurationWriter);
 
-        assertEquals(existingProfile + "\n\n" + manualRole, configurationWriter.toString().trim());
+        String expected = existingProfile + "\n\n" + manualRole;
+        String given = StringUtils.remove(configurationWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
     }
 
     /*
@@ -120,7 +124,9 @@ class ConfigurationTest {
         configuration.addOrUpdateProfile(profileName, updatedPrefix + role_arn);
         configuration.save(configurationWriter);
 
-        assertEquals(expected, configurationWriter.toString().trim());
+        String given = StringUtils.remove(configurationWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
     }
 
     /*
@@ -135,5 +141,33 @@ class ConfigurationTest {
         new Configuration(reader);
         // Causing this to throw an exception
         assertThrows(IOException.class, () -> reader.ready(), "Stream closed");
+    }
+
+    private static int indexOfDifference(String str1, String str2)
+    {
+        if (str1 == str2) {
+            return -1;
+        }
+
+        if (str1 == null || str2 == null)
+        {
+            return 0;
+        }
+
+        int i;
+        for (i = 0; i < str1.length() && i < str2.length(); ++i)
+        {
+            if (str1.charAt(i) != str2.charAt(i))
+            {
+                break;
+            }
+        }
+
+        if (i < str2.length() || i < str1.length())
+        {
+            return i;
+        }
+
+        return -1;
     }
 }

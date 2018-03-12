@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.okta.tools.saml;
+package com.okta.tools.models;
 
 import java.util.List;
 import java.util.Objects;

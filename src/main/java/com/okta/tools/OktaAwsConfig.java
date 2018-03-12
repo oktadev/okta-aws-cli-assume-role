@@ -1,6 +1,9 @@
 package com.okta.tools;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,8 +35,7 @@ final class OktaAwsConfig {
         );
     }
 
-    private static Optional<Path> getConfigFile()
-    {
+    private static Optional<Path> getConfigFile() {
         Path configInWorkingDir = Paths.get(CONFIG_FILENAME);
         if (Files.isRegularFile(configInWorkingDir)) {
             return Optional.of(configInWorkingDir);

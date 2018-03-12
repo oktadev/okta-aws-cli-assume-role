@@ -16,17 +16,19 @@
 package com.okta.tools;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class awscli {
     public static void main(String[] args) throws Exception {
         if (args.length > 0 && "logout".equals(args[0])) {
-            OktaAwsCliAssumeRole oktaAwsCliAssumeRole = OktaAwsConfig.createAwscli();
-            oktaAwsCliAssumeRole.logoutSession();
+            OktaAwsConfig.createAwscli().logoutSession();
             System.out.println("You have been logged out");
             System.exit(0);
             return;
         }
+
         List<String> awsCommand = new ArrayList<>();
         String profileName = OktaAwsConfig.createAwscli().run(Instant.now());
         awsCommand.add("aws");
@@ -37,5 +39,5 @@ public class awscli {
         Process awsSubProcess = awsProcessBuilder.start();
         int exitCode = awsSubProcess.waitFor();
         System.exit(exitCode);
-        }
+    }
 }

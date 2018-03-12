@@ -30,25 +30,27 @@ public class MultipleProfile extends Settings {
     static final String PROFILE_EXPIRY = "profile_expiry";
     static final String OKTA_SESSION = "okta_roleArn";
 
-    public Optional<com.okta.tools.aws.settings.Profile> getProfile(String oktaprofile, Path profileIni) throws IOException {
+    public Optional<com.okta.tools.models.Profile> getProfile(String oktaprofile, Path profileIni) throws IOException {
 
         Ini ini = new Ini(new File(profileIni.toString()));
         Set<String> activeSessions = ini.keySet();
         if (activeSessions.contains(oktaprofile)) {
             Instant expiry = getExpiry(oktaprofile, ini);
             String roleArn = getRoleArn(oktaprofile, ini);
-            return Optional.of(new com.okta.tools.aws.settings.Profile(expiry, roleArn));
+            return Optional.of(new com.okta.tools.models.Profile(expiry, roleArn));
         }
         return Optional.empty();
     }
+
     public void deleteProfile(String profilestore, String oktaProfile) throws IOException {
-        try ( FileInputStream is = new FileInputStream(new File(profilestore))) {
+        try (FileInputStream is = new FileInputStream(new File(profilestore))) {
             Ini ini = new Ini(is);
             ini.remove(ini.get(oktaProfile));
             ini.store(new FileOutputStream(new File(profilestore)));
         }
     }
-    private Instant getExpiry(String oktaprofile,Ini ini) {
+
+    private Instant getExpiry(String oktaprofile, Ini ini) {
         Ini.Section profilesection = ini.get(oktaprofile);
         String profileExpiry = profilesection.get("profile_expiry");
         Instant expiry = Instant.parse(profileExpiry);
@@ -75,13 +77,14 @@ public class MultipleProfile extends Settings {
     /**
      * Add or update a profile to an Okta Profile file based on {@code name}. This will be linked to a okta profile
      * of the same {@code name}, which should already be present in the profile expiry file.
-     * @param name The name of the profile.
-     * @param expiry expiry time of the profile session.
+     *
+     * @param name         The name of the profile.
+     * @param expiry       expiry time of the profile session.
      * @param okta_session the expiry time of the okta session
      */
-    public void addOrUpdateProfile(String name, String okta_session,Instant expiry) {
-        final Profile.Section awsProfile = settings.get(name) != null  ? settings.get(name) : settings.add(name);
-        writeSessionProfile(awsProfile,name,okta_session,expiry);
+    public void addOrUpdateProfile(String name, String okta_session, Instant expiry) {
+        final Profile.Section awsProfile = settings.get(name) != null ? settings.get(name) : settings.add(name);
+        writeSessionProfile(awsProfile, name, okta_session, expiry);
     }
 
     private void writeSessionProfile(Profile.Section awsProfile, String name, String okta_session, Instant expiry) {
