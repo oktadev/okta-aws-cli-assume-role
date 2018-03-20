@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -88,12 +89,11 @@ public class OktaMFA {
      *
      * @param primaryAuthResponse The response from Primary Authentication
      * @return A {@link JSONObject} representing the selected factor.
-     * @throws JSONException
+     * @throws JSONException if a network or protocol error occurs
      */
     private static JSONObject selectFactor(JSONObject primaryAuthResponse) throws JSONException {
         JSONArray factors = primaryAuthResponse.getJSONObject("_embedded").getJSONArray("factors");
         String factorType;
-        System.out.println("\nMulti-Factor authentication is required. Please select a factor to use.");
 
         List<JSONObject> supportedFactors = getUsableFactors(factors);
         if (supportedFactors.isEmpty()) {
@@ -104,33 +104,60 @@ public class OktaMFA {
             }
         }
 
-        System.out.println("Factors:");
-        for (int i = 0; i < supportedFactors.size(); i++) {
-            JSONObject factor = supportedFactors.get(i);
-            factorType = factor.getString("factorType");
-            switch (factorType) {
-                case "question":
-                    factorType = "Security Question";
-                    break;
-                case "sms":
-                    factorType = "SMS Verification";
-                    break;
-                case "token":
-                case "token:software:totp":
-                    String provider = factor.getString("provider");
-                    if (provider.equals("GOOGLE")) {
-                        factorType = "Google Authenticator";
-                    } else {
-                        factorType = "Okta Verify";
-                    }
-                    break;
+        if (supportedFactors.size() > 1) {
+            System.out.println("\nMulti-Factor authentication is required. Please select a factor to use.");
+            System.out.println("Factors:");
+            for (int i = 0; i < supportedFactors.size(); i++) {
+                JSONObject factor = supportedFactors.get(i);
+                factorType = factor.getString("factorType");
+                factorType = getFactorDescription(factorType, factor);
+                System.out.println("[ " + (i + 1) + " ] : " + factorType);
             }
-            System.out.println("[ " + (i + 1) + " ] : " + factorType);
         }
 
         // Handles user factor selection
         int selection = MenuHelper.promptForMenuSelection(supportedFactors.size());
         return supportedFactors.get(selection);
+    }
+
+    private static String getFactorDescription(String factorType, JSONObject factor) {
+        String provider = factor.getString("provider");
+        switch (factorType) {
+            case "push":
+                return "Okta Verify (Push)";
+            case "question":
+                return "Security Question";
+            case "sms":
+                return "SMS Verification";
+            case "call":
+                return "Phone Verification"; // Unsupported
+            case "token:software:totp":
+                switch (provider) {
+                    case "OKTA":
+                        return "Okta Verify (TOTP)";
+                    case "GOOGLE":
+                        return "Google Authenticator";
+                    default:
+                        return provider + " " + factorType;
+                }
+            case "email":
+                return "Email Verification";  // Unsupported
+            case "token":
+                switch (provider) {
+                    case "SYMANTEC":
+                        return "Symantec VIP";
+                    case "RSA":
+                        return "RSA SecurID";
+                    default:
+                        return provider + " " + factorType;
+                }
+            case "web":
+                return "Duo Push"; // Unsupported
+            case "token:hardware":
+                return "Yubikey";
+            default:
+                return provider + " " + factorType;
+        }
     }
 
     /**
@@ -145,8 +172,12 @@ public class OktaMFA {
         for (int i = 0; i < factors.length(); i++) {
             JSONObject factor = factors.getJSONObject(i);
 
-            // Factors that only work on the web cannot be verified via the CLI
-            if (!"web".equals(factor.getString("factorType"))) {
+            String factorType = factor.getString("factorType");
+            if (!Arrays.asList(
+                    "web", // Factors that only work on the web cannot be verified via the CLI
+                    "call", // Call factor support isn't implemented yet
+                    "email"  // Email factor support isn't implemented yet
+            ).contains(factorType)) {
                 eligibleFactors.add(factor);
             }
         }
@@ -160,10 +191,9 @@ public class OktaMFA {
      * @param factor     A {@link JSONObject} representing the user's factor
      * @param stateToken The current state token
      * @return The session token
-     * @throws JSONException
-     * @throws IOException
+     * @throws IOException if a network or protocol error occurs
      */
-    private static String questionFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
+    private static String questionFactor(JSONObject factor, String stateToken) throws IOException {
         String question = factor.getJSONObject("profile").getString("questionText");
         Scanner scanner = new Scanner(System.in);
         String sessionToken = "";
@@ -241,10 +271,9 @@ public class OktaMFA {
      * @param factor     A {@link JSONObject} representing the user's factor
      * @param stateToken The current state token
      * @return The session token
-     * @throws JSONException
-     * @throws IOException
+     * @throws IOException if a network or protocol error occurs
      */
-    private static String totpFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
+    private static String totpFactor(JSONObject factor, String stateToken) throws IOException {
         Scanner scanner = new Scanner(System.in);
         String sessionToken = "";
         String answer = "";
@@ -278,7 +307,6 @@ public class OktaMFA {
      * @param factor     A {@link JSONObject} representing the user's factor
      * @param stateToken The current state token
      * @return The session token
-     * @throws JSONException
      * @throws IOException
      */
     private static String pushFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
@@ -308,11 +336,8 @@ public class OktaMFA {
      * @param stateToken The current state token
      * @param factorType The factor type
      * @return The session token
-     * @throws JSONException
-     * @throws IOException
      */
-    private static String verifyAnswer(String answer, JSONObject factor, String stateToken, String factorType)
-            throws JSONException, IOException {
+    private static String verifyAnswer(String answer, JSONObject factor, String stateToken, String factorType) throws IOException {
 
         String sessionToken = null;
 
