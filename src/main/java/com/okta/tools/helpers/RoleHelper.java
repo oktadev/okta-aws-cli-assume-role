@@ -53,8 +53,6 @@ public class RoleHelper {
             List<AccountOption> accountOptions = getAvailableRoles(samlResponse);
 
             System.out.println("\nPlease choose the role you would like to assume: ");
-            System.out.println(roleIdpPairs.toString());
-            System.out.println(accountOptions.toString());
             //Gather list of applicable AWS roles
             int i = 0;
             int j = -1;
