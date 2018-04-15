@@ -1,5 +1,6 @@
-package com.okta.tools;
+package com.okta.tools.authentication;
 
+import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.helpers.CookieHelper;
 import javafx.application.Application;
 import javafx.concurrent.Worker.State;
@@ -16,17 +17,25 @@ import java.net.CookieHandler;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
-public class BrowserAuthentication extends Application {
-    // FIXME: this is awful
-    private static final CountDownLatch LATCH = new CountDownLatch(1);
-    // FIXME: this is worse
+public final class BrowserAuthentication extends Application {
+    // Trade-off: JavaFX app model makes interacting with UI state challenging
+    // Experienced JavaFX devs welcomed to suggest solutions to this
+    private static final CountDownLatch USER_AUTH_COMPLETE = new CountDownLatch(1);
+
+    // Trade-off: JavaFX app model makes passing parameters to UI challenging
+    // Experienced JavaFX devs welcomed to suggest solutions to this
     private static OktaAwsCliEnvironment ENVIRONMENT;
 
-    public static void login(OktaAwsCliEnvironment environment) throws InterruptedException {
+    // The value of samlResponse is only valid if USER_AUTH_COMPLETE has counted down to zero
+    private static final AtomicReference<String> samlResponse = new AtomicReference<>();
+
+    public static String login(OktaAwsCliEnvironment environment) throws InterruptedException {
         ENVIRONMENT = environment;
         launch();
-        LATCH.await();
+        USER_AUTH_COMPLETE.await();
+        return samlResponse.get();
     }
 
     @Override
@@ -50,16 +59,14 @@ public class BrowserAuthentication extends Application {
                 .addListener((ov, oldState, newState) -> {
                     if (newState == State.SUCCEEDED) {
                         if (webEngine.getLocation().endsWith("/sso/saml")) {
-                            String samlResponse = webEngine.getDocument().getElementsByTagName("input").item(0)
-                                    .getAttributes().getNamedItem("value").getTextContent();
-                            System.out.println(samlResponse);
+                            samlResponse.set(webEngine.getDocument().getElementsByTagName("input").item(0)
+                                    .getAttributes().getNamedItem("value").getTextContent());
                             try {
                                 String cookie = CookieHandler.getDefault().get(uri, headers).get("Cookie").get(0);
                                 String sid = StringUtils.substringBefore(
                                         StringUtils.substringAfter(cookie, "sid="),
                                         ";"
                                 );
-                                System.out.println(sid);
                                 Properties properties = new Properties();
                                 properties.setProperty("sid", sid);
                                 properties.store(new FileWriter(CookieHelper.getCookies().toFile()), "");
@@ -67,7 +74,7 @@ public class BrowserAuthentication extends Application {
                                 throw new RuntimeException(e);
                             } finally {
                                 stage.close();
-                                LATCH.countDown();
+                                USER_AUTH_COMPLETE.countDown();
                             }
                         }
                         stage.setTitle(webEngine.getLocation());
@@ -79,9 +86,5 @@ public class BrowserAuthentication extends Application {
 
         stage.setScene(scene);
         stage.show();
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }
