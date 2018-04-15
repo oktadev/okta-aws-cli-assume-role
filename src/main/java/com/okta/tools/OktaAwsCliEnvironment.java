@@ -1,17 +1,19 @@
 package com.okta.tools;
 
 public class OktaAwsCliEnvironment {
-    public String oktaOrg;
-    public String oktaUsername;
-    public String oktaPassword;
+    public final boolean browserAuth;
+    public final String oktaOrg;
+    public final String oktaUsername;
+    public final String oktaPassword;
     public String oktaProfile;
 
-    public String oktaAwsAppUrl;
+    public final String oktaAwsAppUrl;
 
     public String awsRoleToAssume;
 
-    public OktaAwsCliEnvironment(String oktaOrg, String oktaUsername, String oktaPassword, String oktaProfile,
+    public OktaAwsCliEnvironment(boolean browserAuth, String oktaOrg, String oktaUsername, String oktaPassword, String oktaProfile,
                                  String oktaAwsAppUrl, String awsRoleToAssume) {
+        this.browserAuth = browserAuth;
         this.oktaOrg = oktaOrg;
         this.oktaUsername = oktaUsername;
         this.oktaPassword = oktaPassword;

@@ -1,5 +1,6 @@
 package com.okta.tools.saml;
 
+import com.okta.tools.BrowserAuthentication;
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.authentication.OktaAuthentication;
 import com.okta.tools.helpers.CookieHelper;
@@ -39,11 +40,18 @@ public class OktaSaml {
     public String getSamlResponse() throws IOException {
         authentication = new OktaAuthentication(environment);
 
-        if (!reuseSession()) {
+        if (reuseSession()) {
+            return getSamlResponseForAwsRefresh();
+        } else if (environment.browserAuth) {
+            try {
+                BrowserAuthentication.login(environment);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            return getSamlResponseForAwsRefresh();
+        } else {
             String oktaSessionToken = authentication.getOktaSessionToken();
             return getSamlResponseForAws(oktaSessionToken);
-        } else {
-            return getSamlResponseForAwsRefresh();
         }
     }
 

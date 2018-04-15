@@ -1,5 +1,6 @@
 package com.okta.tools;
 
+import com.okta.tools.helpers.CookieHelper;
 import javafx.application.Application;
 import javafx.concurrent.Worker.State;
 import javafx.scene.Group;
@@ -10,19 +11,23 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.CookieHandler;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 public class BrowserAuthentication extends Application {
-    private static final String CONFIG_FILENAME = "config.properties";
+    // FIXME: this is awful
+    private static final CountDownLatch LATCH = new CountDownLatch(1);
+    // FIXME: this is worse
+    private static OktaAwsCliEnvironment ENVIRONMENT;
+
+    public static void login(OktaAwsCliEnvironment environment) throws InterruptedException {
+        ENVIRONMENT = environment;
+        launch();
+        LATCH.await();
+    }
 
     @Override
     public void start(final Stage stage) throws IOException {
@@ -36,15 +41,8 @@ public class BrowserAuthentication extends Application {
 
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setContent(browser);
-        Properties properties = new Properties();
-        getConfigFile().ifPresent(configFile -> {
-            try (InputStream config = new FileInputStream(configFile.toFile())) {
-                properties.load(new InputStreamReader(config));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        URI uri = URI.create(getEnvOrConfig(properties, "OKTA_AWS_APP_URL"));
+
+        URI uri = URI.create(ENVIRONMENT.oktaAwsAppUrl);
         Map<String, List<String>> headers = new LinkedHashMap<>();
         java.net.CookieHandler.getDefault().put(uri, headers);
 
@@ -62,10 +60,14 @@ public class BrowserAuthentication extends Application {
                                         ";"
                                 );
                                 System.out.println(sid);
+                                Properties properties = new Properties();
+                                properties.setProperty("sid", sid);
+                                properties.store(new FileWriter(CookieHelper.getCookies().toFile()), "");
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             } finally {
                                 stage.close();
+                                LATCH.countDown();
                             }
                         }
                         stage.setTitle(webEngine.getLocation());
@@ -77,26 +79,6 @@ public class BrowserAuthentication extends Application {
 
         stage.setScene(scene);
         stage.show();
-    }
-
-    private static Optional<Path> getConfigFile() {
-        Path configInWorkingDir = Paths.get(CONFIG_FILENAME);
-        if (Files.isRegularFile(configInWorkingDir)) {
-            return Optional.of(configInWorkingDir);
-        }
-        Path userHome = Paths.get(System.getProperty("user.home"));
-        Path oktaDir = userHome.resolve(".okta");
-        Path configInOktaDir = oktaDir.resolve(CONFIG_FILENAME);
-        if (Files.isRegularFile(configInOktaDir)) {
-            return Optional.of(configInOktaDir);
-        }
-        return Optional.empty();
-    }
-
-    private static String getEnvOrConfig(Properties properties, String propertyName) {
-        String envValue = System.getenv(propertyName);
-        return envValue != null ?
-                envValue : properties.getProperty(propertyName);
     }
 
     public static void main(String[] args) {
