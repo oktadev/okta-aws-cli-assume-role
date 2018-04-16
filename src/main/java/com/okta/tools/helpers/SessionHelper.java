@@ -96,8 +96,7 @@ public final class SessionHelper {
     }
 
     private void logoutMultipleAccounts(String profileName) throws IOException {
-        File cookieStore = CookieHelper.getCookies().toFile();
-        cookieStore.deleteOnExit();
+        CookieHelper.clearCookies();
 
         getMultipleProfile().deleteProfile(getMultipleProfilesPath().toString(), profileName);
     }
