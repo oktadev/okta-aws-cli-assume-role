@@ -1,5 +1,6 @@
 package com.okta.tools.saml;
 
+import com.okta.tools.authentication.BrowserAuthentication;
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.authentication.OktaAuthentication;
 import com.okta.tools.helpers.CookieHelper;
@@ -9,41 +10,39 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.cookie.Cookie;
-import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.cookie.BasicClientCookie;
 import org.json.JSONException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import java.util.Properties;
-import java.util.stream.Collectors;
 
 public class OktaSaml {
 
     private OktaAwsCliEnvironment environment;
-
-    private OktaAuthentication authentication;
 
     public OktaSaml(OktaAwsCliEnvironment environment) {
         this.environment = environment;
     }
 
     public String getSamlResponse() throws IOException {
-        authentication = new OktaAuthentication(environment);
+        OktaAuthentication authentication = new OktaAuthentication(environment);
 
-        if (!reuseSession()) {
+        if (reuseSession()) {
+            return getSamlResponseForAwsRefresh();
+        } else if (environment.browserAuth) {
+            try {
+                return BrowserAuthentication.login(environment);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
             String oktaSessionToken = authentication.getOktaSessionToken();
             return getSamlResponseForAws(oktaSessionToken);
-        } else {
-            return getSamlResponseForAwsRefresh();
         }
     }
 
@@ -70,17 +69,8 @@ public class OktaSaml {
     }
 
     private Document launchOktaAwsApp(String appUrl) throws IOException {
-        CookieStore cookieStore = new BasicCookieStore();
-        Properties loadedProperties = new Properties();
-
         HttpGet httpget = new HttpGet(appUrl);
-        loadedProperties.load(new FileReader(CookieHelper.getCookies().toFile()));
-        loadedProperties.entrySet().stream().map(entry -> {
-            BasicClientCookie basicClientCookie = new BasicClientCookie(entry.getKey().toString(), entry.getValue().toString());
-            basicClientCookie.setDomain(environment.oktaOrg);
-
-            return basicClientCookie;
-        }).forEach(cookieStore::addCookie);
+        CookieStore cookieStore = CookieHelper.loadCookies(environment);
 
         try (CloseableHttpClient httpClient = HttpClients.custom().setDefaultCookieStore(cookieStore).useSystemProperties().build();
              CloseableHttpResponse oktaAwsAppResponse = httpClient.execute(httpget)) {
@@ -93,10 +83,7 @@ public class OktaSaml {
                         + oktaAwsAppResponse.getStatusLine().getStatusCode());
             }
 
-            Properties properties = new Properties();
-            cookieStore.getCookies().stream().collect(Collectors.toMap(Cookie::getName, Cookie::getValue))
-                    .forEach(properties::setProperty);
-            properties.store(new FileWriter(CookieHelper.getCookies().toFile()), "");
+            CookieHelper.storeCookies(cookieStore);
 
             return Jsoup.parse(
                     oktaAwsAppResponse.getEntity().getContent(),
@@ -107,15 +94,7 @@ public class OktaSaml {
     }
 
     private boolean reuseSession() throws JSONException, IOException {
-        CookieStore cookieStore = new BasicCookieStore();
-        Properties loadedProperties = new Properties();
-        loadedProperties.load(new FileReader(CookieHelper.getCookies().toFile()));
-        loadedProperties.entrySet().stream().map(entry -> {
-            BasicClientCookie basicClientCookie = new BasicClientCookie(entry.getKey().toString(), entry.getValue().toString());
-            basicClientCookie.setDomain(environment.oktaOrg);
-
-            return basicClientCookie;
-        }).forEach(cookieStore::addCookie);
+        CookieStore cookieStore = CookieHelper.loadCookies(environment);
 
         Optional<String> sidCookie = cookieStore.getCookies().stream().filter(cookie -> "sid".equals(cookie.getName())).findFirst().map(Cookie::getValue);
 
@@ -134,4 +113,5 @@ public class OktaSaml {
             return authnResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
         }
     }
+
 }

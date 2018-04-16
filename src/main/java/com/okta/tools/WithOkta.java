@@ -20,7 +20,7 @@ import java.time.Instant;
 
 public class WithOkta {
     public static void main(String[] args) throws Exception {
-        OktaAwsConfig.createAwscli().run(Instant.now());
+        OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment()).run(Instant.now());
         ProcessBuilder awsProcessBuilder = new ProcessBuilder().inheritIO().command(args);
         Process awsSubProcess = awsProcessBuilder.start();
         int exitCode = awsSubProcess.waitFor();

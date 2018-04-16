@@ -48,12 +48,12 @@ final class OktaAwsCliAssumeRole {
     private Optional<Session> currentSession;
     private Optional<Profile> currentProfile;
 
-    static OktaAwsCliAssumeRole createOktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaAWSUsername, String oktaAWSPassword, String oktaProfile, String oktaAWSRoleToAssume) {
-        return new OktaAwsCliAssumeRole(oktaOrg, oktaAWSAppURL, oktaAWSUsername, oktaAWSPassword, oktaProfile, oktaAWSRoleToAssume);
+    static OktaAwsCliAssumeRole withEnvironment(OktaAwsCliEnvironment environment) {
+        return new OktaAwsCliAssumeRole(environment);
     }
 
-    private OktaAwsCliAssumeRole(String oktaOrg, String oktaAWSAppURL, String oktaUsername, String oktaAWSPassword, String oktaProfile, String awsRoleToAssume) {
-        environment = new OktaAwsCliEnvironment(oktaOrg, oktaUsername, oktaAWSPassword, oktaProfile, oktaAWSAppURL, awsRoleToAssume);
+    private OktaAwsCliAssumeRole(OktaAwsCliEnvironment environment) {
+        this.environment = environment;
     }
 
     private void init() throws Exception {
