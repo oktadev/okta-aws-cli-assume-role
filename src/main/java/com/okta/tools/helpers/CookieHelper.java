@@ -1,18 +1,16 @@
 package com.okta.tools.helpers;
 
+import com.google.common.base.Splitter;
 import com.okta.tools.OktaAwsCliEnvironment;
 import org.apache.http.client.CookieStore;
-import org.apache.http.cookie.*;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.cookie.BasicClientCookie;
-import org.apache.http.impl.cookie.DefaultCookieSpec;
-import org.apache.http.message.BasicHeader;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -37,21 +35,14 @@ public final class CookieHelper {
         return filePath;
     }
 
-    // SOURCE: https://stackoverflow.com/a/13104873/154527
-    // SOURCE: https://github.com/droidparts/droidparts/blob/master/droidparts/src/org/droidparts/net/http/CookieJar.java
-    public static CookieStore parseCookies(URI uri, List<String> cookieHeaders) {
-        CookieSpec cookieSpec = new DefaultCookieSpec();
+    public static CookieStore parseCookies(List<String> cookieHeaders) {
         CookieStore cookieStore = new BasicCookieStore();
-        int port = (uri.getPort() < 0) ? 80 : uri.getPort();
-        boolean secure = "https".equals(uri.getScheme());
-        CookieOrigin origin = new CookieOrigin(uri.getHost(), port,
-                uri.getPath(), secure);
         for (String cookieHeader : cookieHeaders) {
-            BasicHeader header = new BasicHeader(SM.SET_COOKIE, cookieHeader);
-            try {
-                cookieSpec.parse(header, origin).forEach(cookieStore::addCookie);
-            } catch (MalformedCookieException e) {
-                throw new RuntimeException(e);
+            for (String cookie : Splitter.on(";").trimResults().omitEmptyStrings().split(cookieHeader)) {
+                int indexOfEquals = cookie.indexOf('=');
+                String name = cookie.substring(0, indexOfEquals);
+                String value = cookie.substring(indexOfEquals + 1);
+                cookieStore.addCookie(new BasicClientCookie(name, value));
             }
         }
         return cookieStore;
