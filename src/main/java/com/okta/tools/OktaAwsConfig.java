@@ -14,7 +14,7 @@ final class OktaAwsConfig {
 
     private static final String CONFIG_FILENAME = "config.properties";
 
-    static OktaAwsCliAssumeRole createAwscli() {
+    static OktaAwsCliEnvironment loadEnvironment() {
         Properties properties = new Properties();
         getConfigFile().ifPresent(configFile -> {
             try (InputStream config = new FileInputStream(configFile.toFile())) {
@@ -24,14 +24,14 @@ final class OktaAwsConfig {
             }
         });
 
-        return OktaAwsCliAssumeRole.createOktaAwsCliAssumeRole(
+        return new OktaAwsCliEnvironment(
+                Boolean.valueOf(getEnvOrConfig(properties, "OKTA_BROWSER_AUTH")),
                 getEnvOrConfig(properties, "OKTA_ORG"),
-                getEnvOrConfig(properties, "OKTA_AWS_APP_URL"),
                 getEnvOrConfig(properties, "OKTA_USERNAME"),
                 getEnvOrConfig(properties, "OKTA_PASSWORD"),
                 getEnvOrConfig(properties, "OKTA_PROFILE"),
+                getEnvOrConfig(properties, "OKTA_AWS_APP_URL"),
                 getEnvOrConfig(properties, "OKTA_AWS_ROLE_TO_ASSUME")
-
         );
     }
 
