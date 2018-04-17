@@ -101,6 +101,8 @@ Here is the list of parameters that must be maintained in the ```config.properti
   - ```OKTA_AWS_APP_URL``` is the url link of your Okta AWS application url (see below for more info) 
   - ```OKTA_USERNAME``` is the username to use. If present will skip username input.
   - ```OKTA_PASSWORD``` is the password to use. If present will skip password input.
+  - ```OKTA_BROWSER_AUTH``` set to **true** to use integrated web browser for authentication (default: **false**)
+  - ```OKTA_PROFILE``` reuse or generate a named AWS profile (default: generate a randomly named profile)  
   - ```OKTA_AWS_ROLE_TO_ASSUME``` is the role to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found.
   
   - **Obtaining the AWS app url**
