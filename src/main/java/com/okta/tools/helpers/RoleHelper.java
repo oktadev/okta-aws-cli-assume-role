@@ -93,11 +93,13 @@ public class RoleHelper {
             principalArn = role.getValue();
         }
 
+        int stsDuration = environment.stsDuration;
+
         return new AssumeRoleWithSAMLRequest()
                 .withPrincipalArn(principalArn)
                 .withRoleArn(roleArn)
                 .withSAMLAssertion(samlResponse)
-                .withDurationSeconds(3600);
+                .withDurationSeconds(stsDuration);
     }
 
     private List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {

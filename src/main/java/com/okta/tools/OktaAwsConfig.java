@@ -31,7 +31,8 @@ final class OktaAwsConfig {
                 getEnvOrConfig(properties, "OKTA_PASSWORD"),
                 getEnvOrConfig(properties, "OKTA_PROFILE"),
                 getEnvOrConfig(properties, "OKTA_AWS_APP_URL"),
-                getEnvOrConfig(properties, "OKTA_AWS_ROLE_TO_ASSUME")
+                getEnvOrConfig(properties, "OKTA_AWS_ROLE_TO_ASSUME"),
+                getStsDurationOrDefault(getEnvOrConfig(properties, "OKTA_STS_DURATION"))
         );
     }
 
@@ -53,5 +54,9 @@ final class OktaAwsConfig {
         String envValue = System.getenv(propertyName);
         return envValue != null ?
                 envValue : properties.getProperty(propertyName);
+    }
+
+    private static Integer getStsDurationOrDefault(String stsDuration) {
+        return (stsDuration == null) ? 3600 : Integer.parseInt(stsDuration);
     }
 }

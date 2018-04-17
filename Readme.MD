@@ -102,6 +102,7 @@ Here is the list of parameters that must be maintained in the ```config.properti
   - ```OKTA_USERNAME``` is the username to use. If present will skip username input.
   - ```OKTA_PASSWORD``` is the password to use. If present will skip password input.
   - ```OKTA_AWS_ROLE_TO_ASSUME``` is the role to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found.
+  - ```OKTA_STS_DURATION``` is the duration the role will be assumed, in seconds. The maximum session duration allowed by AWS is 12 hours and this needs to be set on the role as well.  Defaults to 1hr.
   
   - **Obtaining the AWS app url**
     - Navigate to the ```Admin Dashboard``` of you Okta organization
