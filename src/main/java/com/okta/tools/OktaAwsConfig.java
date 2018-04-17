@@ -31,7 +31,8 @@ final class OktaAwsConfig {
                 getEnvOrConfig(properties, "OKTA_PASSWORD"),
                 getEnvOrConfig(properties, "OKTA_PROFILE"),
                 getEnvOrConfig(properties, "OKTA_AWS_APP_URL"),
-                getEnvOrConfig(properties, "OKTA_AWS_ROLE_TO_ASSUME")
+                getEnvOrConfig(properties, "OKTA_AWS_ROLE_TO_ASSUME"),
+                Integer.valueOf(getEnvOrConfig(properties, "OKTA_STS_DURATION"))
         );
     }
 
