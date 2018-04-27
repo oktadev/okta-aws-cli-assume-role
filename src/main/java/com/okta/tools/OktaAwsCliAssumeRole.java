@@ -15,6 +15,15 @@
  */
 package com.okta.tools;
 
+import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.helpers.ConfigHelper;
@@ -24,13 +33,6 @@ import com.okta.tools.helpers.SessionHelper;
 import com.okta.tools.models.Profile;
 import com.okta.tools.models.Session;
 import com.okta.tools.saml.OktaSaml;
-import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Optional;
 
 final class OktaAwsCliAssumeRole {
 
@@ -75,30 +77,50 @@ final class OktaAwsCliAssumeRole {
         currentProfile = sessionHelper.getFromMultipleProfiles();
     }
 
-    String run(Instant startInstant) throws Exception {
-        init();
+	String run(Instant startInstant) throws Exception {
+		init();
 
-        environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
+		environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
 
-        if (currentSession.isPresent() && sessionHelper.sessionIsActive(startInstant, currentSession.get()) &&
-                StringUtils.isBlank(environment.oktaProfile)) {
-            return currentSession.get().profileName;
-        }
+		if (currentSession.isPresent() && sessionHelper.sessionIsActive(startInstant, currentSession.get()) &&
+				StringUtils.isBlank(environment.oktaProfile)) {
+			return currentSession.get().profileName;
+		}
 
-        String samlResponse = oktaSaml.getSamlResponse();
-        AssumeRoleWithSAMLRequest assumeRequest = roleHelper.chooseAwsRoleToAssume(samlResponse);
-        Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
-        AssumeRoleWithSAMLResult assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
-        String profileName = profileHelper.createAwsProfile(assumeResult);
+		String samlResponse = oktaSaml.getSamlResponse();
+		AssumeRoleWithSAMLRequest assumeRequest = roleHelper.chooseAwsRoleToAssume(samlResponse);
+		Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
+		AssumeRoleWithSAMLResult assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
+		String profileName = profileHelper.createAwsProfile(assumeResult);
 
-        environment.oktaProfile = profileName;
+		updateConfig(assumeRequest, sessionExpiry, profileName);
+
+		return profileName;
+	}
+    
+	AssumeRoleWithSAMLResult getAssumeRoleWithSAMLResult(Instant startInstant) throws Exception {
+		init();
+
+		environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
+
+		String samlResponse = oktaSaml.getSamlResponse();
+		AssumeRoleWithSAMLRequest assumeRequest = roleHelper.chooseAwsRoleToAssume(samlResponse);
+		Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
+		AssumeRoleWithSAMLResult assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
+		String profileName = profileHelper.createAwsProfile(assumeResult);
+
+		updateConfig(assumeRequest, sessionExpiry, profileName);
+
+		return assumeResult;
+	}
+
+	private void updateConfig(AssumeRoleWithSAMLRequest assumeRequest, Instant sessionExpiry, String profileName) throws IOException {
+		environment.oktaProfile = profileName;
         environment.awsRoleToAssume = assumeRequest.getRoleArn();
         configHelper.updateConfigFile();
         sessionHelper.addOrUpdateProfile(sessionExpiry);
         sessionHelper.updateCurrentSession(sessionExpiry, profileName);
-
-        return profileName;
-    }
+	}
 
     public void logoutSession() throws Exception {
         init();
