@@ -77,50 +77,61 @@ final class OktaAwsCliAssumeRole {
         currentProfile = sessionHelper.getFromMultipleProfiles();
     }
 
-	String run(Instant startInstant) throws Exception {
-		init();
+    String run(Instant startInstant) throws Exception {
+        init();
 
-		environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
+        environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
 
-		if (currentSession.isPresent() && sessionHelper.sessionIsActive(startInstant, currentSession.get()) &&
-				StringUtils.isBlank(environment.oktaProfile)) {
-			return currentSession.get().profileName;
-		}
+        if (currentSession.isPresent() && sessionHelper.sessionIsActive(startInstant, currentSession.get()) &&
+                StringUtils.isBlank(environment.oktaProfile)) {
+            return currentSession.get().profileName;
+        }
 
-		String samlResponse = oktaSaml.getSamlResponse();
-		AssumeRoleWithSAMLRequest assumeRequest = roleHelper.chooseAwsRoleToAssume(samlResponse);
-		Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
-		AssumeRoleWithSAMLResult assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
-		String profileName = profileHelper.createAwsProfile(assumeResult);
+        ProfileSAMLResult profileSAMLResult = doRequest(startInstant);
 
-		updateConfig(assumeRequest, sessionExpiry, profileName);
+        return profileSAMLResult.profileName;
+    }
 
-		return profileName;
-	}
-    
-	AssumeRoleWithSAMLResult getAssumeRoleWithSAMLResult(Instant startInstant) throws Exception {
-		init();
+    AssumeRoleWithSAMLResult getAssumeRoleWithSAMLResult(Instant startInstant) throws Exception {
+        init();
 
-		environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
+        environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
 
-		String samlResponse = oktaSaml.getSamlResponse();
-		AssumeRoleWithSAMLRequest assumeRequest = roleHelper.chooseAwsRoleToAssume(samlResponse);
-		Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
-		AssumeRoleWithSAMLResult assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
-		String profileName = profileHelper.createAwsProfile(assumeResult);
+        ProfileSAMLResult profileSAMLResult = doRequest(startInstant);
 
-		updateConfig(assumeRequest, sessionExpiry, profileName);
+        return profileSAMLResult.assumeRoleWithSAMLResult;
+    }
 
-		return assumeResult;
-	}
+    private ProfileSAMLResult doRequest(Instant startInstant) throws IOException {
+        String samlResponse = oktaSaml.getSamlResponse();
+        AssumeRoleWithSAMLRequest assumeRequest = roleHelper.chooseAwsRoleToAssume(samlResponse);
+        Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
+        AssumeRoleWithSAMLResult assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
+        String profileName = profileHelper.createAwsProfile(assumeResult);
 
-	private void updateConfig(AssumeRoleWithSAMLRequest assumeRequest, Instant sessionExpiry, String profileName) throws IOException {
-		environment.oktaProfile = profileName;
+        updateConfig(assumeRequest, sessionExpiry, profileName);
+
+        return new ProfileSAMLResult(assumeResult, profileName);
+    }
+
+    private void updateConfig(AssumeRoleWithSAMLRequest assumeRequest, Instant sessionExpiry, String profileName) throws IOException {
+        environment.oktaProfile = profileName;
         environment.awsRoleToAssume = assumeRequest.getRoleArn();
         configHelper.updateConfigFile();
         sessionHelper.addOrUpdateProfile(sessionExpiry);
         sessionHelper.updateCurrentSession(sessionExpiry, profileName);
-	}
+    }
+
+    // Holds the values for the profile name and SAML result shared by CLI and SDK implementations
+    private class ProfileSAMLResult {
+        String profileName;
+        AssumeRoleWithSAMLResult assumeRoleWithSAMLResult;
+
+        ProfileSAMLResult(AssumeRoleWithSAMLResult pAssumeRoleWithSAMLResult, String pProfileName) {
+            assumeRoleWithSAMLResult = pAssumeRoleWithSAMLResult;
+            profileName = pProfileName;
+        }
+    }
 
     public void logoutSession() throws Exception {
         init();

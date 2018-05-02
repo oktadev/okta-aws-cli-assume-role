@@ -22,19 +22,14 @@ import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.amazonaws.services.securitytoken.model.Credentials;
 
+public interface AWSCredentialsUtil {
 
-public class AWSCredentialsUtil {
-	
-	private AWSCredentialsUtil() {
-		// Utility class - should not be instantiated
-	}
-	
-	public static AWSCredentials getAWSCredential() throws Exception {
-		AssumeRoleWithSAMLResult samlResult = OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment()).getAssumeRoleWithSAMLResult(Instant.now());
-		
-		Credentials credentials = samlResult.getCredentials();
-		
-		return new BasicSessionCredentials(credentials.getAccessKeyId(), credentials.getSecretAccessKey(), credentials.getSessionToken());
-	}
+    static AWSCredentials getAWSCredential() throws Exception {
+        AssumeRoleWithSAMLResult samlResult = OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment()).getAssumeRoleWithSAMLResult(Instant.now());
+
+        Credentials credentials = samlResult.getCredentials();
+
+        return new BasicSessionCredentials(credentials.getAccessKeyId(), credentials.getSecretAccessKey(), credentials.getSessionToken());
+    }
 
 }
