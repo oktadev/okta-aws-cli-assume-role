@@ -103,6 +103,7 @@ Here is the list of parameters that must be maintained in the ```config.properti
   - ```OKTA_PASSWORD``` is the password to use. If present will skip password input.
   - ```OKTA_BROWSER_AUTH``` set to **true** to use integrated web browser for authentication (default: **false**)
   - ```OKTA_PROFILE``` is the name of the AWS profile to create/reuse (default: get AWS profile name based on per-session STS user name)  
+  - ```OKTA_AWS_REGION``` is the default AWS region to store with the created profile.
   - ```OKTA_AWS_ROLE_TO_ASSUME``` is the role to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found.
   - ```OKTA_STS_DURATION``` is the duration the role will be assumed, in seconds. The maximum session duration allowed by AWS is 12 hours and this needs to be set on the role as well.  Defaults to 1hr.
   
@@ -145,6 +146,11 @@ at least allow the role to assume itself:
     ]
 }
 ```
+
+### Add config.properties parameters to support silent mode without prompt for user input (2018/6/22 update)
+- OKTA_AWS_REGION
+
+Same parameters can be set as environment variable. config.properties parameter has priority over environment variable.
 
 ### Add config.properties parameters to support silent mode without prompt for user input (2017/6/8 update)
 - OKTA_USERNAME
