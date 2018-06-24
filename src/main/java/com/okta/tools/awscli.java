@@ -22,12 +22,7 @@ import java.util.List;
 
 public class awscli {
     public static void main(String[] args) throws Exception {
-        if (args.length > 0 && "logout".equals(args[0])) {
-            OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment()).logoutSession();
-            System.out.println("You have been logged out");
-            System.exit(0);
-            return;
-        }
+        if (LogoutHandler.handleLogout(args)) return;
 
         List<String> awsCommand = new ArrayList<>();
         String profileName = OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment()).run(Instant.now());
