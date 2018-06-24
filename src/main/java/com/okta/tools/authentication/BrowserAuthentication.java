@@ -65,7 +65,7 @@ public final class BrowserAuthentication extends Application {
 
         webEngine.getLoadWorker().stateProperty()
                 .addListener((ov, oldState, newState) -> {
-                    if( webEngine.getDocument() != null ) {
+                    if (webEngine.getDocument() != null) {
                         checkForAwsSamlSignon(stage, webEngine, uri, headers);
                         stage.setTitle(webEngine.getLocation());
                     }
