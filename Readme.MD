@@ -151,14 +151,14 @@ at least allow the role to assume itself:
 - Add commandline support for ```--profile``` to specify OKTA_PROFILE
 - OKTA_AWS_REGION
 
-Same parameters can be set as environment variable. config.properties parameter has priority over environment variable.
+Same parameters can be set as environment variable. Environment variables take precedence over config.properties parameters.
 
 ### Add config.properties parameters to support silent mode without prompt for user input (2017/6/8 update)
 - OKTA_USERNAME
 - OKTA_PASSWORD
 - OKTA_AWS_ROLE_TO_ASSUME
 
-Same parameters can be set as environment variable. config.properties parameter has priority over environment variable.
+Same parameters can be set as environment variable. Environment variables take precedence over config.properties parameters.
 
 ### AWS:reInvent Release (2016/11/29 update)
 #### The Okta AWS-CLI tool finally supports multi-policy cross-account roles!
