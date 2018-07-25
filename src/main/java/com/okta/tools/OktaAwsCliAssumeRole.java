@@ -20,16 +20,13 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
+import com.okta.tools.helpers.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
-import com.okta.tools.helpers.ConfigHelper;
-import com.okta.tools.helpers.ProfileHelper;
-import com.okta.tools.helpers.RoleHelper;
-import com.okta.tools.helpers.SessionHelper;
 import com.okta.tools.models.Profile;
 import com.okta.tools.models.Session;
 import com.okta.tools.saml.OktaSaml;
@@ -59,12 +56,13 @@ final class OktaAwsCliAssumeRole {
     }
 
     private void init() throws Exception {
-        sessionHelper = new SessionHelper(environment);
+        CookieHelper cookieHelper = new CookieHelper(environment);
+        sessionHelper = new SessionHelper(environment, cookieHelper);
         configHelper = new ConfigHelper(environment);
         roleHelper = new RoleHelper(environment);
         profileHelper = new ProfileHelper(environment);
 
-        oktaSaml = new OktaSaml(environment);
+        oktaSaml = new OktaSaml(environment, cookieHelper);
 
         currentSession = sessionHelper.getCurrentSession();
 
