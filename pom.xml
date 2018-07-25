@@ -32,7 +32,7 @@
         <junit.jupiter.version>5.0.2</junit.jupiter.version>
         <junit.platform.version>1.0.1</junit.platform.version>
         <ini4j.version>0.5.4</ini4j.version>
-        <jsoup.version>1.11.2</jsoup.version>
+        <jsoup.version>1.11.3</jsoup.version>
         <opensaml.version>3.3.0</opensaml.version>
         <slf4j.version>1.7.25</slf4j.version>
     </properties>
@@ -41,7 +41,12 @@
         <!-- runtime dependencies -->
         <dependency>
             <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk</artifactId>
+            <artifactId>aws-java-sdk-core</artifactId>
+            <version>${aws-java-sdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sts</artifactId>
             <version>${aws-java-sdk.version}</version>
         </dependency>
         <dependency>

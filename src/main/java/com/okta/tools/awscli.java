@@ -22,6 +22,8 @@ import java.util.List;
 
 public class awscli {
     public static void main(String[] args) throws Exception {
+        if (LogoutHandler.handleLogout(args)) return;
+      
         // support named profiles from the CLI
         // https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html
         String profile = null;
@@ -33,14 +35,6 @@ public class awscli {
             }
             hasProfile = "--profile".equals(arg);
         }
-
-        if (args.length > 0 && "logout".equals(args[0])) {
-            OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment(profile)).logoutSession();
-            System.out.println("You have been logged out");
-            System.exit(0);
-            return;
-        }
-
 
         List<String> awsCommand = new ArrayList<>();
         String profileName = OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment(profile)).run(Instant.now());
