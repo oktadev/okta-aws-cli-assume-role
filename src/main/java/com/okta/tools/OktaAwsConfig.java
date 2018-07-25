@@ -15,6 +15,10 @@ final class OktaAwsConfig {
     private static final String CONFIG_FILENAME = "config.properties";
 
     static OktaAwsCliEnvironment loadEnvironment() {
+        return loadEnvironment(null);
+    }
+
+    static OktaAwsCliEnvironment loadEnvironment(String profile) {        
         Properties properties = new Properties();
         getConfigFile().ifPresent(configFile -> {
             try (InputStream config = new FileInputStream(configFile.toFile())) {
@@ -29,10 +33,11 @@ final class OktaAwsConfig {
                 getEnvOrConfig(properties, "OKTA_ORG"),
                 getEnvOrConfig(properties, "OKTA_USERNAME"),
                 getEnvOrConfig(properties, "OKTA_PASSWORD"),
-                getEnvOrConfig(properties, "OKTA_PROFILE"),
+                getProfile(profile, getEnvOrConfig(properties, "OKTA_PROFILE")),
                 getEnvOrConfig(properties, "OKTA_AWS_APP_URL"),
                 getEnvOrConfig(properties, "OKTA_AWS_ROLE_TO_ASSUME"),
-                getStsDurationOrDefault(getEnvOrConfig(properties, "OKTA_STS_DURATION"))
+                getStsDurationOrDefault(getEnvOrConfig(properties, "OKTA_STS_DURATION")),
+                getAwsRegionOrDefault(getEnvOrConfig(properties, "OKTA_AWS_REGION"))
         );
     }
 
@@ -56,7 +61,16 @@ final class OktaAwsConfig {
                 envValue : properties.getProperty(propertyName);
     }
 
+    private static String getProfile(String profileFromCmdLine, String profileFromEnvOrConfig) {
+        return profileFromCmdLine != null ?
+                profileFromCmdLine : profileFromEnvOrConfig;
+    }
+
     private static Integer getStsDurationOrDefault(String stsDuration) {
         return (stsDuration == null) ? 3600 : Integer.parseInt(stsDuration);
+    }
+
+    private static String getAwsRegionOrDefault(String region) {
+        return (region == null) ? "us-east-1" : region;
     }
 }

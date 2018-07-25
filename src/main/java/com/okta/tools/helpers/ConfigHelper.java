@@ -46,7 +46,7 @@ public final class ConfigHelper {
             Configuration configuration = new Configuration(reader);
 
             // Write the given profile data
-            configuration.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume);
+            configuration.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, environment.awsRegion);
 
             // Write the updated profile
             try (FileWriter fileWriter = getConfigWriter()) {
