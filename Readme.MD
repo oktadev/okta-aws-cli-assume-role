@@ -1,8 +1,8 @@
 # Okta AWS CLI Assume Role tool
 
-New to this tool? **Start with the [Okta-AWS Integration Guide](https://support.okta.com/help/articles/Knowledge_Article/Amazon-Web-Services-and-Okta-Integration-Guide)**. We highly recommend that you first read it to understand how Okta and AWS integrate with each other.
+New to Amazon Web Services with Okta? **Start with the [Configuring AWS in Okta](#configuring-aws-in-okta).
 
-This tool has been verified to work on Mac OS X El Capitan and Windows Server 2012 R2, and is expected to work on Linux and Unix as well.
+This tool has been verified to work on macOS Sierra, High Sierra, Windows Server 2012 R2, Windows 10, and Ubuntu 16.04 LTS, and is expected to work on other Linux systems as well.
 
 - [Installation](#installation)
 - [Usage](#usage)
@@ -10,7 +10,7 @@ This tool has been verified to work on Mac OS X El Capitan and Windows Server 20
     - [Prerequisites](#prerequisites)
     - [Building on the command line](#building-on-the-command-line)
     - [Opening the project with IntelliJ Idea](#opening-the-project-with-intellij-idea)
-- [Configuring AWS IAM](#configuring-aws-iam)
+- [Configuring AWS in Okta](#configuring-aws-in-okta)
 - [Configuring the application](#configuring-the-application)
 - [History](#history)
     - [Wrap AWS CLI with session resumption (2017/12/5 update)](#wrap-aws-cli-with-session-resumption-2017125-update)
@@ -25,6 +25,27 @@ This tool has been verified to work on Mac OS X El Capitan and Windows Server 20
 
 ## Installation
 
+### Windows
+
+1. Copy the following PowerShell bootstrap script into your clipboard:
+    ```powershell
+    Invoke-RestMethod https://raw.githubusercontent.com/oktadeveloper/okta-aws-cli-assume-role/master/bin/Install-OktaAwsCli.ps1 | clip.exe
+    ```
+2. Open a PowerShell console (regular user, NOT admin it will break)
+3. Right-click once the paste the bootstrap script into the session
+4. Right-click a second time to paste and run the install script
+5. Customize **%userprofile%\.okta\config.properties** to reflect you Okta and Amazon Web Services setup
+
+### macOS/Linux
+
+1. Run the following in a Terminal:
+    ```bash
+    curl 'https://raw.githubusercontent.com/oktadeveloper/okta-aws-cli-assume-role/master/bin/install.sh' | bash
+    ```
+2. Customize **%userprofile%\.okta\config.properties** to reflect you Okta and Amazon Web Services setup
+
+### Manual install
+
 Create a `.okta` directory in your home directory. For example, `~/.okta`.
 
 Download the latest release JAR and put it in `.okta`:
@@ -33,7 +54,7 @@ https://github.com/oktadeveloper/okta-aws-cli-assume-role/releases
 Copy `config.properties` to `.okta/config.properties` and set
 **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
 
-```json
+```properties
 OKTA_ORG=acmecorp.oktapreview.com
 OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
 ```
@@ -45,15 +66,15 @@ Copy scripts from `.okta/bin` to somewhere on your PATH.
 Verify your setup with a simple command:
 
 ```bash
-awscli sts get-caller-identity
+aws test sts get-caller-identity
 ```
 
-This will prompt for Okta credentials, log you into AWS, let you pick a role, and store a session for you.
+This will prompt for Okta credentials, log you into AWS, let you pick a role, and store a session profile called **test** for you.
 
 Run the program again to see session resumption (you won't be asked for Okta credentials until the session expires):
 
 ```bash
-awscli sts get-caller-identity
+aws test sts get-caller-identity
 ```
 
 ## Compiling the application
@@ -63,9 +84,7 @@ The application was built and compiled with [JetBrains' IntelliJ IDEA](https://w
 ### Prerequisites
 First of all, it goes without saying that you will need to install the [Java SE 8x](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or the [Java JDK 8x](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).
 
-Next, in order to compile the application, you will need to download and install the [AWS Java SDK](https://aws.amazon.com/sdk-for-java/) as well as the [AWS Command Line Interface](https://aws.amazon.com/cli). Once you have downloaded the ```AWS Java SDK```, make sure you copy the latest AWS JAR file (currently ```aws-java-sdk-1.10.74.jar```) into the ```lib``` folder of this tool (otherwise, you will not be able to compile or run it).
-
-You will also need the [Okta Java SDK](https://github.com/okta/oktasdk-java) but we provide a compiled version of it within this repository so there's nothing specific you need to do at this point. We used the following path structure to manage our IntelliJ project: ```$HOME/Projects/okta-aws-cli-assume-role``` and we recommend you do the same to avoid fixing too many references. We've also created a ```lib``` sub-folder inside the ```okta-aws-cli-assume-role``` root folder where we're storing the AWS Java SDK (```aws-java-sdk-1.10.74.jar```), the Okta Java SDK (```okta-sdk.jar```) and other dependencies. We strongly recommend that you do the same.
+Then you will need [Maven 2 or later](https://maven.apache.org/install.html) to run the build.
 
 ### Building on the command line
 
@@ -86,16 +105,12 @@ cp target/okta-aws-cli-*.jar out/oktaawscli.jar
 - The project also builds the JAR artifact, so if you browse to the ```out``` sub-folder, you will see the ```oktaawscli.jar``` JAR artifact.
 - Make sure the ```awscli.command``` file is in the ```out``` sub-folder.
 
-## Configuring AWS IAM
+## Configuring AWS in Okta
 
-  Because this tool aims at facilitating your interaction with the AWS CLI, it must be able to look into the role you select to assume in order to figure out whether it's a role with direct permissions on the account, or a cross-account role that allows you to assume a role (with real permissions) in another account. To perform this introspection into the AWS roles, the tool must be granted AIM Read Only Access in AWS so that it can automatically add the proper role_arn and source_profile entries into the AWS config file.
-
-In order to generate the key and secret to be configured in the ```config.properties``` file, please follow the steps highlighted in ```Appendix A: How to create a IAM user for role introspection``` in the [Okta-AWS Integration Guide](https://support.okta.com/help/articles/Knowledge_Article/Amazon-Web-Services-and-Okta-Integration-Guide) 
+[Integrating the Amazon Web Services Command Line Interface Using Okta](https://support.okta.com/help/Documentation/Knowledge_Article/Integrating-the-Amazon-Web-Services-Command-Line-Interface-Using-Okta). 
 
 ## Configuring the application
-  It is essential that ```config.properties``` be in the same directory as the ```oktaawscli.jar``` file (i.e. in the ```out``` directory). The ```config.properties``` config file holds information specific to each Okta organization (or "tenant") and needs to be configured on an org to org basis. Please copy it from the ```src/com/okta/tools``` folder to the ```out``` folder.
-  
-Here is the list of parameters that must be maintained in the ```config.properties``` file:
+Here is the list of parameters that can be environment variables or settings in the ```~/.okta/config.properties``` file:
   
   - ```OKTA_ORG``` which is the url of your Okta org (starting with https://).
   - ```OKTA_AWS_APP_URL``` is the url link of your Okta AWS application url (see below for more info) 
@@ -114,67 +129,7 @@ Here is the list of parameters that must be maintained in the ```config.properti
     - Your link is located under ```EMBED LINK``` 
   - Replace the example values in ```config.properties``` with your values
 
-
-## History
-
-### Wrap AWS CLI with session resumption (2017/12/5 update)
-Stored IAM credentials are no longer used: you no longer need to distribute or rotate these credentials.
-
-Minimal config requires only your orgname and Amazon Web Services Okta app embed link:
-
-```json
-OKTA_ORG=acmecorp.oktapreview.com
-OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
-```
-
-If the role you are assuming does not have sts:AssumeRole, you will need to attach an inline policy like this to it to
-at least allow the role to assume itself:
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "sts:AssumeRole"
-            ],
-            "Resource": [
-                "arn:aws:iam::123456789012:role/ReadOnly"
-            ]
-        }
-    ]
-}
-```
-
-### Add config.properties parameters to support silent mode without prompt for user input (2018/6/22 update)
-- Add commandline support for ```--profile``` to specify OKTA_PROFILE
-- OKTA_AWS_REGION
-
-Same parameters can be set as environment variable. Environment variables take precedence over config.properties parameters.
-
-### Add config.properties parameters to support silent mode without prompt for user input (2017/6/8 update)
-- OKTA_USERNAME
-- OKTA_PASSWORD
-- OKTA_AWS_ROLE_TO_ASSUME
-
-Same parameters can be set as environment variable. Environment variables take precedence over config.properties parameters.
-
-### AWS:reInvent Release (2016/11/29 update)
-#### The Okta AWS-CLI tool finally supports multi-policy cross-account roles!
-You can now use this tool with the cross-account role architecture recommended in the [Okta-AWS Integration Guide](https://support.okta.com/help/Documentation/Knowledge_Article/Integrating-the-Amazon-Web-Services-Command-Line-Interface-Using-Okta), i.e. you can assign multiple AssumeRole policies to a single cross-account role.
-
-##### Important note
-
-The AWS-CLI tool currently only supports single-statement policies, i.e. policies with one single AssumeRole action (pointing to a role in a separate account). Additionally, the tool only supports managed policies. Support for inline policies is planned in the near future.
-
-
-The Okta AWS-CLI Tool allows Okta customers to take advantage of [Okta](www.okta.com) to use the [AWS Command Line Interface](https://aws.amazon.com/cli) without relying on permanent AWS keys. More specifically, it allows them to generate temporary 60-minute keys
-that are stored for each profile in the ```~/.aws/credentials``` file. Additionally, if the AWS environment is leveraging cross-account roles and the AssumeRole AWS function, the tool will be able to detect that you choose
-to assume a cross-account role and will be able to extract the actual role in the target account as well as add an additional profile line the ```~/.aws/config``` file.
-
-__Important note__: please note that this tool only supports Okta MFA set up at the organization level (i.e. not at the sign-on policy level).
-
+Note: environment variables take precedence over the config file.
 
 ## Troubleshooting
 
@@ -183,6 +138,8 @@ __Important note__: please note that this tool only supports Okta MFA set up at 
 This means that MFA is enforced, but you have no factors enrolled on your user.
 
 You should enrol a CLI-supported factor (all except Duo as far as I know).
+
+If you are using Duo Push, consider setting **OKTA_BROWSER_AUTH=true** in [the configuration](#configuring-the-application).
 
 ### I have Duo, but I get "None of your factors are supported"
 
