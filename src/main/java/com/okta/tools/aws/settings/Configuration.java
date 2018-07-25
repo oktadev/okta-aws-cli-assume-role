@@ -26,7 +26,6 @@ public class Configuration extends Settings {
     static final String SOURCE_PROFILE = "source_profile";
     static final String REGION = "region";
     static final String PROFILE_PREFIX = "profile ";
-    private static final String REGION_DEFAULT = "us-east-1";
 
     /**
      * Create a Configuration object from a given {@link Reader}. The data given by this {@link Reader} should
@@ -42,12 +41,13 @@ public class Configuration extends Settings {
     /**
      * Add or update a profile to an AWS config file based on {@code name}. This will be linked to a credential profile
      * of the same {@code name}, which should already be present in the credentials file.
-     * The region for this new profile will be {@link Configuration#REGION_DEFAULT}.
+     * The region for this new profile will be {@link OktaAwsCliEnvironment#awsRegion}.
      *
      * @param name         The name of the profile.
      * @param roleToAssume The ARN of the role to assume in this profile.
+     * @param region       The AWS to use if not already present in the profile.
      */
-    public void addOrUpdateProfile(String name, String roleToAssume) {
+    public void addOrUpdateProfile(String name, String roleToAssume, String region) {
         // profileName is the string used for the section in the AWS config file.
         // This should be prefixed with "profile ".
         final String profileName = PROFILE_PREFIX + name;
@@ -56,21 +56,21 @@ public class Configuration extends Settings {
         // profile to this profile.
         final boolean newConfig = settings.isEmpty();
         if (newConfig) {
-            writeConfigurationProfile(settings.add(DEFAULTPROFILENAME), name, roleToAssume);
+            writeConfigurationProfile(settings.add(DEFAULTPROFILENAME), name, roleToAssume, region);
         }
 
         // Write the new profile data
         final Profile.Section awsProfile = settings.get(profileName) != null
                 ? settings.get(profileName)
                 : settings.add(profileName);
-        writeConfigurationProfile(awsProfile, name, roleToAssume);
+        writeConfigurationProfile(awsProfile, name, roleToAssume, region);
     }
 
-    private void writeConfigurationProfile(Profile.Section awsProfile, String name, String roleToAssume) {
+    private void writeConfigurationProfile(Profile.Section awsProfile, String name, String roleToAssume, String region) {
         awsProfile.put(ROLE_ARN, roleToAssume);
         awsProfile.put(SOURCE_PROFILE, name + "_source");
         if (!awsProfile.containsKey(REGION)) {
-            awsProfile.put(REGION, REGION_DEFAULT);
+            awsProfile.put(REGION, region);
         }
     }
 }

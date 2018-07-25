@@ -71,7 +71,7 @@ class ConfigurationTest {
         assertTrue(initiallyEmpty.settings.isEmpty());
 
         // Write an initial profile. This should create a default profile as well.
-        initiallyEmpty.addOrUpdateProfile(profileName, role_arn);
+        initiallyEmpty.addOrUpdateProfile(profileName, role_arn, region);
         assertEquals(2, initiallyEmpty.settings.size());
         assertEquals(profileName + "_source", initiallyEmpty.settings.get(DEFAULTPROFILENAME, SOURCE_PROFILE));
         assertEquals(role_arn, initiallyEmpty.settings.get(DEFAULTPROFILENAME, ROLE_ARN));
@@ -80,7 +80,7 @@ class ConfigurationTest {
 
         // Write another profile. Make sure the default profile is left alone.
         final String postfix = "_2";
-        initiallyEmpty.addOrUpdateProfile(profileName + postfix, role_arn + postfix);
+        initiallyEmpty.addOrUpdateProfile(profileName + postfix, role_arn + postfix, region);
         assertTrue(initiallyEmpty.settings.containsKey(PROFILE_PREFIX + profileName + postfix));
         assertEquals(3, initiallyEmpty.settings.size());
         assertEquals(defaultProfileBefore, sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME)));
@@ -95,7 +95,7 @@ class ConfigurationTest {
         final StringWriter configurationWriter = new StringWriter();
         final Configuration configuration = new Configuration(configurationReader);
 
-        configuration.addOrUpdateProfile(profileName, role_arn);
+        configuration.addOrUpdateProfile(profileName, role_arn, region);
         configuration.save(configurationWriter);
 
         String expected = existingProfile + "\n\n" + manualRole;
@@ -121,7 +121,7 @@ class ConfigurationTest {
                 + "\n\n" + existingProfile;
 
 
-        configuration.addOrUpdateProfile(profileName, updatedPrefix + role_arn);
+        configuration.addOrUpdateProfile(profileName, updatedPrefix + role_arn, region);
         configuration.save(configurationWriter);
 
         String given = StringUtils.remove(configurationWriter.toString().trim(), '\r');

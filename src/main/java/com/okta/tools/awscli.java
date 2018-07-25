@@ -23,9 +23,21 @@ import java.util.List;
 public class awscli {
     public static void main(String[] args) throws Exception {
         if (LogoutHandler.handleLogout(args)) return;
+      
+        // support named profiles from the CLI
+        // https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html
+        String profile = null;
+        boolean hasProfile = false;
+        for (String arg : args) {
+            if (hasProfile) {
+                profile = arg;
+                break;
+            }
+            hasProfile = "--profile".equals(arg);
+        }
 
         List<String> awsCommand = new ArrayList<>();
-        String profileName = OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment()).run(Instant.now());
+        String profileName = OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment(profile)).run(Instant.now());
         awsCommand.add("aws");
         awsCommand.add("--profile");
         awsCommand.add(profileName);
