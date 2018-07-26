@@ -25,7 +25,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <aws-java-sdk.version>1.11.277</aws-java-sdk.version>
-        <okta-sdk.version>0.0.4</okta-sdk.version>
+        <okta.version>1.2.0</okta.version>
         <joda-time.version>2.9.9</joda-time.version>
         <json.version>20171018</json.version>
         <log4j.version>2.10.0</log4j.version>
@@ -50,9 +50,21 @@
             <version>${aws-java-sdk.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.okta</groupId>
-            <artifactId>okta-sdk</artifactId>
-            <version>${okta-sdk.version}</version>
+            <groupId>com.okta.sdk</groupId>
+            <artifactId>okta-sdk-api</artifactId>
+            <version>${okta.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.okta.sdk</groupId>
+            <artifactId>okta-sdk-impl</artifactId>
+            <version>${okta.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.okta.sdk</groupId>
+            <artifactId>okta-sdk-httpclient</artifactId>
+            <version>${okta.version}</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>joda-time</groupId>
