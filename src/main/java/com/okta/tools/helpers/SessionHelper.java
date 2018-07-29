@@ -18,10 +18,12 @@ public final class SessionHelper {
     private static final String OKTA_AWS_CLI_EXPIRY_PROPERTY = "OKTA_AWS_CLI_EXPIRY";
     private static final String OKTA_AWS_CLI_PROFILE_PROPERTY = "OKTA_AWS_CLI_PROFILE";
 
-    private OktaAwsCliEnvironment environment;
+    private final OktaAwsCliEnvironment environment;
+    private final CookieHelper cookieHelper;
 
-    public SessionHelper(OktaAwsCliEnvironment environment) {
+    public SessionHelper(OktaAwsCliEnvironment environment, CookieHelper cookieHelper) {
         this.environment = environment;
+        this.cookieHelper = cookieHelper;
     }
 
     /**
@@ -96,7 +98,7 @@ public final class SessionHelper {
     }
 
     private void logoutMultipleAccounts(String profileName) throws IOException {
-        CookieHelper.clearCookies();
+        cookieHelper.clearCookies();
 
         getMultipleProfile().deleteProfile(getMultipleProfilesPath().toString(), profileName);
     }

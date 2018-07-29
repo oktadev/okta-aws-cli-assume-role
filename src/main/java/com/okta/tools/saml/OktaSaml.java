@@ -23,10 +23,12 @@ import java.util.Optional;
 
 public class OktaSaml {
 
-    private OktaAwsCliEnvironment environment;
+    private final OktaAwsCliEnvironment environment;
+    private final CookieHelper cookieHelper;
 
-    public OktaSaml(OktaAwsCliEnvironment environment) {
+    public OktaSaml(OktaAwsCliEnvironment environment, CookieHelper cookieHelper) {
         this.environment = environment;
+        this.cookieHelper = cookieHelper;
     }
 
     public String getSamlResponse() throws IOException {
@@ -70,7 +72,7 @@ public class OktaSaml {
 
     private Document launchOktaAwsApp(String appUrl) throws IOException {
         HttpGet httpget = new HttpGet(appUrl);
-        CookieStore cookieStore = CookieHelper.loadCookies(environment);
+        CookieStore cookieStore = cookieHelper.loadCookies();
 
         try (CloseableHttpClient httpClient = HttpClients.custom().setDefaultCookieStore(cookieStore).useSystemProperties().build();
              CloseableHttpResponse oktaAwsAppResponse = httpClient.execute(httpget)) {
@@ -83,7 +85,7 @@ public class OktaSaml {
                         + oktaAwsAppResponse.getStatusLine().getStatusCode());
             }
 
-            CookieHelper.storeCookies(cookieStore);
+            cookieHelper.storeCookies(cookieStore);
 
             return Jsoup.parse(
                     oktaAwsAppResponse.getEntity().getContent(),
@@ -94,7 +96,7 @@ public class OktaSaml {
     }
 
     private boolean reuseSession() throws JSONException, IOException {
-        CookieStore cookieStore = CookieHelper.loadCookies(environment);
+        CookieStore cookieStore = cookieHelper.loadCookies();
 
         Optional<String> sidCookie = cookieStore.getCookies().stream().filter(cookie -> "sid".equals(cookie.getName())).findFirst().map(Cookie::getValue);
 

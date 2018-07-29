@@ -19,13 +19,19 @@ import java.util.stream.Collectors;
 
 public final class CookieHelper {
 
+    private final OktaAwsCliEnvironment environment;
+
+    public CookieHelper(OktaAwsCliEnvironment environment) {
+        this.environment = environment;
+    }
+
     /**
      * Get the path for the cookies file
      *
      * @return A {@link Path} to the cookies.properties file
-     * @throws IOException
+     * @throws IOException if the cookies file cannot be loaded or created
      */
-    private static Path getCookiesFilePath() throws IOException {
+    private Path getCookiesFilePath() throws IOException {
         Path filePath = FileHelper.getFilePath(FileHelper.getOktaDirectory(), "cookies.properties");
 
         if (!Files.exists(filePath)) {
@@ -35,7 +41,7 @@ public final class CookieHelper {
         return filePath;
     }
 
-    public static CookieStore parseCookies(List<String> cookieHeaders) {
+    public CookieStore parseCookies(List<String> cookieHeaders) {
         CookieStore cookieStore = new BasicCookieStore();
         for (String cookieHeader : cookieHeaders) {
             for (String cookie : Splitter.on(";").trimResults().omitEmptyStrings().split(cookieHeader)) {
@@ -48,7 +54,7 @@ public final class CookieHelper {
         return cookieStore;
     }
 
-    public static CookieStore loadCookies(OktaAwsCliEnvironment environment) throws IOException {
+    public CookieStore loadCookies() throws IOException {
         CookieStore cookieStore = new BasicCookieStore();
         Properties loadedProperties = new Properties();
         loadedProperties.load(new FileReader(getCookiesFilePath().toFile()));
@@ -61,14 +67,16 @@ public final class CookieHelper {
         return cookieStore;
     }
 
-    public static void storeCookies(CookieStore cookieStore) throws IOException {
+    public void storeCookies(CookieStore cookieStore) throws IOException {
         Properties properties = new Properties();
-        cookieStore.getCookies().stream().collect(Collectors.toMap(Cookie::getName, Cookie::getValue))
+        cookieStore.getCookies().stream()
+                .filter(c -> environment.oktaOrg.equals(c.getDomain()))
+                .collect(Collectors.toMap(Cookie::getName, Cookie::getValue, (x, y) -> y))
                 .forEach(properties::setProperty);
         properties.store(new FileWriter(getCookiesFilePath().toFile()), "");
     }
 
-    static void clearCookies() throws IOException {
+    void clearCookies() throws IOException {
         File cookieStore = getCookiesFilePath().toFile();
         cookieStore.deleteOnExit();
     }
