@@ -4,7 +4,6 @@ import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.helpers.CookieHelper;
 import com.okta.tools.util.NodeListIterable;
 import javafx.application.Application;
-import javafx.concurrent.Worker.State;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
@@ -35,12 +34,14 @@ public final class BrowserAuthentication extends Application {
     // Trade-off: JavaFX app model makes passing parameters to UI challenging
     // Experienced JavaFX devs welcomed to suggest solutions to this
     private static OktaAwsCliEnvironment ENVIRONMENT;
+    private static CookieHelper cookieHelper;
 
     // The value of samlResponse is only valid if USER_AUTH_COMPLETE has counted down to zero
     private static final AtomicReference<String> samlResponse = new AtomicReference<>();
 
     public static String login(OktaAwsCliEnvironment environment) throws InterruptedException {
         ENVIRONMENT = environment;
+        cookieHelper = new CookieHelper(ENVIRONMENT);
         launch();
         USER_AUTH_COMPLETE.await();
         return samlResponse.get();
@@ -142,7 +143,7 @@ public final class BrowserAuthentication extends Application {
         samlResponse.set(samlResponseForAws);
         try {
             CookieStore cookieStore = extractCookies(uri, headers);
-            CookieHelper.storeCookies(cookieStore);
+            cookieHelper.storeCookies(cookieStore);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
@@ -153,6 +154,6 @@ public final class BrowserAuthentication extends Application {
 
     private CookieStore extractCookies(URI uri, Map<String, List<String>> headers) throws IOException {
         List<String> cookieHeaders = CookieHandler.getDefault().get(uri, headers).get("Cookie");
-        return CookieHelper.parseCookies(cookieHeaders);
+        return cookieHelper.parseCookies(cookieHeaders);
     }
 }
