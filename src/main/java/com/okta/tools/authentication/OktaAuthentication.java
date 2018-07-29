@@ -56,6 +56,9 @@ public final class OktaAuthentication {
             if (requestStatus == HttpStatus.SC_OK) {
                 return response.responseContent;
             }
+            if (environment.oktaPassword != null) {
+                throw new IllegalStateException("Stored username or password is invalid.");
+            }
         }
     }
 
