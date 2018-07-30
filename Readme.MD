@@ -34,7 +34,7 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
 2. Open a PowerShell console (regular user, NOT admin it will break)
 3. Right-click once the paste the bootstrap script into the session
 4. Right-click a second time to paste and run the install script
-5. Customize **%userprofile%\.okta\config.properties** to reflect you Okta and Amazon Web Services setup
+5. Customize **%userprofile%\\.okta\\config.properties** to reflect your Okta and Amazon Web Services setup
 
 ### macOS/Linux
 
@@ -42,7 +42,7 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
     ```bash
     curl 'https://raw.githubusercontent.com/oktadeveloper/okta-aws-cli-assume-role/master/bin/install.sh' | bash
     ```
-2. Customize **%userprofile%\.okta\config.properties** to reflect you Okta and Amazon Web Services setup
+2. Customize **~/.okta/config.properties** to reflect your Okta and Amazon Web Services setup
 
 ### Manual install
 
