@@ -15,6 +15,7 @@
  */
 package com.okta.tools.aws.settings;
 
+import com.okta.tools.OktaAwsCliEnvironment;
 import org.ini4j.Profile;
 
 import java.io.IOException;
@@ -25,7 +26,7 @@ public class Configuration extends Settings {
     static final String ROLE_ARN = "role_arn";
     static final String SOURCE_PROFILE = "source_profile";
     static final String REGION = "region";
-    static final String PROFILE_PREFIX = "profile ";
+    private final OktaAwsCliEnvironment environment;
 
     /**
      * Create a Configuration object from a given {@link Reader}. The data given by this {@link Reader} should
@@ -34,8 +35,13 @@ public class Configuration extends Settings {
      * @param reader The settings we want to work with. N.B.: The reader is consumed by the constructor.
      * @throws IOException Thrown when we cannot read or load from the given {@code reader}.
      */
-    public Configuration(Reader reader) throws IOException {
+    public Configuration(Reader reader, OktaAwsCliEnvironment environment) throws IOException {
         super(reader);
+        this.environment = environment;
+    }
+
+    Configuration(Reader reader) throws IOException {
+        this(reader, new OktaAwsCliEnvironment());
     }
 
     /**
@@ -50,7 +56,7 @@ public class Configuration extends Settings {
     public void addOrUpdateProfile(String name, String roleToAssume, String region) {
         // profileName is the string used for the section in the AWS config file.
         // This should be prefixed with "profile ".
-        final String profileName = PROFILE_PREFIX + name;
+        final String profileName = "default".equals(name) ? "default" : environment.profilePrefix + name;
 
         // Determine whether this is a new AWS configuration file. If it is, we'll set the default
         // profile to this profile.
@@ -68,7 +74,7 @@ public class Configuration extends Settings {
 
     private void writeConfigurationProfile(Profile.Section awsProfile, String name, String roleToAssume, String region) {
         awsProfile.put(ROLE_ARN, roleToAssume);
-        awsProfile.put(SOURCE_PROFILE, name + "_source");
+        awsProfile.put(SOURCE_PROFILE, "default".equals(name) ? "default" : name + "_source");
         if (!awsProfile.containsKey(REGION)) {
             awsProfile.put(REGION, region);
         }

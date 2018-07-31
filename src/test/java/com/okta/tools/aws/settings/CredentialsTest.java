@@ -15,12 +15,15 @@
  */
 package com.okta.tools.aws.settings;
 
+import com.okta.tools.OktaAwsCliEnvironment;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.commons.util.StringUtils;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CredentialsTest {
 
@@ -37,6 +40,15 @@ class CredentialsTest {
             + Credentials.ACCES_KEY_ID + " = " + accessKey + "\n"
             + Credentials.SECRET_ACCESS_KEY + " = " + secretKey + "\n"
             + Credentials.SESSION_TOKEN + " = " + sessionToken;
+    private String manualRoleCustomSuffix = "[" + roleName + "_custom]\n"
+            + Credentials.ACCES_KEY_ID + " = " + accessKey + "\n"
+            + Credentials.SECRET_ACCESS_KEY + " = " + secretKey + "\n"
+            + Credentials.SESSION_TOKEN + " = " + sessionToken;
+    private OktaAwsCliEnvironment environmentWithCustomSuffix =
+            new OktaAwsCliEnvironment(false, null, null,
+                    null, null, null,
+                    null, 0, null,
+                    null, "_custom");
 
     /*
      * Test instantiating a Credentials object with invalid INI.
@@ -64,6 +76,23 @@ class CredentialsTest {
     }
 
     /*
+     * Test writing a new credentials profile to a blank credentials file with custom suffix.
+     */
+    @Test
+    void addOrUpdateProfileToNewCredentialsFileCustomSuffix() throws IOException {
+        final StringReader credentialsReader = new StringReader("");
+        final StringWriter credentialsWriter = new StringWriter();
+        final Credentials credentials = new Credentials(credentialsReader, environmentWithCustomSuffix);
+
+        credentials.addOrUpdateProfile(roleName, accessKey, secretKey, sessionToken);
+        credentials.save(credentialsWriter);
+
+        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
+
+        assertEquals(manualRoleCustomSuffix, given);
+    }
+
+    /*
      * Test writing a new credentials profile to an existing credentials file.
      */
     @Test
@@ -76,6 +105,24 @@ class CredentialsTest {
         credentials.save(credentialsWriter);
 
         String expected = existingCredentials + "\n\n" + manualRole;
+        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
+    }
+
+    /*
+     * Test writing a new credentials profile to an existing credentials file with custom suffix.
+     */
+    @Test
+    void addOrUpdateProfileToExistingCredentialsFileCustomSuffix() throws IOException {
+        final StringReader credentialsReader = new StringReader(existingCredentials);
+        final StringWriter credentialsWriter = new StringWriter();
+        final Credentials credentials = new Credentials(credentialsReader, environmentWithCustomSuffix);
+
+        credentials.addOrUpdateProfile(roleName, accessKey, secretKey, sessionToken);
+        credentials.save(credentialsWriter);
+
+        String expected = existingCredentials + "\n\n" + manualRoleCustomSuffix;
         String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
 
         assertEquals(expected, given);
@@ -98,6 +145,58 @@ class CredentialsTest {
                 + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken;
 
         credentials.addOrUpdateProfile(roleName, updatedPrefix + accessKey, updatedPrefix + secretKey, updatedPrefix + sessionToken);
+        credentials.save(credentialsWriter);
+
+        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
+    }
+
+    /*
+     * Test updating an existing profile with custom suffix.
+     *
+     * Leaves the entry with the previous suffix in place by design.
+     */
+    @Test
+    void addOrUpdateProfileToExistingProfileCustomSuffix() throws IOException {
+        final StringReader credentialsReader = new StringReader(existingCredentials + "\n\n" + manualRole);
+        final StringWriter credentialsWriter = new StringWriter();
+        final Credentials credentials = new Credentials(credentialsReader, environmentWithCustomSuffix);
+
+        final String updatedPrefix = "updated_";
+        final String expected = existingCredentials + "\n\n"
+                + manualRole + "\n\n"
+                + "[" + roleName + "_custom]\n"
+                + Credentials.ACCES_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
+                + Credentials.SECRET_ACCESS_KEY + " = " + updatedPrefix + secretKey + "\n"
+                + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken;
+
+        credentials.addOrUpdateProfile(roleName, updatedPrefix + accessKey, updatedPrefix + secretKey, updatedPrefix + sessionToken);
+        credentials.save(credentialsWriter);
+
+        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
+    }
+
+    /*
+     * Test updating default profile.
+     */
+    @Test
+    void addOrUpdateDefaultProfileToExistingProfile() throws IOException {
+        final StringReader credentialsReader = new StringReader(existingCredentials + "\n\n" + manualRole);
+        final StringWriter credentialsWriter = new StringWriter();
+        final Credentials credentials = new Credentials(credentialsReader);
+
+        final String updatedPrefix = "updated_";
+        final String expected =
+                "[default]\n"
+                + Credentials.ACCES_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
+                + Credentials.SECRET_ACCESS_KEY + " = " + updatedPrefix + secretKey + "\n"
+                + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken + "\n\n"
+                + manualRole;
+
+        credentials.addOrUpdateProfile("default", updatedPrefix + accessKey, updatedPrefix + secretKey, updatedPrefix + sessionToken);
         credentials.save(credentialsWriter);
 
         String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');

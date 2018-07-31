@@ -121,6 +121,8 @@ Here is the list of parameters that can be environment variables or settings in 
   - ```OKTA_AWS_REGION``` is the default AWS region to store with the created profile.
   - ```OKTA_AWS_ROLE_TO_ASSUME``` is the role to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found.
   - ```OKTA_STS_DURATION``` is the duration the role will be assumed, in seconds. The maximum session duration allowed by AWS is 12 hours and this needs to be set on the role as well.  Defaults to 1hr.
+  - ```OKTA_PROFLE_PREFIX``` is the text to prepend to the section name in ~/.aws/config for a named profile.  Defaults to "profile " (necessary for use with AWS CLI).
+  - ```OKTA_CREDENTIALS_SUFFIX``` is the text to append to the section name in ~/.aws/credentals for a named profile.  Defaults to "_source" (necessary for use with AWS Tools for Windows PowerShell).
   
   - **Obtaining the AWS app url**
     - Navigate to the ```Admin Dashboard``` of you Okta organization
