@@ -9,9 +9,11 @@ import java.io.IOException;
 
 public class ProfileHelper {
 
+    private final CredentialsHelper credentialsHelper;
     private OktaAwsCliEnvironment environment;
 
-    public ProfileHelper(OktaAwsCliEnvironment environment) {
+    public ProfileHelper(CredentialsHelper credentialsHelper, OktaAwsCliEnvironment environment) {
+        this.credentialsHelper = credentialsHelper;
         this.environment = environment;
     }
 
@@ -27,7 +29,7 @@ public class ProfileHelper {
         String awsSessionToken = temporaryCredentials.getSessionToken();
 
         String credentialsProfileName = getProfileName(assumeResult, environment.oktaProfile);
-        CredentialsHelper.updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
+        credentialsHelper.updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
 
         return credentialsProfileName;
     }

@@ -15,6 +15,7 @@
  */
 package com.okta.tools.aws.settings;
 
+import com.okta.tools.OktaAwsCliEnvironment;
 import org.apache.commons.lang.StringUtils;
 import org.ini4j.Profile;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.okta.tools.aws.settings.Configuration.PROFILE_PREFIX;
 import static com.okta.tools.aws.settings.Configuration.ROLE_ARN;
 import static com.okta.tools.aws.settings.Configuration.SOURCE_PROFILE;
 import static com.okta.tools.aws.settings.Settings.DEFAULTPROFILENAME;
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ConfigurationTest {
 
-    private String existingProfile = "[profile default]\n"
+    private String existingProfile = "[profile existing]\n"
             + Configuration.ROLE_ARN + " = " + "arn:aws:iam:12345:role/foo" + "\n"
             + SOURCE_PROFILE + " = " + "default-source_profile" + "\n"
             + Configuration.REGION + " = " + "default-region";
@@ -46,6 +46,18 @@ class ConfigurationTest {
             + Configuration.ROLE_ARN + " = " + role_arn + "\n"
             + SOURCE_PROFILE + " = " + profileName + "_source\n"
             + Configuration.REGION + " = " + region;
+    private String manualRoleCustomPrefix = "[custom " + profileName + "]\n"
+            + Configuration.ROLE_ARN + " = " + role_arn + "\n"
+            + SOURCE_PROFILE + " = " + profileName + "_source\n"
+            + Configuration.REGION + " = " + region;
+    private String defaultRole = "[default]\n"
+            + Configuration.ROLE_ARN + " = " + role_arn + "\n"
+            + SOURCE_PROFILE + " = " + "default\n"
+            + Configuration.REGION + " = " + region;
+    private OktaAwsCliEnvironment environmentWithCustomPrefix =
+            new OktaAwsCliEnvironment(false, null, null,
+                    null, null, null, null,
+                    0, null, "custom ", null);
 
     /*
      * Test instantiating a Credentials object with invalid INI.
@@ -81,8 +93,70 @@ class ConfigurationTest {
         // Write another profile. Make sure the default profile is left alone.
         final String postfix = "_2";
         initiallyEmpty.addOrUpdateProfile(profileName + postfix, role_arn + postfix, region);
-        assertTrue(initiallyEmpty.settings.containsKey(PROFILE_PREFIX + profileName + postfix));
+        assertTrue(initiallyEmpty.settings.containsKey("profile " + profileName + postfix));
         assertEquals(3, initiallyEmpty.settings.size());
+        assertEquals(defaultProfileBefore, sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME)));
+    }
+
+    /*
+     * Test writing a new profile to a blank configuration file with custom prefix.
+     */
+    @Test
+    void addOrUpdateProfileToNewConfigFileWithCustomPrefix() throws IOException {
+        Configuration initiallyEmpty = new Configuration(new StringReader(""), environmentWithCustomPrefix);
+
+        // Small function to copy a section to a map so we can easily compare it
+        Function<Profile.Section, Map<String, String>> sectionToMap = section ->
+                section.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // Make sure the INI object is empty.
+        assertTrue(initiallyEmpty.settings.isEmpty());
+
+        // Write an initial profile. This should create a default profile as well.
+        initiallyEmpty.addOrUpdateProfile(profileName, role_arn, region);
+        assertEquals(2, initiallyEmpty.settings.size());
+        assertEquals(profileName + "_source", initiallyEmpty.settings.get(DEFAULTPROFILENAME, SOURCE_PROFILE));
+        assertEquals(role_arn, initiallyEmpty.settings.get(DEFAULTPROFILENAME, ROLE_ARN));
+        // State of the default profile after creating an initial profile.
+        final Map<String, String> defaultProfileBefore = sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME));
+
+        // Write another profile. Make sure the default profile is left alone.
+        final String postfix = "_2";
+        initiallyEmpty.addOrUpdateProfile(profileName + postfix, role_arn + postfix, region);
+        assertTrue(initiallyEmpty.settings.containsKey("custom " + profileName + postfix));
+        assertEquals(3, initiallyEmpty.settings.size());
+        assertEquals(defaultProfileBefore, sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME)));
+    }
+
+    /*
+     * Test writing a new default profile to a blank configuration file.
+     */
+    @Test
+    void addOrUpdateDefaultProfileToNewConfigFile() throws IOException {
+        Configuration initiallyEmpty = new Configuration(new StringReader(""));
+
+        // Small function to copy a section to a map so we can easily compare it
+        Function<Profile.Section, Map<String, String>> sectionToMap = section ->
+                section.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // Make sure the INI object is empty.
+        assertTrue(initiallyEmpty.settings.isEmpty());
+
+        // Write the default profile only.
+        initiallyEmpty.addOrUpdateProfile("default", role_arn, region);
+        assertEquals(1, initiallyEmpty.settings.size());
+        assertEquals("default", initiallyEmpty.settings.get(DEFAULTPROFILENAME, SOURCE_PROFILE));
+        assertEquals(role_arn, initiallyEmpty.settings.get(DEFAULTPROFILENAME, ROLE_ARN));
+        // State of the default profile after creating an initial profile.
+        final Map<String, String> defaultProfileBefore = sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME));
+
+        // Write another profile. Make sure the default profile is left alone.
+        final String postfix = "_2";
+        initiallyEmpty.addOrUpdateProfile(profileName + postfix, role_arn + postfix, region);
+        assertTrue(initiallyEmpty.settings.containsKey("profile " + profileName + postfix));
+        assertEquals(2, initiallyEmpty.settings.size());
         assertEquals(defaultProfileBefore, sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME)));
     }
 
@@ -99,6 +173,42 @@ class ConfigurationTest {
         configuration.save(configurationWriter);
 
         String expected = existingProfile + "\n\n" + manualRole;
+        String given = StringUtils.remove(configurationWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
+    }
+
+    /*
+     * Test writing a new profile to an existing configuration file with custom prefix.
+     */
+    @Test
+    void addOrUpdateProfileToExistingConfigFileCustomPrexi() throws IOException {
+        final StringReader configurationReader = new StringReader(existingProfile);
+        final StringWriter configurationWriter = new StringWriter();
+        final Configuration configuration = new Configuration(configurationReader, environmentWithCustomPrefix);
+
+        configuration.addOrUpdateProfile(profileName, role_arn, region);
+        configuration.save(configurationWriter);
+
+        String expected = existingProfile + "\n\n" + manualRoleCustomPrefix;
+        String given = StringUtils.remove(configurationWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
+    }
+
+    /*
+     * Test writing a new default profile to an existing configuration file.
+     */
+    @Test
+    void addOrUpdateDefaultProfileToExistingConfigFile() throws IOException {
+        final StringReader configurationReader = new StringReader(existingProfile);
+        final StringWriter configurationWriter = new StringWriter();
+        final Configuration configuration = new Configuration(configurationReader);
+
+        configuration.addOrUpdateProfile("default", role_arn, region);
+        configuration.save(configurationWriter);
+
+        String expected = existingProfile + "\n\n" + defaultRole;
         String given = StringUtils.remove(configurationWriter.toString().trim(), '\r');
 
         assertEquals(expected, given);

@@ -1,5 +1,6 @@
 package com.okta.tools.helpers;
 
+import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.aws.settings.Credentials;
 
 import java.io.FileWriter;
@@ -7,6 +8,12 @@ import java.io.IOException;
 import java.io.Reader;
 
 public final class CredentialsHelper {
+
+    private final OktaAwsCliEnvironment environment;
+
+    public CredentialsHelper(OktaAwsCliEnvironment environment) {
+        this.environment = environment;
+    }
 
     /**
      * Gets a reader for the credentials file. If the file doesn't exist, it creates it
@@ -37,11 +44,11 @@ public final class CredentialsHelper {
      * @param awsSessionToken The session token to use
      * @throws IOException
      */
-    public static void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
+    public void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
             throws IOException {
         try (Reader reader = CredentialsHelper.getCredsReader()) {
             // Create the credentials object with the data read from the credentials file
-            Credentials credentials = new Credentials(reader);
+            Credentials credentials = new Credentials(reader, environment);
 
             // Write the given profile data
             credentials.addOrUpdateProfile(profileName, awsAccessKey, awsSecretKey, awsSessionToken);
