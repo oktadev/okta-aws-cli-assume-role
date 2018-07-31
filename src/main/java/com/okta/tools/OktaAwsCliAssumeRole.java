@@ -40,6 +40,7 @@ final class OktaAwsCliAssumeRole {
     private SessionHelper sessionHelper;
     private ConfigHelper configHelper;
     private RoleHelper roleHelper;
+    private CredentialsHelper credentialsHelper;
     private ProfileHelper profileHelper;
 
     private OktaSaml oktaSaml;
@@ -60,7 +61,8 @@ final class OktaAwsCliAssumeRole {
         sessionHelper = new SessionHelper(environment, cookieHelper);
         configHelper = new ConfigHelper(environment);
         roleHelper = new RoleHelper(environment);
-        profileHelper = new ProfileHelper(environment);
+        credentialsHelper  = new CredentialsHelper(environment);
+        profileHelper = new ProfileHelper(credentialsHelper, environment);
 
         oktaSaml = new OktaSaml(environment, cookieHelper);
 

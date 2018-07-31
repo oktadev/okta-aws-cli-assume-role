@@ -43,7 +43,7 @@ public final class ConfigHelper {
     public void updateConfigFile() throws IOException {
         try (Reader reader = getConfigReader()) {
             // Create the configuration object with the data from the config file
-            Configuration configuration = new Configuration(reader);
+            Configuration configuration = new Configuration(reader, environment);
 
             // Write the given profile data
             configuration.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, environment.awsRegion);
