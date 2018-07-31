@@ -27,7 +27,7 @@ then
 fi
 
 mkdir -p ${HOME}/.okta
-curl 'https://github.com/oktadeveloper/okta-aws-cli-assume-role/releases/download/v1.0.2/okta-aws-cli-1.0.2.jar' --output "${HOME}/.okta/okta-aws-cli.jar"
+curl -L 'https://github.com/oktadeveloper/okta-aws-cli-assume-role/releases/download/v1.0.2/okta-aws-cli-1.0.2.jar' --output "${HOME}/.okta/okta-aws-cli.jar"
 
 # bash functions
 bash_functions="${HOME}/.okta/bash_functions"
