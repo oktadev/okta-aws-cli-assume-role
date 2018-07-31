@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ConfigurationTest {
 
-    private String existingProfile = "[profile default]\n"
+    private String existingProfile = "[default]\n"
             + Configuration.ROLE_ARN + " = " + "arn:aws:iam:12345:role/foo" + "\n"
             + SOURCE_PROFILE + " = " + "default-source_profile" + "\n"
             + Configuration.REGION + " = " + "default-region";
@@ -42,7 +42,7 @@ class ConfigurationTest {
     private String profileName = "new-profilename";
     private String role_arn = "arn:aws:iam:67890:role/bar";
     private String region = "us-east-1";
-    private String manualRole = "[profile " + profileName + "]\n"
+    private String manualRole = "[" + profileName + "]\n"
             + Configuration.ROLE_ARN + " = " + role_arn + "\n"
             + SOURCE_PROFILE + " = " + profileName + "_source\n"
             + Configuration.REGION + " = " + region;
@@ -114,7 +114,7 @@ class ConfigurationTest {
         final Configuration configuration = new Configuration(configurationReader);
 
         final String updatedPrefix = "updated_";
-        final String expected = "[profile " + profileName + "]\n"
+        final String expected = "[" + profileName + "]\n"
                 + Configuration.ROLE_ARN + " = " + updatedPrefix + role_arn + "\n"
                 + SOURCE_PROFILE + " = " + profileName + "_source\n"
                 + Configuration.REGION + " = " + region
