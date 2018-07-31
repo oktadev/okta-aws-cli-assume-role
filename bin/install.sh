@@ -36,7 +36,7 @@ if [ $? -ne 0 ]
 then
 echo '
 function withokta {
-    java -Djava.net.useSystemProxies om.okta.tools.WithOkta $@
+    java -Djava.net.useSystemProxies com.okta.tools.WithOkta $@
 }
 function aws {
     withokta "aws --profile $1" $@
@@ -58,7 +58,7 @@ echo '
 #OktaAWSCLI
 export PATH="$HOME/bin:$PATH"
 function withokta
-    java -Djava.net.useSystemProxies om.okta.tools.WithOkta $argv
+    java -Djava.net.useSystemProxies com.okta.tools.WithOkta $argv
 end
 function aws
     withokta "aws --profile $argv[1]" $argv
