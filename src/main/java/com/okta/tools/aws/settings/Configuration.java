@@ -25,7 +25,7 @@ public class Configuration extends Settings {
     static final String ROLE_ARN = "role_arn";
     static final String SOURCE_PROFILE = "source_profile";
     static final String REGION = "region";
-    static final String PROFILE_PREFIX = "profile ";
+    static final String PROFILE_PREFIX = "";
 
     /**
      * Create a Configuration object from a given {@link Reader}. The data given by this {@link Reader} should
