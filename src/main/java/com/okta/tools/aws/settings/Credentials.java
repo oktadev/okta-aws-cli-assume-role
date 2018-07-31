@@ -52,7 +52,7 @@ public class Credentials extends Settings {
      * @param awsSessionToken The session token to use for the profile.
      */
     public void addOrUpdateProfile(String name, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
-        name = name + "_source";
+        name = "default".equals(name) ? "default" : name + "_source";
         final Profile.Section awsProfile = settings.get(name) != null ? settings.get(name) : settings.add(name);
         writeCredentialsProfile(awsProfile, awsAccessKey, awsSecretKey, awsSessionToken);
     }

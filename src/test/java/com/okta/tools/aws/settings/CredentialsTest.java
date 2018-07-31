@@ -16,11 +16,13 @@
 package com.okta.tools.aws.settings;
 
 import org.junit.jupiter.api.Test;
-import org.junit.platform.commons.util.StringUtils;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CredentialsTest {
 
@@ -98,6 +100,31 @@ class CredentialsTest {
                 + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken;
 
         credentials.addOrUpdateProfile(roleName, updatedPrefix + accessKey, updatedPrefix + secretKey, updatedPrefix + sessionToken);
+        credentials.save(credentialsWriter);
+
+        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
+    }
+
+    /*
+     * Test updating default profile.
+     */
+    @Test
+    void addOrUpdateDefaultProfileToExistingProfile() throws IOException {
+        final StringReader credentialsReader = new StringReader(existingCredentials + "\n\n" + manualRole);
+        final StringWriter credentialsWriter = new StringWriter();
+        final Credentials credentials = new Credentials(credentialsReader);
+
+        final String updatedPrefix = "updated_";
+        final String expected =
+                "[default]\n"
+                + Credentials.ACCES_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
+                + Credentials.SECRET_ACCESS_KEY + " = " + updatedPrefix + secretKey + "\n"
+                + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken + "\n\n"
+                + manualRole;
+
+        credentials.addOrUpdateProfile("default", updatedPrefix + accessKey, updatedPrefix + secretKey, updatedPrefix + sessionToken);
         credentials.save(credentialsWriter);
 
         String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');

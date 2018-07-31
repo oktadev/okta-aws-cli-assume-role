@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ConfigurationTest {
 
-    private String existingProfile = "[profile default]\n"
+    private String existingProfile = "[profile existing]\n"
             + Configuration.ROLE_ARN + " = " + "arn:aws:iam:12345:role/foo" + "\n"
             + SOURCE_PROFILE + " = " + "default-source_profile" + "\n"
             + Configuration.REGION + " = " + "default-region";
@@ -45,6 +45,10 @@ class ConfigurationTest {
     private String manualRole = "[profile " + profileName + "]\n"
             + Configuration.ROLE_ARN + " = " + role_arn + "\n"
             + SOURCE_PROFILE + " = " + profileName + "_source\n"
+            + Configuration.REGION + " = " + region;
+    private String defaultRole = "[default]\n"
+            + Configuration.ROLE_ARN + " = " + role_arn + "\n"
+            + SOURCE_PROFILE + " = " + "default\n"
             + Configuration.REGION + " = " + region;
 
     /*
@@ -87,6 +91,37 @@ class ConfigurationTest {
     }
 
     /*
+     * Test writing a new default profile to a blank configuration file.
+     */
+    @Test
+    void addOrUpdateDefaultProfileToNewConfigFile() throws IOException {
+        Configuration initiallyEmpty = new Configuration(new StringReader(""));
+
+        // Small function to copy a section to a map so we can easily compare it
+        Function<Profile.Section, Map<String, String>> sectionToMap = section ->
+                section.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // Make sure the INI object is empty.
+        assertTrue(initiallyEmpty.settings.isEmpty());
+
+        // Write the default profile only.
+        initiallyEmpty.addOrUpdateProfile("default", role_arn, region);
+        assertEquals(1, initiallyEmpty.settings.size());
+        assertEquals("default", initiallyEmpty.settings.get(DEFAULTPROFILENAME, SOURCE_PROFILE));
+        assertEquals(role_arn, initiallyEmpty.settings.get(DEFAULTPROFILENAME, ROLE_ARN));
+        // State of the default profile after creating an initial profile.
+        final Map<String, String> defaultProfileBefore = sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME));
+
+        // Write another profile. Make sure the default profile is left alone.
+        final String postfix = "_2";
+        initiallyEmpty.addOrUpdateProfile(profileName + postfix, role_arn + postfix, region);
+        assertTrue(initiallyEmpty.settings.containsKey(PROFILE_PREFIX + profileName + postfix));
+        assertEquals(2, initiallyEmpty.settings.size());
+        assertEquals(defaultProfileBefore, sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME)));
+    }
+
+    /*
      * Test writing a new profile to an existing configuration file.
      */
     @Test
@@ -99,6 +134,24 @@ class ConfigurationTest {
         configuration.save(configurationWriter);
 
         String expected = existingProfile + "\n\n" + manualRole;
+        String given = StringUtils.remove(configurationWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
+    }
+
+    /*
+     * Test writing a new default profile to an existing configuration file.
+     */
+    @Test
+    void addOrUpdateDefaultProfileToExistingConfigFile() throws IOException {
+        final StringReader configurationReader = new StringReader(existingProfile);
+        final StringWriter configurationWriter = new StringWriter();
+        final Configuration configuration = new Configuration(configurationReader);
+
+        configuration.addOrUpdateProfile("default", role_arn, region);
+        configuration.save(configurationWriter);
+
+        String expected = existingProfile + "\n\n" + defaultRole;
         String given = StringUtils.remove(configurationWriter.toString().trim(), '\r');
 
         assertEquals(expected, given);

@@ -50,7 +50,7 @@ public class Configuration extends Settings {
     public void addOrUpdateProfile(String name, String roleToAssume, String region) {
         // profileName is the string used for the section in the AWS config file.
         // This should be prefixed with "profile ".
-        final String profileName = PROFILE_PREFIX + name;
+        final String profileName = "default".equals(name) ? "default" : PROFILE_PREFIX + name;
 
         // Determine whether this is a new AWS configuration file. If it is, we'll set the default
         // profile to this profile.
@@ -68,7 +68,7 @@ public class Configuration extends Settings {
 
     private void writeConfigurationProfile(Profile.Section awsProfile, String name, String roleToAssume, String region) {
         awsProfile.put(ROLE_ARN, roleToAssume);
-        awsProfile.put(SOURCE_PROFILE, name + "_source");
+        awsProfile.put(SOURCE_PROFILE, "default".equals(name) ? "default" : name + "_source");
         if (!awsProfile.containsKey(REGION)) {
             awsProfile.put(REGION, region);
         }
