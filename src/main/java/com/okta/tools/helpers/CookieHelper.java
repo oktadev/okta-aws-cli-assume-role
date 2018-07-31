@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -41,14 +42,16 @@ public final class CookieHelper {
         return filePath;
     }
 
-    public CookieStore parseCookies(List<String> cookieHeaders) {
+    public CookieStore parseCookies(URI uri, List<String> cookieHeaders) {
         CookieStore cookieStore = new BasicCookieStore();
         for (String cookieHeader : cookieHeaders) {
             for (String cookie : Splitter.on(";").trimResults().omitEmptyStrings().split(cookieHeader)) {
                 int indexOfEquals = cookie.indexOf('=');
                 String name = cookie.substring(0, indexOfEquals);
                 String value = cookie.substring(indexOfEquals + 1);
-                cookieStore.addCookie(new BasicClientCookie(name, value));
+                BasicClientCookie clientCookie = new BasicClientCookie(name, value);
+                clientCookie.setDomain(uri.getHost());
+                cookieStore.addCookie(clientCookie);
             }
         }
         return cookieStore;

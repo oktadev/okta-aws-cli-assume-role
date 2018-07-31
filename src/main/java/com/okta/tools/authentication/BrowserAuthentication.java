@@ -154,6 +154,6 @@ public final class BrowserAuthentication extends Application {
 
     private CookieStore extractCookies(URI uri, Map<String, List<String>> headers) throws IOException {
         List<String> cookieHeaders = CookieHandler.getDefault().get(uri, headers).get("Cookie");
-        return cookieHelper.parseCookies(cookieHeaders);
+        return cookieHelper.parseCookies(uri, cookieHeaders);
     }
 }
