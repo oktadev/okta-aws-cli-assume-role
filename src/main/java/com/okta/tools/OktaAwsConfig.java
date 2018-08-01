@@ -18,15 +18,25 @@ final class OktaAwsConfig {
         return loadEnvironment(null);
     }
 
-    static OktaAwsCliEnvironment loadEnvironment(String profile) {        
+    static OktaAwsCliEnvironment loadEnvironment(String profile) {
         Properties properties = new Properties();
-        getConfigFile().ifPresent(configFile -> {
-            try (InputStream config = new FileInputStream(configFile.toFile())) {
+        Optional<Path> path = getConfigFile();
+        if (path.isPresent()) {
+            try (InputStream config = new FileInputStream(path.get().toFile())) {
                 properties.load(new InputStreamReader(config));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        });
+        } else {
+            try (InputStream config = properties.getClass().getResourceAsStream("/config.properties")) {
+                // Don't fail if no config.properties found in classpath as we will fallback to env variables
+                if (config != null) {
+                    properties.load(new InputStreamReader(config));
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         return new OktaAwsCliEnvironment(
                 Boolean.valueOf(getEnvOrConfig(properties, "OKTA_BROWSER_AUTH")),
