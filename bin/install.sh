@@ -35,14 +35,8 @@ grep '^#OktaAWSCLI' "${bash_functions}" > /dev/null 2>&1
 if [ $? -ne 0 ]
 then
 echo '
-function withokta {
-    java -Djava.net.useSystemProxies com.okta.tools.WithOkta $@
-}
 function aws {
-    withokta "aws --profile $1" $@
-}
-function sls {
-    withokta "sls --stage $1" $@
+    withokta aws $@
 }
 ' >> "${bash_functions}"
 fi
