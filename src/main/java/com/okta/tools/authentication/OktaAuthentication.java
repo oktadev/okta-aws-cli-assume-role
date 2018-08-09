@@ -44,6 +44,7 @@ public final class OktaAuthentication {
         // "sessionProperty" = An ephemeral one-time token used to bootstrap an Okta session.
         final String sessionProperty = "sessionToken";
 
+        // Template used to build a missing property exception message.
         final String missingProperty = "Could not find the expected property \"%s\" in the response message.";
 
         // Sanity check: Does the (required) status property exist?
@@ -148,6 +149,7 @@ public final class OktaAuthentication {
         entity.setContentType("application/json");
         httpPost.setEntity(entity);
 
+        logger.debug("Calling okta authn service at " + httpPost.getURI());
         try (CloseableHttpClient httpClient = HttpClients.createSystem()) {
             CloseableHttpResponse authnResponse = httpClient.execute(httpPost);
 
