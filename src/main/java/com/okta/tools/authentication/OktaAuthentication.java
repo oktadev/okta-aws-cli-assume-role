@@ -2,6 +2,7 @@ package com.okta.tools.authentication;
 
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.models.AuthResult;
+import com.sun.tools.javac.util.List;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -30,14 +31,77 @@ public final class OktaAuthentication {
      * Performs primary and secondary (2FA) authentication, then returns a session token
      *
      * @return The session token
-     * @throws IOException
+     * @throws IOException If an error occurs during the api call or during the processing of the result.
      */
     public String getOktaSessionToken() throws IOException {
+        // Returns an Okta Authentication Transaction object.
+        // See: https://developer.okta.com/docs/api/resources/authn#authentication-transaction-model
         JSONObject primaryAuthResult = new JSONObject(getPrimaryAuthResponse(environment.oktaOrg));
-        if (primaryAuthResult.getString("status").equals("MFA_REQUIRED")) {
-            return OktaMFA.promptForFactor(primaryAuthResult);
-        } else {
-            return primaryAuthResult.getString("sessionToken");
+
+        // "statusProperty" = The current state of the authentication transaction.
+        final String statusProperty = "status";
+
+        // "sessionProperty" = An ephemeral one-time token used to bootstrap an Okta session.
+        final String sessionProperty = "sessionToken";
+
+        // Sanity check: Does the (required) status property exist?
+        if (!primaryAuthResult.has(statusProperty)) {
+            throw makeException(
+                primaryAuthResult,
+                "Could not find the expected property \"%s\" in the response message.",
+                statusProperty);
+        }
+
+        // Validate status value.
+        TransactionState state;
+        try {
+            state = TransactionState.valueOf(primaryAuthResult.getString(statusProperty).toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw makeException(
+                primaryAuthResult,
+                e,
+                "The response message contained an unrecognized value \"%s\" for property \"%s\".",
+                primaryAuthResult.getString(statusProperty),
+                statusProperty);
+        }
+
+        // Handle the response
+        switch(state) {
+            // Handled States
+            case INVALID:
+                throw new IllegalStateException("Invalid value - should never happen.");
+            case MFA_REQUIRED:
+                // Handle second-factor
+                return OktaMFA.promptForFactor(primaryAuthResult);
+            case SUCCESS:
+                if (primaryAuthResult.has(sessionProperty)) {
+                    return primaryAuthResult.getString(sessionProperty);
+                } else {
+                    throw makeException(
+                        primaryAuthResult,
+                        "Could not find the expected property \"%s\" in the response message.",
+                        sessionProperty);
+                }
+
+            // Unhandled States
+            // If support for handling a new state is added, move to the 'Handled' block and keep the
+            // values sorted in the order given by TransactionState.java.
+            case UNAUTHENTICATED:
+            case PASSWORD_WARN:
+            case PASSWORD_EXPIRED:
+            case RECOVERY:
+            case RECOVERY_CHALLENGE:
+            case PASSWORD_RESET:
+            case LOCKED_OUT:
+            case MFA_ENROLL:
+            case MFA_ENROLL_ACTIVATE:
+            case MFA_CHALLENGE:
+            default:
+                throw makeException(
+                    primaryAuthResult,
+                    "Handling for the received status code is not currently implemented.\nS%s: %s",
+                    state.toString(),
+                    state.getDescription());
         }
     }
 
@@ -46,7 +110,7 @@ public final class OktaAuthentication {
      *
      * @param oktaOrg The org to authenticate against
      * @return The response of the authentication
-     * @throws IOException
+     * @throws IOException If an error occurs during the api call or during the processing of the result.
      */
     private String getPrimaryAuthResponse(String oktaOrg) throws IOException {
         while (true) {
@@ -69,9 +133,10 @@ public final class OktaAuthentication {
      * @param password The password of the user
      * @param oktaOrg  The org to perform auth against
      * @return The authentication result
-     * @throws IOException
+     * @throws IOException If an error occurs during the api call or during the processing of the result.
      */
     private AuthResult primaryAuthentication(String username, String password, String oktaOrg) throws IOException {
+        // Okta authn API docs: https://developer.okta.com/docs/api/resources/authn#primary-authentication
         HttpPost httpPost = new HttpPost("https://" + oktaOrg + "/api/v1/authn");
 
         httpPost.addHeader("Accept", "application/json");
@@ -137,6 +202,24 @@ public final class OktaAuthentication {
             return new Scanner(System.in).next();
         } else {
             return new String(System.console().readPassword("Password: "));
+        }
+    }
+
+    private RuntimeException makeException(JSONObject primaryAuthResult, String template, Object... args) {
+        return makeException(primaryAuthResult, null, template, args);
+    }
+
+    // Create an exception by formatting a string with arguments and appending the json message.
+    private RuntimeException makeException(JSONObject primaryAuthResult, Exception e, String template, Object... args) {
+        // Add the formatted json message to the output.
+        template = template + "\n\nMessage:\n%s\n";
+        String responseJson = primaryAuthResult.toString(2);
+        Object[] argsWithMessageJson = List.from(args).append(responseJson).toArray();
+
+        if (e != null) {
+            return new IllegalStateException(String.format(template, argsWithMessageJson), e);
+        } else {
+            return new IllegalStateException(String.format(template, args));
         }
     }
 }
