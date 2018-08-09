@@ -1,5 +1,9 @@
 package com.okta.tools;
 
+import com.okta.tools.authentication.OktaAuthentication;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,6 +16,8 @@ import java.util.Properties;
 
 final class OktaAwsConfig {
 
+    private static final Logger logger = LogManager.getLogger(OktaAwsConfig.class);
+
     private static final String CONFIG_FILENAME = "config.properties";
 
     static OktaAwsCliEnvironment loadEnvironment() {
@@ -23,15 +29,18 @@ final class OktaAwsConfig {
         Optional<Path> path = getConfigFile();
         if (path.isPresent()) {
             try (InputStream config = new FileInputStream(path.get().toFile())) {
+                logger.debug("Reading config settings from file: " + path.get().toAbsolutePath().toString());
                 properties.load(new InputStreamReader(config));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         } else {
             try (InputStream config = properties.getClass().getResourceAsStream("/config.properties")) {
-                // Don't fail if no config.properties found in classpath as we will fallback to env variables
                 if (config != null) {
                     properties.load(new InputStreamReader(config));
+                } else {
+                    // Don't fail if no config.properties found in classpath as we will fallback to env variables
+                    logger.debug("No config.properties file found in working directory, ~/.okta, or the class loader");
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -69,8 +78,13 @@ final class OktaAwsConfig {
 
     private static String getEnvOrConfig(Properties properties, String propertyName) {
         String envValue = System.getenv(propertyName);
-        return envValue != null ?
-                envValue : properties.getProperty(propertyName);
+        if (envValue != null) {
+            logger.debug("Using " + propertyName + "  value from the environment.");
+            return envValue;
+        } else {
+            logger.debug("Using " + propertyName + "  value from the config file." );
+            return properties.getProperty(propertyName);
+        }
     }
 
     private static String getProfile(String profileFromCmdLine, String profileFromEnvOrConfig) {
