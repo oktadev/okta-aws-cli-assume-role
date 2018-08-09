@@ -50,20 +50,40 @@ public class OktaSaml {
 
     private String getSamlResponseForAws(String oktaSessionToken) throws IOException {
         Document document = launchOktaAwsAppWithSessionToken(environment.oktaAwsAppUrl, oktaSessionToken);
-        Elements samlResponseInputElement = document.select("form input[name=SAMLResponse]");
-        if (samlResponseInputElement.isEmpty()) {
-            throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
-        }
-        return samlResponseInputElement.attr("value");
+        return getSamlResponseForAwsFromDocument(document);
     }
 
     private String getSamlResponseForAwsRefresh() throws IOException {
         Document document = launchOktaAwsApp(environment.oktaAwsAppUrl);
+        return getSamlResponseForAwsFromDocument(document);
+    }
+
+    private String getSamlResponseForAwsFromDocument(Document document) {
         Elements samlResponseInputElement = document.select("form input[name=SAMLResponse]");
         if (samlResponseInputElement.isEmpty()) {
-            throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
+            if (isPasswordAuthenticationChallenge(document)) {
+                throw new IllegalStateException("Unsupported App sign on rule: 'Prompt for re-authentication'. \nPlease contact your administrator.");
+            } else if (isPromptForFactorChallenge(document)) {
+                throw new IllegalStateException("Unsupported App sign on rule: 'Prompt for factor'. \nPlease contact your administrator.");
+            } else {
+                Elements errorContent = document.getElementsByClass("error-content");
+                Elements errorHeadline = errorContent.select("h1");
+                if (errorHeadline.isEmpty()) {
+                    throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
+                } else {
+                    throw new RuntimeException(errorHeadline.text());
+                }
+            }
         }
         return samlResponseInputElement.attr("value");
+    }
+
+    private boolean isPasswordAuthenticationChallenge(Document document) {
+        return document.getElementById("password-verification-challenge") != null;
+    }
+
+    private boolean isPromptForFactorChallenge(Document document) {
+        return document.getElementById("okta-sign-in") != null;
     }
 
     private Document launchOktaAwsAppWithSessionToken(String appUrl, String oktaSessionToken) throws IOException {
