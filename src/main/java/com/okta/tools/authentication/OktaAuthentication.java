@@ -15,21 +15,17 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
 public final class OktaAuthentication {
     private static final Logger logger = LogManager.getLogger(OktaAuthentication.class);
 
-    private OktaAwsCliEnvironment environment;
+    private final OktaAwsCliEnvironment environment;
 
     public OktaAuthentication(OktaAwsCliEnvironment environment) {
         this.environment = environment;
     }
-
-    private static String missingProperty = "Could not find the expected property \"%s\" in the response message.";
 
     /**
      * Performs primary and secondary (2FA) authentication, then returns a session token
@@ -48,13 +44,15 @@ public final class OktaAuthentication {
         // "sessionProperty" = An ephemeral one-time token used to bootstrap an Okta session.
         final String sessionProperty = "sessionToken";
 
+        final String missingProperty = "Could not find the expected property \"%s\" in the response message.";
+
         // Sanity check: Does the (required) status property exist?
         if (!primaryAuthResult.has(statusProperty)) {
             throw makeException(primaryAuthResult, missingProperty, statusProperty);
         }
 
         // Validate status value.
-        TransactionState state;
+        final TransactionState state;
         try {
             state = TransactionState.valueOf(primaryAuthResult.getString(statusProperty).toUpperCase());
         } catch (IllegalArgumentException e) {
@@ -97,7 +95,8 @@ public final class OktaAuthentication {
             default:
                 throw makeException(
                     primaryAuthResult,
-                    "Handling for the received status code is not currently implemented.\n%s: %s",
+                    "Handling for the received status code is not currently implemented.\n" +
+                    "The status code received was:\n%s: %s",
                     state.toString(),
                     state.getDescription());
         }
@@ -209,18 +208,13 @@ public final class OktaAuthentication {
 
     // Create an exception by formatting a string with arguments and appending the json message.
     private RuntimeException makeException(JSONObject primaryAuthResult, Exception e, String template, Object... args) {
-        // Add the formatted json message to the output.
-        template = template + "\n\nMessage:\n%s\n";
-        String responseJson = primaryAuthResult.toString(2);
-
-        Collection<Object> argsWithMessageJson = new ArrayList<>();
-        Stream.of(args).forEach(argsWithMessageJson::add);
-        argsWithMessageJson.add(responseJson);
-
+        Object[] argsWithMessageJson =
+            Stream.concat(Stream.of(args), Stream.of(primaryAuthResult.toString(2))).toArray();
+        String message = String.format(template + "\n\nMessage:\n%s\n", argsWithMessageJson);
         if (e != null) {
-            return new IllegalStateException(String.format(template, argsWithMessageJson.toArray()), e);
+            return new IllegalStateException(message, e);
         } else {
-            return new IllegalStateException(String.format(template, argsWithMessageJson.toArray()));
+            return new IllegalStateException(message);
         }
     }
 }
