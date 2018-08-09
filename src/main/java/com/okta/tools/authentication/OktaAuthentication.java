@@ -2,7 +2,6 @@ package com.okta.tools.authentication;
 
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.models.AuthResult;
-import com.sun.tools.javac.util.List;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -16,7 +15,10 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Scanner;
+import java.util.stream.Stream;
 
 public final class OktaAuthentication {
     private static final Logger logger = LogManager.getLogger(OktaAuthentication.class);
@@ -26,6 +28,8 @@ public final class OktaAuthentication {
     public OktaAuthentication(OktaAwsCliEnvironment environment) {
         this.environment = environment;
     }
+
+    private static String missingProperty = "Could not find the expected property \"%s\" in the response message.";
 
     /**
      * Performs primary and secondary (2FA) authentication, then returns a session token
@@ -46,10 +50,7 @@ public final class OktaAuthentication {
 
         // Sanity check: Does the (required) status property exist?
         if (!primaryAuthResult.has(statusProperty)) {
-            throw makeException(
-                primaryAuthResult,
-                "Could not find the expected property \"%s\" in the response message.",
-                statusProperty);
+            throw makeException(primaryAuthResult, missingProperty, statusProperty);
         }
 
         // Validate status value.
@@ -77,10 +78,7 @@ public final class OktaAuthentication {
                 if (primaryAuthResult.has(sessionProperty)) {
                     return primaryAuthResult.getString(sessionProperty);
                 } else {
-                    throw makeException(
-                        primaryAuthResult,
-                        "Could not find the expected property \"%s\" in the response message.",
-                        sessionProperty);
+                    throw makeException(primaryAuthResult, missingProperty, sessionProperty);
                 }
 
             // Unhandled States
@@ -99,7 +97,7 @@ public final class OktaAuthentication {
             default:
                 throw makeException(
                     primaryAuthResult,
-                    "Handling for the received status code is not currently implemented.\nS%s: %s",
+                    "Handling for the received status code is not currently implemented.\n%s: %s",
                     state.toString(),
                     state.getDescription());
         }
@@ -214,12 +212,15 @@ public final class OktaAuthentication {
         // Add the formatted json message to the output.
         template = template + "\n\nMessage:\n%s\n";
         String responseJson = primaryAuthResult.toString(2);
-        Object[] argsWithMessageJson = List.from(args).append(responseJson).toArray();
+
+        Collection<Object> argsWithMessageJson = new ArrayList<>();
+        Stream.of(args).forEach(argsWithMessageJson::add);
+        argsWithMessageJson.add(responseJson);
 
         if (e != null) {
-            return new IllegalStateException(String.format(template, argsWithMessageJson), e);
+            return new IllegalStateException(String.format(template, argsWithMessageJson.toArray()), e);
         } else {
-            return new IllegalStateException(String.format(template, args));
+            return new IllegalStateException(String.format(template, argsWithMessageJson.toArray()));
         }
     }
 }
