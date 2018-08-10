@@ -56,7 +56,7 @@ class ConfigurationTest {
             + Configuration.REGION + " = " + region;
     private OktaAwsCliEnvironment environmentWithCustomPrefix =
             new OktaAwsCliEnvironment(false, null, null,
-                    null, null, null, null,
+                    null, null, null, null, null,
                     0, null, "custom ", null);
 
     /*
