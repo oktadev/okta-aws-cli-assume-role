@@ -11,16 +11,24 @@ import java.nio.file.Paths;
 public final class FileHelper {
 
     private static final String USER_HOME = System.getProperty("user.home");
+    private static final String USER_DIR = System.getProperty("user.dir");
 
     /**
      * Gets the path of a directory in the user home directory
      *
      * @param name The name of the directory
+     * @param userHomeContext
      * @return The {@link Path} of the directory
      * @throws IOException
      */
-    private static Path getDirectory(String name) throws IOException {
-        Path directory = Paths.get(USER_HOME).resolve(name);
+    private static Path getDirectory(String name, Boolean userHomeContext) throws IOException {
+        Path directory;
+
+        if (userHomeContext) {
+            directory = Paths.get(USER_HOME).resolve(name);
+        } else {
+            directory = Paths.get(USER_DIR).resolve(name);
+        }
 
         if (!Files.exists(directory)) {
             Files.createDirectory(directory);
@@ -37,7 +45,7 @@ public final class FileHelper {
      * @return The path of the AWS directory
      */
     public static Path getAwsDirectory() throws IOException {
-        return getDirectory(".aws");
+        return getDirectory(".aws", true);
     }
 
     /**
@@ -46,7 +54,17 @@ public final class FileHelper {
      * @return The path of the Okta directory
      */
     public static Path getOktaDirectory() throws IOException {
-        return getDirectory(".okta");
+        return getDirectory(".okta", true);
+    }
+
+    /**
+     * Gets the path of the User provided directory
+     *
+     * @param name The name of the directory
+     * @return The path of the User provided directory
+     */
+    public static Path getUserDirectory(String name) throws IOException {
+        return getDirectory(name, false);
     }
 
     /**
