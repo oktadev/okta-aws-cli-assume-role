@@ -8,7 +8,7 @@ public class OktaAwsCliEnvironment {
     public final String oktaOrg;
     public final String oktaUsername;
     public final String oktaPassword;
-    public final String oktaCookiesPath; 
+    public final String oktaCookiesPath;
     public String oktaProfile;
 
     public final String oktaAwsAppUrl;
@@ -26,7 +26,7 @@ public class OktaAwsCliEnvironment {
     }
 
     public OktaAwsCliEnvironment(boolean browserAuth, String oktaOrg,
-                                 String oktaUsername, String oktaPassword, String oktaCookiesPath, 
+                                 String oktaUsername, String oktaPassword, String oktaCookiesPath,
                                  String oktaProfile, String oktaAwsAppUrl, String awsRoleToAssume,
                                  int stsDuration, String awsRegion, String profilePrefix,
                                  String credentialsSuffix) {
