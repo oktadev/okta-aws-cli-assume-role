@@ -46,7 +46,7 @@ class CredentialsTest {
             + Credentials.SESSION_TOKEN + " = " + sessionToken;
     private OktaAwsCliEnvironment environmentWithCustomSuffix =
             new OktaAwsCliEnvironment(false, null, null,
-                    null, null, null,
+                    null, null, null, null,
                     null, 0, null,
                     null, "_custom");
 

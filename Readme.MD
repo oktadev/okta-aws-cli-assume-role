@@ -117,6 +117,7 @@ Here is the list of parameters that can be environment variables or settings in 
   - ```OKTA_USERNAME``` is the username to use. If present will skip username input.
   - ```OKTA_PASSWORD``` is the password to use. If present will skip password input.
   - ```OKTA_BROWSER_AUTH``` set to **true** to use integrated web browser for authentication (default: **false**)
+  - ```OKTA_COOKIES_PATH``` is directory path to store cookies.properties for Okta (default: ~/.okta)
   - ```OKTA_PROFILE``` is the name of the AWS profile to create/reuse.  May also be specified on the commandline by ```--profile```. (default: get AWS profile name based on per-session STS user name)  
   - ```OKTA_AWS_REGION``` is the default AWS region to store with the created profile.
   - ```OKTA_AWS_ROLE_TO_ASSUME``` is the role to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found.

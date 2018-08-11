@@ -33,7 +33,15 @@ public final class CookieHelper {
      * @throws IOException if the cookies file cannot be loaded or created
      */
     private Path getCookiesFilePath() throws IOException {
-        Path filePath = FileHelper.getFilePath(FileHelper.getOktaDirectory(), "cookies.properties");
+        Path filePath;
+
+        if (environment.oktaCookiesPath == null) {
+            filePath = FileHelper.getFilePath(FileHelper.getOktaDirectory(), "cookies.properties");
+        } else {
+            filePath = FileHelper.getFilePath(
+                    FileHelper.getUserDirectory(environment.oktaCookiesPath), "cookies.properties"
+            );
+        }
 
         if (!Files.exists(filePath)) {
             Files.createFile(filePath);
