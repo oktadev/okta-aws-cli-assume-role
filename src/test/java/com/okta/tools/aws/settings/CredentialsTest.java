@@ -23,7 +23,6 @@ import java.io.StringReader;
 import java.io.StringWriter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CredentialsTest {
 
@@ -49,14 +48,6 @@ class CredentialsTest {
                     null, null, null, null,
                     null, 0, null,
                     null, "_custom");
-
-    /*
-     * Test instantiating a Credentials object with invalid INI.
-     */
-    @Test
-    void instantiateInvalidCredentials() {
-        assertThrows(IOException.class, () -> new Credentials(new StringReader("someinvalidini")));
-    }
 
     /*
      * Test writing a new credentials profile to a blank credentials file.
@@ -202,19 +193,5 @@ class CredentialsTest {
         String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
 
         assertEquals(expected, given);
-    }
-
-    /*
-     * Tests whether the Reader given to the Credentials constructor is properly closed.
-     */
-    @Test
-    public void constructorClosesReader() throws Exception {
-        final String simpleIniDocument = "[ini]\nfoo=bar";
-        final StringReader reader = new StringReader(simpleIniDocument);
-
-        // This should consume reader
-        new Credentials(reader);
-        // Causing this to throw an exception
-        assertThrows(IOException.class, () -> reader.ready(), "Stream closed");
     }
 }

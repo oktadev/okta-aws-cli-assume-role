@@ -16,7 +16,6 @@
 package com.okta.tools.aws.settings;
 
 import com.okta.tools.OktaAwsCliEnvironment;
-import org.ini4j.Profile;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -56,27 +55,23 @@ public class Configuration extends Settings {
     public void addOrUpdateProfile(String name, String roleToAssume, String region) {
         // profileName is the string used for the section in the AWS config file.
         // This should be prefixed with "profile ".
-        final String profileName = "default".equals(name) ? "default" : environment.profilePrefix + name;
+        String profileName = DEFAULT_PROFILE_NAME.equals(name) ? DEFAULT_PROFILE_NAME : environment.profilePrefix + name;
 
         // Determine whether this is a new AWS configuration file. If it is, we'll set the default
         // profile to this profile.
-        final boolean newConfig = settings.isEmpty();
-        if (newConfig) {
-            writeConfigurationProfile(settings.add(DEFAULTPROFILENAME), name, roleToAssume, region);
+        if (isEmpty()) {
+            writeConfigurationProfile(DEFAULT_PROFILE_NAME, name, roleToAssume, region);
         }
 
         // Write the new profile data
-        final Profile.Section awsProfile = settings.get(profileName) != null
-                ? settings.get(profileName)
-                : settings.add(profileName);
-        writeConfigurationProfile(awsProfile, name, roleToAssume, region);
+        writeConfigurationProfile(profileName, name, roleToAssume, region);
     }
 
-    private void writeConfigurationProfile(Profile.Section awsProfile, String name, String roleToAssume, String region) {
-        awsProfile.put(ROLE_ARN, roleToAssume);
-        awsProfile.put(SOURCE_PROFILE, "default".equals(name) ? "default" : name + environment.credentialsSuffix);
-        if (!awsProfile.containsKey(REGION)) {
-            awsProfile.put(REGION, region);
+    private void writeConfigurationProfile(String profile, String name, String roleToAssume, String region) {
+        setProperty(profile, ROLE_ARN, roleToAssume);
+        setProperty(profile, SOURCE_PROFILE, DEFAULT_PROFILE_NAME.equals(name) ? DEFAULT_PROFILE_NAME : name + environment.credentialsSuffix);
+        if (!containsProperty(profile, REGION)) {
+            setProperty(profile, REGION, region);
         }
     }
 }

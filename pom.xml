@@ -76,6 +76,11 @@
             <version>${json.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>2.3</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
             <version>${log4j.version}</version>
@@ -84,11 +89,6 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>${log4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ini4j</groupId>
-            <artifactId>ini4j</artifactId>
-            <version>${ini4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -137,6 +137,13 @@
             <artifactId>apiguardian-api</artifactId>
             <version>1.0.0</version>
             <scope>test</scope>
+        </dependency>
+        <!-- Dynamic dependency of commons-configuration -->
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.3</version>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 

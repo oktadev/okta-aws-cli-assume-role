@@ -15,53 +15,16 @@
  */
 package com.okta.tools.aws.settings;
 
-import org.ini4j.Ini;
-import org.ini4j.Profile;
-
-import java.io.*;
-import java.nio.file.Path;
+import java.io.IOException;
+import java.io.Reader;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.Set;
 
 public class MultipleProfile extends Settings {
 
-    static final String SOURCE_PROFILE = "source_profile";
-    static final String PROFILE_EXPIRY = "profile_expiry";
-    static final String OKTA_SESSION = "okta_roleArn";
-
-    public Optional<com.okta.tools.models.Profile> getProfile(String oktaprofile, Path profileIni) throws IOException {
-
-        Ini ini = new Ini(new File(profileIni.toString()));
-        Set<String> activeSessions = ini.keySet();
-        if (activeSessions.contains(oktaprofile)) {
-            Instant expiry = getExpiry(oktaprofile, ini);
-            String roleArn = getRoleArn(oktaprofile, ini);
-            return Optional.of(new com.okta.tools.models.Profile(expiry, roleArn));
-        }
-        return Optional.empty();
-    }
-
-    public void deleteProfile(String profilestore, String oktaProfile) throws IOException {
-        try (FileInputStream is = new FileInputStream(new File(profilestore))) {
-            Ini ini = new Ini(is);
-            ini.remove(ini.get(oktaProfile));
-            ini.store(new FileOutputStream(new File(profilestore)));
-        }
-    }
-
-    private Instant getExpiry(String oktaprofile, Ini ini) {
-        Ini.Section profilesection = ini.get(oktaprofile);
-        String profileExpiry = profilesection.get("profile_expiry");
-        Instant expiry = Instant.parse(profileExpiry);
-        return expiry;
-    }
-
-    private String getRoleArn(String oktaprofile, Ini ini) {
-        Ini.Section profileSection = ini.get(oktaprofile);
-        String roleArn = profileSection.get("okta_roleArn");
-        return roleArn;
-    }
+    private static final String SOURCE_PROFILE = "source_profile";
+    private static final String PROFILE_EXPIRY = "profile_expiry";
+    private static final String OKTA_ROLE_ARN = "okta_roleArn";
 
     /**
      * Create a Profiles object from a given {@link Reader}. The data given by this {@link Reader} should
@@ -74,22 +37,39 @@ public class MultipleProfile extends Settings {
         super(reader);
     }
 
+    public Optional<com.okta.tools.models.Profile> getProfile(String profile) {
+        if (getSections().contains(profile)) {
+            Instant expiry = getExpiry(profile);
+            String roleArn = getRoleArn(profile);
+            return Optional.of(new com.okta.tools.models.Profile(expiry, roleArn));
+        }
+        return Optional.empty();
+    }
+
+    public void deleteProfile(String profile) {
+        clearSection(profile);
+    }
+
+    private Instant getExpiry(String profile) {
+        String profileExpiry = getProperty(profile, "profile_expiry");
+        return Instant.parse(profileExpiry);
+    }
+
+    private String getRoleArn(String profile) {
+        return getProperty(profile, "okta_roleArn");
+    }
+
     /**
      * Add or update a profile to an Okta Profile file based on {@code name}. This will be linked to a okta profile
      * of the same {@code name}, which should already be present in the profile expiry file.
      *
      * @param name         The name of the profile.
+     * @param roleArn      ARN of the role to assume
      * @param expiry       expiry time of the profile session.
-     * @param okta_session the expiry time of the okta session
      */
-    public void addOrUpdateProfile(String name, String okta_session, Instant expiry) {
-        final Profile.Section awsProfile = settings.get(name) != null ? settings.get(name) : settings.add(name);
-        writeSessionProfile(awsProfile, name, okta_session, expiry);
-    }
-
-    private void writeSessionProfile(Profile.Section awsProfile, String name, String okta_session, Instant expiry) {
-        awsProfile.put(SOURCE_PROFILE, name);
-        awsProfile.put(OKTA_SESSION, okta_session);
-        awsProfile.put(PROFILE_EXPIRY, expiry);
+    public void addOrUpdateProfile(String name, String roleArn, Instant expiry) {
+        setProperty(name, SOURCE_PROFILE, name);
+        setProperty(name, OKTA_ROLE_ARN, roleArn);
+        setProperty(name, PROFILE_EXPIRY, expiry.toString());
     }
 }
