@@ -51,7 +51,7 @@ final class OktaAwsConfig {
                 Boolean.valueOf(getEnvOrConfig(properties, "OKTA_BROWSER_AUTH")),
                 getEnvOrConfig(properties, "OKTA_ORG"),
                 getEnvOrConfig(properties, "OKTA_USERNAME"),
-                getEnvOrConfig(properties, "OKTA_PASSWORD"),
+                null,
                 getEnvOrConfig(properties, "OKTA_COOKIES_PATH"),
                 getProfile(profile, getEnvOrConfig(properties, "OKTA_PROFILE")),
                 getEnvOrConfig(properties, "OKTA_AWS_APP_URL"),
