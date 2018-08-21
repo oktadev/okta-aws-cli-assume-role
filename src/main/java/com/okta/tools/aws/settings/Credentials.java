@@ -58,7 +58,7 @@ public class Credentials extends Settings {
      * @param awsSessionToken The session token to use for the profile.
      */
     public void addOrUpdateProfile(String name, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
-        name = "default".equals(name) ? "default" : name + environment.credentialsSuffix;
+        name = DEFAULT_PROFILE_NAME.equals(name) ? DEFAULT_PROFILE_NAME : name + environment.credentialsSuffix;
         setProperty(name, ACCES_KEY_ID, awsAccessKey);
         setProperty(name, SECRET_ACCESS_KEY, awsSecretKey);
         setProperty(name, SESSION_TOKEN, awsSessionToken);
