@@ -51,8 +51,8 @@ public final class BrowserAuthentication extends Application {
     public void start(final Stage stage) throws IOException {
         stage.setWidth(802);
         stage.setHeight(650);
+        stage.setOnCloseRequest(event -> System.exit(1));
         Scene scene = new Scene(new Group());
-
 
         final WebView browser = new WebView();
         final WebEngine webEngine = browser.getEngine();
