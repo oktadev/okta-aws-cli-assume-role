@@ -27,42 +27,40 @@ public final class SessionHelper {
     }
 
     /**
-     * Gets the current session file's path
-     *
-     * @return A {@link Path} for the current session file
-     * @throws IOException
-     */
-    private Path getSessionPath() throws IOException {
-        return FileHelper.resolveFilePath(FileHelper.getOktaDirectory(), ".current-session");
-    }
-
-    /**
      * Gets the current session, if it exists
      *
      * @return The current {@link Session}
-     * @throws IOException
+     * @throws IOException if file system or permissions errors are encountered
      */
     public Optional<Session> getCurrentSession() throws IOException {
         if (Files.exists(getSessionPath())) {
-            FileReader fileReader = new FileReader(getSessionPath().toString());
+            try (FileReader fileReader = new FileReader(getSessionPath().toFile())) {
+                Properties properties = new Properties();
+                properties.load(fileReader);
+                String expiry = properties.getProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY);
+                String profileName = properties.getProperty(OKTA_AWS_CLI_PROFILE_PROPERTY);
+                Instant expiryInstant = Instant.parse(expiry);
 
-            Properties properties = new Properties();
-            properties.load(fileReader);
-            String expiry = properties.getProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY);
-            String profileName = properties.getProperty(OKTA_AWS_CLI_PROFILE_PROPERTY);
-            Instant expiryInstant = Instant.parse(expiry);
-
-            fileReader.close();
-
-            return Optional.of(new Session(profileName, expiryInstant));
+                return Optional.of(new Session(profileName, expiryInstant));
+            }
         }
         return Optional.empty();
     }
 
     /**
+     * Gets the current session file's path
+     *
+     * @return A {@link Path} for the current session file
+     * @throws IOException if file system or permissions errors are encountered
+     */
+    private Path getSessionPath() throws IOException {
+        return FileHelper.getOktaDirectory().resolve(".current-session");
+    }
+
+    /**
      * Deletes the current session, if it exists
      *
-     * @throws IOException
+     * @throws IOException if file system or permissions errors are encountered
      */
     public void logoutCurrentSession() throws IOException {
         if (StringUtils.isNotBlank(environment.oktaProfile)) {
@@ -73,6 +71,15 @@ public final class SessionHelper {
         }
     }
 
+    private void logoutMultipleAccounts(String profileName) throws IOException {
+        cookieHelper.clearCookies();
+        FileHelper.usingPath(FileHelper.getOktaDirectory().resolve("profiles"), (reader, writer) -> {
+            MultipleProfile multipleProfile = new MultipleProfile(reader);
+            multipleProfile.deleteProfile(profileName);
+            multipleProfile.save(writer);
+        });
+    }
+
     public void updateCurrentSession(Instant expiryInstant, String profileName) throws IOException {
         Properties properties = new Properties();
         properties.setProperty(OKTA_AWS_CLI_PROFILE_PROPERTY, profileName);
@@ -81,35 +88,20 @@ public final class SessionHelper {
     }
 
     public Optional<Profile> getFromMultipleProfiles() throws IOException {
-        return getMultipleProfile().getProfile(environment.oktaProfile, getMultipleProfilesPath());
+        return FileHelper.readingPath(FileHelper.getOktaDirectory().resolve("profiles"), reader ->
+            new MultipleProfile(reader).getProfile(environment.oktaProfile)
+        );
     }
 
     public void addOrUpdateProfile(Instant start) throws IOException {
-        MultipleProfile multipleProfile = getMultipleProfile();
-        multipleProfile.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, start);
-
-        try (final FileWriter fileWriter = FileHelper.getWriter(FileHelper.getOktaDirectory(), "profiles")) {
-            multipleProfile.save(fileWriter);
-        }
+        FileHelper.usingPath(FileHelper.getOktaDirectory().resolve("profiles"), (reader, writer) -> {
+            MultipleProfile multipleProfile = new MultipleProfile(reader);
+            multipleProfile.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, start);
+            multipleProfile.save(writer);
+        });
     }
 
     public boolean sessionIsActive(Instant startInstant, Session session) {
         return startInstant.isBefore(session.expiry);
-    }
-
-    private void logoutMultipleAccounts(String profileName) throws IOException {
-        cookieHelper.clearCookies();
-
-        getMultipleProfile().deleteProfile(getMultipleProfilesPath().toString(), profileName);
-    }
-
-    private Path getMultipleProfilesPath() throws IOException {
-        return FileHelper.getFilePath(FileHelper.getOktaDirectory(), "profiles");
-    }
-
-    private MultipleProfile getMultipleProfile() throws IOException {
-        Reader reader = FileHelper.getReader(FileHelper.getOktaDirectory(), "profiles");
-
-        return new MultipleProfile(reader);
     }
 }

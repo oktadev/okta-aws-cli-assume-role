@@ -3,9 +3,7 @@ package com.okta.tools.helpers;
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.aws.settings.Configuration;
 
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Reader;
 
 public final class ConfigHelper {
 
@@ -16,42 +14,15 @@ public final class ConfigHelper {
     }
 
     /**
-     * Gets a reader for the config file. If the file doesn't exist, it creates it
-     *
-     * @return A {@link Reader} for the config file
-     * @throws IOException
-     */
-    public Reader getConfigReader() throws IOException {
-        return FileHelper.getReader(FileHelper.getAwsDirectory(), "config");
-    }
-
-    /**
-     * Gets a FileWriter for the config file
-     *
-     * @return A {@link FileWriter} for the config file
-     * @throws IOException
-     */
-    public FileWriter getConfigWriter() throws IOException {
-        return FileHelper.getWriter(FileHelper.getAwsDirectory(), "config");
-    }
-
-    /**
      * Updates the configuration file
      *
-     * @throws IOException
+     * @throws IOException if a file system or permissions error occurs
      */
     public void updateConfigFile() throws IOException {
-        try (Reader reader = getConfigReader()) {
-            // Create the configuration object with the data from the config file
+        FileHelper.usingPath(FileHelper.getAwsDirectory().resolve("config"), (reader, writer) -> {
             Configuration configuration = new Configuration(reader, environment);
-
-            // Write the given profile data
             configuration.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, environment.awsRegion);
-
-            // Write the updated profile
-            try (FileWriter fileWriter = getConfigWriter()) {
-                configuration.save(fileWriter);
-            }
-        }
+            configuration.save(writer);
+        });
     }
 }

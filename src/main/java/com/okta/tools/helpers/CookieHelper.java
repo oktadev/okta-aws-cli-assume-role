@@ -9,7 +9,6 @@ import org.apache.http.impl.cookie.BasicClientCookie;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -84,7 +83,9 @@ public final class CookieHelper {
                 .filter(c -> environment.oktaOrg.equals(c.getDomain()))
                 .collect(Collectors.toMap(Cookie::getName, Cookie::getValue, (x, y) -> y))
                 .forEach(properties::setProperty);
-        properties.store(new FileWriter(getCookiesFilePath().toFile()), "");
+        FileHelper.writingPath(getCookiesFilePath(), writer ->
+                properties.store(writer, "")
+        );
     }
 
     void clearCookies() throws IOException {

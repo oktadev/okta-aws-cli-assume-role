@@ -17,19 +17,16 @@ package com.okta.tools.aws.settings;
 
 import com.okta.tools.OktaAwsCliEnvironment;
 import org.apache.commons.lang.StringUtils;
-import org.ini4j.Profile;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.okta.tools.aws.settings.Configuration.ROLE_ARN;
 import static com.okta.tools.aws.settings.Configuration.SOURCE_PROFILE;
-import static com.okta.tools.aws.settings.Settings.DEFAULTPROFILENAME;
+import static com.okta.tools.aws.settings.Settings.DEFAULT_PROFILE_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ConfigurationTest {
@@ -60,42 +57,29 @@ class ConfigurationTest {
                     0, null, "custom ", null);
 
     /*
-     * Test instantiating a Credentials object with invalid INI.
-     */
-    @Test
-    void instantiateInvalidConfiguration() {
-        assertThrows(IOException.class, () -> new Configuration(new StringReader("someinvalidini")));
-    }
-
-    /*
      * Test writing a new profile to a blank configuration file.
      */
     @Test
     void addOrUpdateProfileToNewConfigFile() throws IOException {
         Configuration initiallyEmpty = new Configuration(new StringReader(""));
 
-        // Small function to copy a section to a map so we can easily compare it
-        Function<Profile.Section, Map<String, String>> sectionToMap = section ->
-                section.entrySet().stream()
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
         // Make sure the INI object is empty.
-        assertTrue(initiallyEmpty.settings.isEmpty());
+        assertTrue(initiallyEmpty.isEmpty());
 
         // Write an initial profile. This should create a default profile as well.
         initiallyEmpty.addOrUpdateProfile(profileName, role_arn, region);
-        assertEquals(2, initiallyEmpty.settings.size());
-        assertEquals(profileName + "_source", initiallyEmpty.settings.get(DEFAULTPROFILENAME, SOURCE_PROFILE));
-        assertEquals(role_arn, initiallyEmpty.settings.get(DEFAULTPROFILENAME, ROLE_ARN));
+        assertEquals(2, initiallyEmpty.getSections().size());
+        assertEquals(profileName + "_source", initiallyEmpty.getProperty(DEFAULT_PROFILE_NAME, SOURCE_PROFILE));
+        assertEquals(role_arn, initiallyEmpty.getProperty(DEFAULT_PROFILE_NAME, ROLE_ARN));
         // State of the default profile after creating an initial profile.
-        final Map<String, String> defaultProfileBefore = sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME));
+        final Map<String, Object> defaultProfileBefore = initiallyEmpty.sectionToMap(DEFAULT_PROFILE_NAME);
 
         // Write another profile. Make sure the default profile is left alone.
         final String postfix = "_2";
         initiallyEmpty.addOrUpdateProfile(profileName + postfix, role_arn + postfix, region);
-        assertTrue(initiallyEmpty.settings.containsKey("profile " + profileName + postfix));
-        assertEquals(3, initiallyEmpty.settings.size());
-        assertEquals(defaultProfileBefore, sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME)));
+        assertTrue(initiallyEmpty.getSections().contains("profile " + profileName + postfix));
+        assertEquals(3, initiallyEmpty.getSections().size());
+        assertEquals(defaultProfileBefore, initiallyEmpty.sectionToMap(DEFAULT_PROFILE_NAME));
     }
 
     /*
@@ -105,28 +89,54 @@ class ConfigurationTest {
     void addOrUpdateProfileToNewConfigFileWithCustomPrefix() throws IOException {
         Configuration initiallyEmpty = new Configuration(new StringReader(""), environmentWithCustomPrefix);
 
-        // Small function to copy a section to a map so we can easily compare it
-        Function<Profile.Section, Map<String, String>> sectionToMap = section ->
-                section.entrySet().stream()
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
         // Make sure the INI object is empty.
-        assertTrue(initiallyEmpty.settings.isEmpty());
+        assertTrue(initiallyEmpty.isEmpty());
 
         // Write an initial profile. This should create a default profile as well.
         initiallyEmpty.addOrUpdateProfile(profileName, role_arn, region);
-        assertEquals(2, initiallyEmpty.settings.size());
-        assertEquals(profileName + "_source", initiallyEmpty.settings.get(DEFAULTPROFILENAME, SOURCE_PROFILE));
-        assertEquals(role_arn, initiallyEmpty.settings.get(DEFAULTPROFILENAME, ROLE_ARN));
+        assertEquals(2, initiallyEmpty.getSections().size());
+        assertEquals(profileName + "_source", initiallyEmpty.getProperty(DEFAULT_PROFILE_NAME, SOURCE_PROFILE));
+        assertEquals(role_arn, initiallyEmpty.getProperty(DEFAULT_PROFILE_NAME, ROLE_ARN));
         // State of the default profile after creating an initial profile.
-        final Map<String, String> defaultProfileBefore = sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME));
+        final Map<String, Object> defaultProfileBefore = initiallyEmpty.sectionToMap(DEFAULT_PROFILE_NAME);
 
         // Write another profile. Make sure the default profile is left alone.
         final String postfix = "_2";
         initiallyEmpty.addOrUpdateProfile(profileName + postfix, role_arn + postfix, region);
-        assertTrue(initiallyEmpty.settings.containsKey("custom " + profileName + postfix));
-        assertEquals(3, initiallyEmpty.settings.size());
-        assertEquals(defaultProfileBefore, sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME)));
+        assertTrue(initiallyEmpty.getSections().contains("custom " + profileName + postfix));
+        assertEquals(3, initiallyEmpty.getSections().size());
+        assertEquals(defaultProfileBefore, initiallyEmpty.sectionToMap(DEFAULT_PROFILE_NAME));
+    }
+
+    /*
+     * Test updating a profile with nested configuration (Issue #141).
+     */
+    @Test
+    void addOrUpdateProfileToExistingProfileWithNestedConfiguration() throws IOException {
+        final String existingCombined = manualRole + "\n"
+                + "s3 =\n"
+                + "    max_queue_size = 1000" + "\n\n" + existingProfile;
+
+        final StringReader configurationReader = new StringReader(existingCombined);
+        final StringWriter configurationWriter = new StringWriter();
+        final Configuration configuration = new Configuration(configurationReader);
+
+        final String updatedPrefix = "updated_";
+        final String expected = "[profile " + profileName + "]\n"
+                + Configuration.ROLE_ARN + " = " + updatedPrefix + role_arn + "\n"
+                + SOURCE_PROFILE + " = " + profileName + "_source\n"
+                + Configuration.REGION + " = " + region + "\n"
+                + "s3 = \n" // additional space here is a tolerable divergence (AWS CLI doesn't care)
+                + "    max_queue_size = 1000"
+                + "\n\n" + existingProfile;
+
+
+        configuration.addOrUpdateProfile(profileName, updatedPrefix + role_arn, region);
+        configuration.save(configurationWriter);
+
+        String given = StringUtils.remove(configurationWriter.toString().trim(), '\r');
+
+        assertEquals(expected, given);
     }
 
     /*
@@ -136,28 +146,23 @@ class ConfigurationTest {
     void addOrUpdateDefaultProfileToNewConfigFile() throws IOException {
         Configuration initiallyEmpty = new Configuration(new StringReader(""));
 
-        // Small function to copy a section to a map so we can easily compare it
-        Function<Profile.Section, Map<String, String>> sectionToMap = section ->
-                section.entrySet().stream()
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
         // Make sure the INI object is empty.
-        assertTrue(initiallyEmpty.settings.isEmpty());
+        assertTrue(initiallyEmpty.isEmpty());
 
         // Write the default profile only.
         initiallyEmpty.addOrUpdateProfile("default", role_arn, region);
-        assertEquals(1, initiallyEmpty.settings.size());
-        assertEquals("default", initiallyEmpty.settings.get(DEFAULTPROFILENAME, SOURCE_PROFILE));
-        assertEquals(role_arn, initiallyEmpty.settings.get(DEFAULTPROFILENAME, ROLE_ARN));
+        assertEquals(1, initiallyEmpty.getSections().size());
+        assertEquals("default", initiallyEmpty.getProperty(DEFAULT_PROFILE_NAME, SOURCE_PROFILE));
+        assertEquals(role_arn, initiallyEmpty.getProperty(DEFAULT_PROFILE_NAME, ROLE_ARN));
         // State of the default profile after creating an initial profile.
-        final Map<String, String> defaultProfileBefore = sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME));
+        final Map<String, Object> defaultProfileBefore = initiallyEmpty.sectionToMap(DEFAULT_PROFILE_NAME);
 
         // Write another profile. Make sure the default profile is left alone.
         final String postfix = "_2";
         initiallyEmpty.addOrUpdateProfile(profileName + postfix, role_arn + postfix, region);
-        assertTrue(initiallyEmpty.settings.containsKey("profile " + profileName + postfix));
-        assertEquals(2, initiallyEmpty.settings.size());
-        assertEquals(defaultProfileBefore, sectionToMap.apply(initiallyEmpty.settings.get(DEFAULTPROFILENAME)));
+        assertTrue(initiallyEmpty.getSections().contains("profile " + profileName + postfix));
+        assertEquals(2, initiallyEmpty.getSections().size());
+        assertEquals(defaultProfileBefore, initiallyEmpty.sectionToMap(DEFAULT_PROFILE_NAME));
     }
 
     /*
@@ -237,47 +242,5 @@ class ConfigurationTest {
         String given = StringUtils.remove(configurationWriter.toString().trim(), '\r');
 
         assertEquals(expected, given);
-    }
-
-    /*
-     * Tests whether the Reader given to the Configuration constructor is properly closed.
-     */
-    @Test
-    public void constructorClosesReader() throws Exception {
-        final String simpleIniDocument = "[ini]\nfoo=bar";
-        final StringReader reader = new StringReader(simpleIniDocument);
-
-        // This should consume reader
-        new Configuration(reader);
-        // Causing this to throw an exception
-        assertThrows(IOException.class, () -> reader.ready(), "Stream closed");
-    }
-
-    private static int indexOfDifference(String str1, String str2)
-    {
-        if (str1 == str2) {
-            return -1;
-        }
-
-        if (str1 == null || str2 == null)
-        {
-            return 0;
-        }
-
-        int i;
-        for (i = 0; i < str1.length() && i < str2.length(); ++i)
-        {
-            if (str1.charAt(i) != str2.charAt(i))
-            {
-                break;
-            }
-        }
-
-        if (i < str2.length() || i < str1.length())
-        {
-            return i;
-        }
-
-        return -1;
     }
 }

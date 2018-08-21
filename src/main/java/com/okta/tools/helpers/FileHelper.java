@@ -1,34 +1,25 @@
 package com.okta.tools.helpers;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public final class FileHelper {
+final class FileHelper {
 
-    private static final String USER_HOME = System.getProperty("user.home");
-    private static final String USER_DIR = System.getProperty("user.dir");
+    private static final Path USER_HOME = Paths.get(System.getProperty("user.home"));
+    private static final Path USER_DIR = Paths.get(System.getProperty("user.dir"));
 
     /**
      * Gets the path of a directory in the user home directory
      *
      * @param name The name of the directory
-     * @param userHomeContext
+     * @param dirContext base directory to load relative to
      * @return The {@link Path} of the directory
-     * @throws IOException
+     * @throws IOException if a file system or permissions error is encountered
      */
-    private static Path getDirectory(String name, Boolean userHomeContext) throws IOException {
-        Path directory;
-
-        if (userHomeContext) {
-            directory = Paths.get(USER_HOME).resolve(name);
-        } else {
-            directory = Paths.get(USER_DIR).resolve(name);
-        }
+    private static Path getDirectory(String name, Path dirContext) throws IOException {
+        Path directory = dirContext.resolve(name);
 
         if (!Files.exists(directory)) {
             Files.createDirectory(directory);
@@ -44,8 +35,8 @@ public final class FileHelper {
      *
      * @return The path of the AWS directory
      */
-    public static Path getAwsDirectory() throws IOException {
-        return getDirectory(".aws", true);
+    static Path getAwsDirectory() throws IOException {
+        return getDirectory(".aws", USER_HOME);
     }
 
     /**
@@ -53,8 +44,8 @@ public final class FileHelper {
      *
      * @return The path of the Okta directory
      */
-    public static Path getOktaDirectory() throws IOException {
-        return getDirectory(".okta", true);
+    static Path getOktaDirectory() throws IOException {
+        return getDirectory(".okta", USER_HOME);
     }
 
     /**
@@ -63,8 +54,12 @@ public final class FileHelper {
      * @param name The name of the directory
      * @return The path of the User provided directory
      */
-    public static Path getUserDirectory(String name) throws IOException {
-        return getDirectory(name, false);
+    static Path getUserDirectory(String name) throws IOException {
+        return getDirectory(name, USER_DIR);
+    }
+
+    private static Reader getReader(Path path) throws IOException {
+        return getReader(path.getParent(), path.toFile().getName());
     }
 
     /**
@@ -73,10 +68,14 @@ public final class FileHelper {
      * @param directoryPath The {@link Path} of the file's parent directory
      * @param fileName      The name of the file
      * @return The reader for the given file
-     * @throws IOException
+     * @throws IOException if a file system or permissions error is encountered
      */
-    public static Reader getReader(Path directoryPath, String fileName) throws IOException {
+    private static Reader getReader(Path directoryPath, String fileName) throws IOException {
         return new FileReader(getFilePath(directoryPath, fileName).toFile());
+    }
+
+    private static Writer getWriter(Path path) throws IOException {
+        return getWriter(path.getParent(), path.toFile().getName());
     }
 
     /**
@@ -85,9 +84,9 @@ public final class FileHelper {
      * @param directoryPath The {@link Path} of the file's parent directory
      * @param fileName      The name of the file
      * @return The FileReader for the given path
-     * @throws IOException
+     * @throws IOException if a file system or permissions error is encountered
      */
-    public static FileWriter getWriter(Path directoryPath, String fileName) throws IOException {
+    private static FileWriter getWriter(Path directoryPath, String fileName) throws IOException {
         return new FileWriter(getFilePath(directoryPath, fileName).toFile());
     }
 
@@ -97,9 +96,9 @@ public final class FileHelper {
      * @param directoryPath The {@link Path} of the file's parent directory
      * @param fileName      The name of the file
      * @return The Path of the file
-     * @throws IOException
+     * @throws IOException if a file system or permissions error is encountered
      */
-    public static Path getFilePath(Path directoryPath, String fileName) throws IOException {
+    static Path getFilePath(Path directoryPath, String fileName) throws IOException {
         Path filePath = directoryPath.resolve(fileName);
 
         if (!Files.exists(filePath)) {
@@ -111,15 +110,34 @@ public final class FileHelper {
         return filePath;
     }
 
-    /**
-     * Gets the Path of a specified file, without creating it
-     *
-     * @param directoryPath The {@link Path} of the file's parent directory
-     * @param fileName      The name of the file
-     * @return The Path of the file
-     * @throws IOException
-     */
-    public static Path resolveFilePath(Path directoryPath, String fileName) throws IOException {
-        return Paths.get(directoryPath.toString(), fileName);
+    static void usingPath(Path path, PathRW pathRW) throws IOException {
+        try (Reader reader = getReader(path);
+             Writer writer = getWriter(path)) {
+            pathRW.useFile(reader, writer);
+        }
+    }
+
+    public interface PathRW {
+        void useFile(Reader reader, Writer writer) throws IOException;
+    }
+
+    static <T> T readingPath(Path path, PathR<T> pathR) throws IOException {
+        try (Reader reader = getReader(path)) {
+            return pathR.useFile(reader);
+        }
+    }
+
+    public interface PathR<T> {
+        T useFile(Reader reader) throws IOException;
+    }
+
+    static void writingPath(Path path, PathW pathW) throws IOException {
+        try (Writer writer = getWriter(path)) {
+            pathW.useFile(writer);
+        }
+    }
+
+    public interface PathW {
+        void useFile(Writer writer) throws IOException;
     }
 }

@@ -16,7 +16,6 @@
 package com.okta.tools.aws.settings;
 
 import com.okta.tools.OktaAwsCliEnvironment;
-import org.ini4j.Profile;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -46,7 +45,7 @@ public class Credentials extends Settings {
         this.environment = environment;
     }
 
-    public Credentials(Reader reader) throws IOException {
+    Credentials(Reader reader) throws IOException {
         this(reader, new OktaAwsCliEnvironment());
     }
 
@@ -59,22 +58,9 @@ public class Credentials extends Settings {
      * @param awsSessionToken The session token to use for the profile.
      */
     public void addOrUpdateProfile(String name, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
-        name = "default".equals(name) ? "default" : name + environment.credentialsSuffix;
-        final Profile.Section awsProfile = settings.get(name) != null ? settings.get(name) : settings.add(name);
-        writeCredentialsProfile(awsProfile, awsAccessKey, awsSecretKey, awsSessionToken);
-    }
-
-    /**
-     * Create a new profile in this credentials object.
-     *
-     * @param awsProfile      A reference to the profile in the credentials.
-     * @param awsAccessKey    The AWS access key to use in the profile.
-     * @param awsSecretKey    The AWS secret access key to use in the profile.
-     * @param awsSessionToken The AWS session token to use in the profile.
-     */
-    private void writeCredentialsProfile(Profile.Section awsProfile, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
-        awsProfile.put(ACCES_KEY_ID, awsAccessKey);
-        awsProfile.put(SECRET_ACCESS_KEY, awsSecretKey);
-        awsProfile.put(SESSION_TOKEN, awsSessionToken);
+        name = DEFAULT_PROFILE_NAME.equals(name) ? DEFAULT_PROFILE_NAME : name + environment.credentialsSuffix;
+        setProperty(name, ACCES_KEY_ID, awsAccessKey);
+        setProperty(name, SECRET_ACCESS_KEY, awsSecretKey);
+        setProperty(name, SESSION_TOKEN, awsSessionToken);
     }
 }
