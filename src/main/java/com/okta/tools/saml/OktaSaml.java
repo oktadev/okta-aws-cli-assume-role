@@ -68,20 +68,24 @@ public class OktaSaml {
             } else {
                 Elements errorContent = document.getElementsByClass("error-content");
                 Elements errorHeadline = errorContent.select("h1");
-                if (errorHeadline.isEmpty()) {
-                    throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
-                } else {
+                if (errorHeadline.hasText()) {
                     throw new RuntimeException(errorHeadline.text());
+                } else {
+                    throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
                 }
             }
         }
         return samlResponseInputElement.attr("value");
     }
 
+    // Heuristic based on undocumented behavior observed experimentally
+    // This condition may be missed Okta significantly changes the app-level re-auth page
     private boolean isPasswordAuthenticationChallenge(Document document) {
         return document.getElementById("password-verification-challenge") != null;
     }
 
+    // Heuristic based on undocumented behavior observed experimentally
+    // This condition may be missed if Okta significantly changes the app-level MFA page
     private boolean isPromptForFactorChallenge(Document document) {
         return document.getElementById("okta-sign-in") != null;
     }
