@@ -51,12 +51,12 @@ public class MultipleProfile extends Settings {
     }
 
     private Instant getExpiry(String profile) {
-        String profileExpiry = getProperty(profile, "profile_expiry");
+        String profileExpiry = getProperty(profile, PROFILE_EXPIRY);
         return Instant.parse(profileExpiry);
     }
 
     private String getRoleArn(String profile) {
-        return getProperty(profile, "okta_roleArn");
+        return getProperty(profile, OKTA_ROLE_ARN);
     }
 
     /**
