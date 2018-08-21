@@ -1,18 +1,16 @@
 package com.okta.tools;
 
-import com.okta.tools.authentication.OktaAuthentication;
+import org.apache.commons.lang.SystemUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 final class OktaAwsConfig {
 
@@ -51,7 +49,7 @@ final class OktaAwsConfig {
                 Boolean.valueOf(getEnvOrConfig(properties, "OKTA_BROWSER_AUTH")),
                 getEnvOrConfig(properties, "OKTA_ORG"),
                 getEnvOrConfig(properties, "OKTA_USERNAME"),
-                null,
+                runProgram(getEnvOrConfig(properties, "OKTA_PASSWORD_CMD")),
                 getEnvOrConfig(properties, "OKTA_COOKIES_PATH"),
                 getProfile(profile, getEnvOrConfig(properties, "OKTA_PROFILE")),
                 getEnvOrConfig(properties, "OKTA_AWS_APP_URL"),
@@ -61,6 +59,33 @@ final class OktaAwsConfig {
                 getEnvOrConfig(properties, "OKTA_PROFILE_PREFIX"),
                 getEnvOrConfig(properties, "OKTA_CREDENTIALS_SUFFIX")
         );
+    }
+
+    private static String runProgram(String oktaPasswordCommand) {
+        if (oktaPasswordCommand == null) return null;
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        if (SystemUtils.IS_OS_WINDOWS) {
+            processBuilder.command("cmd", "/C", oktaPasswordCommand);
+        } else if (SystemUtils.IS_OS_UNIX) {
+            processBuilder.command("sh", "-c", oktaPasswordCommand);
+        }
+        try {
+            Process passwordCommandProcess = processBuilder.start();
+            String password = getOutput(passwordCommandProcess);
+            int exitCode = passwordCommandProcess.waitFor();
+            if (exitCode == 0) return password;
+            throw new IllegalStateException("password command failed with exit code " + exitCode);
+        } catch (IOException | InterruptedException e) {
+            throw new IllegalStateException("password command failed", e);
+        }
+    }
+
+    private static String getOutput(Process process) throws IOException {
+        try (InputStream inputStream = process.getInputStream();
+             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+            return bufferedReader.lines().collect(Collectors.joining("\n"));
+        }
     }
 
     private static Optional<Path> getConfigFile() {
