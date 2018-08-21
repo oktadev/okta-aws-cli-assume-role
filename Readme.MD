@@ -115,7 +115,7 @@ Here is the list of parameters that can be environment variables or settings in 
   - ```OKTA_ORG``` which is the url of your Okta org (starting with https://).
   - ```OKTA_AWS_APP_URL``` is the url link of your Okta AWS application url (see below for more info) 
   - ```OKTA_USERNAME``` is the username to use. If present will skip username input.
-  - ```OKTA_PASSWORD``` is the password to use. If present will skip password input.
+  - ```OKTA_PASSWORD_CMD``` is the command to fetch your password instead of showing a password prompt. [Read more...](docs/OKTA_PASSWORD_CMD.md)  
   - ```OKTA_BROWSER_AUTH``` set to **true** to use integrated web browser for authentication (default: **false**)
   - ```OKTA_COOKIES_PATH``` is directory path to store cookies.properties for Okta (default: ~/.okta)
   - ```OKTA_PROFILE``` is the name of the AWS profile to create/reuse.  May also be specified on the commandline by ```--profile```. (default: get AWS profile name based on per-session STS user name)  
