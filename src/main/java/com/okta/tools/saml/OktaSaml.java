@@ -79,7 +79,7 @@ public class OktaSaml {
     }
 
     // Heuristic based on undocumented behavior observed experimentally
-    // This condition may be missed Okta significantly changes the app-level re-auth page
+    // This condition may be missed if Okta significantly changes the app-level re-auth page
     private boolean isPasswordAuthenticationChallenge(Document document) {
         return document.getElementById("password-verification-challenge") != null;
     }
