@@ -17,7 +17,7 @@ public class ProfileHelper {
         this.environment = environment;
     }
 
-    public String createAwsProfile(AssumeRoleWithSAMLResult assumeResult) throws IOException {
+    public void createAwsProfile(AssumeRoleWithSAMLResult assumeResult, String credentialsProfileName) throws IOException {
         BasicSessionCredentials temporaryCredentials =
                 new BasicSessionCredentials(
                         assumeResult.getCredentials().getAccessKeyId(),
@@ -28,13 +28,10 @@ public class ProfileHelper {
         String awsSecretKey = temporaryCredentials.getAWSSecretKey();
         String awsSessionToken = temporaryCredentials.getSessionToken();
 
-        String credentialsProfileName = getProfileName(assumeResult, environment.oktaProfile);
         credentialsHelper.updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
-
-        return credentialsProfileName;
     }
 
-    private String getProfileName(AssumeRoleWithSAMLResult assumeResult, String oktaProfile) {
+    public String getProfileName(AssumeRoleWithSAMLResult assumeResult, String oktaProfile) {
         String credentialsProfileName;
         if (StringUtils.isNotBlank(oktaProfile)) {
             credentialsProfileName = oktaProfile;

@@ -54,7 +54,7 @@ class ConfigurationTest {
     private OktaAwsCliEnvironment environmentWithCustomPrefix =
             new OktaAwsCliEnvironment(false, null, null,
                     null, null, null, null, null,
-                    0, null, "custom ", null);
+                    0, null, "custom ", false, null);
 
     /*
      * Test writing a new profile to a blank configuration file.

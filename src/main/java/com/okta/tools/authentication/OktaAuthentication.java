@@ -188,10 +188,10 @@ public final class OktaAuthentication {
     }
 
     private String getPassword() {
-        if (environment.oktaPassword == null || environment.oktaPassword.isEmpty()) {
+        if (environment.oktaPassword == null) {
             return promptForPassword();
         } else {
-            return environment.oktaPassword;
+            return environment.oktaPassword.get();
         }
     }
 

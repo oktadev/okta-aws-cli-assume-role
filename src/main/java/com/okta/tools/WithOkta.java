@@ -1,6 +1,9 @@
 package com.okta.tools;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /*
  * Copyright 2017 Okta
@@ -21,10 +24,37 @@ import java.time.Instant;
 public class WithOkta {
     public static void main(String[] args) throws Exception {
         if (LogoutHandler.handleLogout(args)) return;
-        OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment()).run(Instant.now());
-        ProcessBuilder awsProcessBuilder = new ProcessBuilder().inheritIO().command(args);
+        OktaAwsCliEnvironment environment = OktaAwsConfig.loadEnvironment();
+        OktaAwsCliAssumeRole.RunResult runResult = OktaAwsCliAssumeRole.withEnvironment(environment).run(Instant.now());
+        ProcessBuilder awsProcessBuilder = new ProcessBuilder().inheritIO();
+        if (environment.oktaEnvMode) {
+            Map<String, String> awsEnvironment = awsProcessBuilder.environment();
+            awsEnvironment.put("AWS_ACCESS_KEY_ID", runResult.accessKeyId);
+            awsEnvironment.put("AWS_SECRET_ACCESS_KEY", runResult.secretAccessKey);
+            awsEnvironment.put("AWS_SESSION_TOKEN", runResult.sessionToken);
+            args = removeProfileArguments(args);
+        }
+        awsProcessBuilder.command(args);
         Process awsSubProcess = awsProcessBuilder.start();
         int exitCode = awsSubProcess.waitFor();
         System.exit(exitCode);
+    }
+
+    private static String[] removeProfileArguments(String[] args) {
+        List<String> argsList = new ArrayList<>(args.length);
+        boolean profileArg = false;
+        for (String arg : args) {
+            if ("--profile".equals(arg)) {
+                // skip the profile flag and note to skip its argument
+                profileArg = true;
+            }
+            else if (profileArg) {
+                // skip the profile argument
+                profileArg = false;
+            } else {
+                argsList.add(arg);
+            }
+        }
+        return argsList.toArray(new String[] {});
     }
 }

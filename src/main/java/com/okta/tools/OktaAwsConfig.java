@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 final class OktaAwsConfig {
@@ -46,10 +47,10 @@ final class OktaAwsConfig {
         }
 
         return new OktaAwsCliEnvironment(
-                Boolean.valueOf(getEnvOrConfig(properties, "OKTA_BROWSER_AUTH")),
+                Boolean.parseBoolean(getEnvOrConfig(properties, "OKTA_BROWSER_AUTH")),
                 getEnvOrConfig(properties, "OKTA_ORG"),
                 getEnvOrConfig(properties, "OKTA_USERNAME"),
-                runProgram(getEnvOrConfig(properties, "OKTA_PASSWORD_CMD")),
+                deferProgram(getEnvOrConfig(properties, "OKTA_PASSWORD_CMD")),
                 getEnvOrConfig(properties, "OKTA_COOKIES_PATH"),
                 getProfile(profile, getEnvOrConfig(properties, "OKTA_PROFILE")),
                 getEnvOrConfig(properties, "OKTA_AWS_APP_URL"),
@@ -57,12 +58,17 @@ final class OktaAwsConfig {
                 getStsDurationOrDefault(getEnvOrConfig(properties, "OKTA_STS_DURATION")),
                 getAwsRegionOrDefault(getEnvOrConfig(properties, "OKTA_AWS_REGION")),
                 getEnvOrConfig(properties, "OKTA_PROFILE_PREFIX"),
+                Boolean.parseBoolean(getEnvOrConfig(properties, "OKTA_ENV_MODE")),
                 getEnvOrConfig(properties, "OKTA_CREDENTIALS_SUFFIX")
         );
     }
 
-    private static String runProgram(String oktaPasswordCommand) {
+    private static Supplier<String> deferProgram(String oktaPasswordCommand) {
         if (oktaPasswordCommand == null) return null;
+        return () -> runProgram(oktaPasswordCommand);
+    }
+
+    private static String runProgram(String oktaPasswordCommand) {
         ProcessBuilder processBuilder = new ProcessBuilder();
         if (SystemUtils.IS_OS_WINDOWS) {
             processBuilder.command("cmd", "/C", oktaPasswordCommand);
