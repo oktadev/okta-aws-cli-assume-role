@@ -44,6 +44,22 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
     ```
 2. Customize **~/.okta/config.properties** to reflect your Okta and Amazon Web Services setup
 
+### Docker
+
+1. Copy `config.properties` to `~/.okta/config.properties` and set
+   **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
+   
+   ```properties
+   OKTA_ORG=acmecorp.oktapreview.com
+   OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
+   ```
+2. Run this command:
+   ```shell
+   docker run -v ~/.okta/config.properties:/root/.okta/config.properties -it tomsmithokta/okta-awscli-java
+   ```
+
+Read more at [@tom-smith-okta's okta-awscli-java Docker repo](https://hub.docker.com/r/tomsmithokta/okta-awscli-java/).
+
 ### Manual install
 
 Create a `.okta` directory in your home directory. For example, `~/.okta`.
@@ -51,7 +67,7 @@ Create a `.okta` directory in your home directory. For example, `~/.okta`.
 Download the latest release JAR and put it in `.okta`:
 https://github.com/oktadeveloper/okta-aws-cli-assume-role/releases
 
-Copy `config.properties` to `.okta/config.properties` and set
+Copy `config.properties` to `~/.okta/config.properties` and set
 **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
 
 ```properties
