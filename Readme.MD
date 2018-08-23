@@ -118,7 +118,7 @@ Here is the list of parameters that can be environment variables or settings in 
   - ```OKTA_PASSWORD_CMD``` is the command to fetch your password instead of showing a password prompt. [Read more...](docs/OKTA_PASSWORD_CMD.md)
   - ```OKTA_ENV_MODE``` set to **true** to run sub-command with **AWS_ACCESS_KEY_ID**, **AWS_SECRET_ACCESS_KEY**, and **AWS_SESSION_TOKEN** env vars set. Temporary credentials are shared in memory and kept off disk in this mode. (default: **false**)
   - ```OKTA_BROWSER_AUTH``` set to **true** to use integrated web browser for authentication (default: **false**)
-  - ```OKTA_COOKIES_PATH``` is directory path to store cookies.properties for Okta (default: ~/.okta)
+  - ```OKTA_COOKIES_PATH``` is directory path to store cookies.properties for Okta. This is particularly useful when running this tool in many concurrent processes like you might with **OKTA_ENV_MODE** (default: ~/.okta)
   - ```OKTA_PROFILE``` is the name of the AWS profile to create/reuse.  May also be specified on the commandline by ```--profile```. (default: get AWS profile name based on per-session STS user name)  
   - ```OKTA_AWS_REGION``` is the default AWS region to store with the created profile.
   - ```OKTA_AWS_ROLE_TO_ASSUME``` is the role to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found.
