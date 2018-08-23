@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class awscli {
     public static void main(String[] args) throws Exception {
@@ -36,13 +37,23 @@ public class awscli {
             hasProfile = "--profile".equals(arg);
         }
 
+        OktaAwsCliEnvironment environment = OktaAwsConfig.loadEnvironment(profile);
+        OktaAwsCliAssumeRole.RunResult runResult = OktaAwsCliAssumeRole.withEnvironment(environment).run(Instant.now());
+        ProcessBuilder awsProcessBuilder = new ProcessBuilder().inheritIO();
+
         List<String> awsCommand = new ArrayList<>();
-        String profileName = OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment(profile)).run(Instant.now());
         awsCommand.add("aws");
-        awsCommand.add("--profile");
-        awsCommand.add(profileName);
+        if (environment.oktaEnvMode) {
+            Map<String, String> awsEnvironment = awsProcessBuilder.environment();
+            awsEnvironment.put("AWS_ACCESS_KEY_ID", runResult.accessKeyId);
+            awsEnvironment.put("AWS_SECRET_ACCESS_KEY", runResult.secretAccessKey);
+            awsEnvironment.put("AWS_SESSION_TOKEN", runResult.sessionToken);
+        } else {
+            awsCommand.add("--profile");
+            awsCommand.add(runResult.profileName);
+        }
         awsCommand.addAll(Arrays.asList(args));
-        ProcessBuilder awsProcessBuilder = new ProcessBuilder().inheritIO().command(awsCommand);
+        awsProcessBuilder.command(awsCommand);
         Process awsSubProcess = awsProcessBuilder.start();
         int exitCode = awsSubProcess.waitFor();
         System.exit(exitCode);

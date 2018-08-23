@@ -47,7 +47,7 @@ class CredentialsTest {
             new OktaAwsCliEnvironment(false, null, null,
                     null, null, null, null,
                     null, 0, null,
-                    null, "_custom");
+                    null, false, "_custom");
 
     /*
      * Test writing a new credentials profile to a blank credentials file.

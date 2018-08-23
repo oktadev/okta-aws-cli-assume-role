@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
+import com.amazonaws.services.securitytoken.model.Credentials;
 import com.okta.tools.helpers.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -77,19 +78,35 @@ final class OktaAwsCliAssumeRole {
         currentProfile = sessionHelper.getFromMultipleProfiles();
     }
 
-    String run(Instant startInstant) throws Exception {
+    RunResult run(Instant startInstant) throws Exception {
         init();
 
         environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
 
         if (currentSession.isPresent() && sessionHelper.sessionIsActive(startInstant, currentSession.get()) &&
                 StringUtils.isBlank(environment.oktaProfile)) {
-            return currentSession.get().profileName;
+            RunResult runResult = new RunResult();
+            runResult.profileName = currentSession.get().profileName;
+            return runResult;
         }
 
         ProfileSAMLResult profileSAMLResult = doRequest(startInstant);
 
-        return profileSAMLResult.profileName;
+        RunResult runResult = new RunResult();
+        runResult.profileName = profileSAMLResult.profileName;
+        Credentials credentials = profileSAMLResult.assumeRoleWithSAMLResult.getCredentials();
+        runResult.accessKeyId = credentials.getAccessKeyId();
+        runResult.secretAccessKey = credentials.getSecretAccessKey();
+        runResult.sessionToken = credentials.getSessionToken();
+
+        return runResult;
+    }
+
+    class RunResult {
+        String profileName;
+        String accessKeyId;
+        String secretAccessKey;
+        String sessionToken;
     }
 
     AssumeRoleWithSAMLResult getAssumeRoleWithSAMLResult(Instant startInstant) throws Exception {
@@ -107,9 +124,12 @@ final class OktaAwsCliAssumeRole {
         AssumeRoleWithSAMLRequest assumeRequest = roleHelper.chooseAwsRoleToAssume(samlResponse);
         Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
         AssumeRoleWithSAMLResult assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
-        String profileName = profileHelper.createAwsProfile(assumeResult);
 
-        updateConfig(assumeRequest, sessionExpiry, profileName);
+        String profileName = profileHelper.getProfileName(assumeResult, environment.oktaProfile);
+        if (!environment.oktaEnvMode) {
+            profileHelper.createAwsProfile(assumeResult, profileName);
+            updateConfig(assumeRequest, sessionExpiry, profileName);
+        }
 
         return new ProfileSAMLResult(assumeResult, profileName);
     }
