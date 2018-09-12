@@ -28,7 +28,7 @@
         <okta.version>1.2.0</okta.version>
         <joda-time.version>2.10</joda-time.version>
         <json.version>20180813</json.version>
-        <log4j.version>2.10.0</log4j.version>
+        <log4j.version>2.11.1</log4j.version>
         <junit.jupiter.version>5.0.2</junit.jupiter.version>
         <junit.platform.version>1.0.1</junit.platform.version>
         <ini4j.version>0.5.4</ini4j.version>
