@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+PREFIX=${PREFIX:=/usr/local}
 
 java -version > /dev/null 2>&1
 if [ $? -ne 0 ];
@@ -85,8 +86,8 @@ profile=$2
 shift;
 shift;
 env OKTA_PROFILE=$profile java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.WithOkta $command $@
-' > "/usr/local/bin/withokta"
-chmod +x "/usr/local/bin/withokta"
+' > "$PREFIX/bin/withokta"
+chmod +x "$PREFIX/bin/withokta"
 
 # Configure Okta AWS CLI
 oktaConfig="${HOME}/.okta/config.properties"
