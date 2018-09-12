@@ -179,10 +179,10 @@ public final class OktaAuthentication {
 
     private String getUsername() {
         if (environment.oktaUsername == null || environment.oktaUsername.isEmpty()) {
-            System.out.print("Username: ");
+            System.err.print("Username: ");
             return new Scanner(System.in).next();
         } else {
-            System.out.println("Username: " + environment.oktaUsername);
+            System.err.println("Username: " + environment.oktaUsername);
             return environment.oktaUsername;
         }
     }
@@ -197,7 +197,7 @@ public final class OktaAuthentication {
 
     private String promptForPassword() {
         if (System.console() == null) { // hack to be able to debug in an IDE
-            System.out.print("Password: ");
+            System.err.print("Password: ");
             return new Scanner(System.in).next();
         } else {
             return new String(System.console().readPassword("Password: "));

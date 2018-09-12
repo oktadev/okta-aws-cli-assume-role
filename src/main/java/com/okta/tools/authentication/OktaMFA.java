@@ -75,10 +75,10 @@ public class OktaMFA {
      */
     private static String handleTimeoutsAndChanges(String sessionToken, JSONObject primaryAuthResponse) {
         if (sessionToken.equals("change factor")) {
-            System.out.println("Factor change initiated");
+            System.err.println("Factor change initiated");
             return promptForFactor(primaryAuthResponse);
         } else if (sessionToken.equals("timeout")) {
-            System.out.println("Factor timed out");
+            System.err.println("Factor timed out");
             return promptForFactor(primaryAuthResponse);
         }
         return sessionToken;
@@ -105,13 +105,13 @@ public class OktaMFA {
         }
 
         if (supportedFactors.size() > 1) {
-            System.out.println("\nMulti-Factor authentication is required. Please select a factor to use.");
-            System.out.println("Factors:");
+            System.err.println("\nMulti-Factor authentication is required. Please select a factor to use.");
+            System.err.println("Factors:");
             for (int i = 0; i < supportedFactors.size(); i++) {
                 JSONObject factor = supportedFactors.get(i);
                 factorType = factor.getString("factorType");
                 factorType = getFactorDescription(factorType, factor);
-                System.out.println("[ " + (i + 1) + " ] : " + factorType);
+                System.err.println("[ " + (i + 1) + " ] : " + factorType);
             }
         }
 
@@ -200,13 +200,13 @@ public class OktaMFA {
         String answer = "";
 
         // Prompt the user for the Security Question Answer
-        System.out.println("\nSecurity Question Factor Authentication\nEnter 'change factor' to use a different factor\n");
+        System.err.println("\nSecurity Question Factor Authentication\nEnter 'change factor' to use a different factor\n");
         while ("".equals(sessionToken)) {
             if (!"".equals(answer)) {
-                System.out.println("Incorrect answer, please try again");
+                System.err.println("Incorrect answer, please try again");
             }
-            System.out.println(question);
-            System.out.println("Answer: ");
+            System.err.println(question);
+            System.err.println("Answer: ");
             answer = scanner.nextLine();
 
             // Factor change requested
@@ -235,23 +235,23 @@ public class OktaMFA {
         String answer = "";
         String sessionToken = "";
 
-        System.out.println("\nSMS Factor Authentication \nEnter 'change factor' to use a different factor");
+        System.err.println("\nSMS Factor Authentication \nEnter 'change factor' to use a different factor");
         while ("".equals(sessionToken)) {
             if (!"".equals(answer)) {
-                System.out.println("Incorrect passcode, please try again or type 'new code' to be sent a new SMS passcode");
+                System.err.println("Incorrect passcode, please try again or type 'new code' to be sent a new SMS passcode");
             } else {
                 // Send initial code to the user
                 verifyAnswer("", factor, stateToken, "sms");
             }
 
-            System.out.println("SMS Code: ");
+            System.err.println("SMS Code: ");
             answer = scanner.nextLine();
 
             switch (answer.toLowerCase()) {
                 case "new code":
                     // New SMS passcode requested
                     answer = "";
-                    System.out.println("New code sent! \n");
+                    System.err.println("New code sent! \n");
                     break;
                 case "change factor":
                     // Factor change requested
@@ -279,13 +279,13 @@ public class OktaMFA {
         String answer = "";
 
         // Prompt for token
-        System.out.println("\n" + factor.getString("provider") + " Token Factor Authentication\nEnter 'change factor' to use a different factor");
+        System.err.println("\n" + factor.getString("provider") + " Token Factor Authentication\nEnter 'change factor' to use a different factor");
         while ("".equals(sessionToken)) {
             if (!"".equals(answer)) {
-                System.out.println("Invalid token, please try again");
+                System.err.println("Invalid token, please try again");
             }
 
-            System.out.println("Token: ");
+            System.err.println("Token: ");
             answer = scanner.nextLine();
 
             // Factor change requested
@@ -311,16 +311,16 @@ public class OktaMFA {
      */
     private static String pushFactor(JSONObject factor, String stateToken) throws JSONException, IOException {
         String sessionToken = "";
-        System.out.println("\nPush Factor Authentication");
+        System.err.println("\nPush Factor Authentication");
 
         while ("".equals(sessionToken)) {
             // Verify if Okta Push has been verified
             sessionToken = verifyAnswer(null, factor, stateToken, "push");
-            System.out.println(sessionToken);
+            System.err.println(sessionToken);
 
             // Session has timed out
             if (sessionToken.equals("Timeout")) {
-                System.out.println("Session has timed out");
+                System.err.println("Session has timed out");
                 return "timeout";
             }
         }
@@ -371,8 +371,8 @@ public class OktaMFA {
         // An error has been returned by Okta
         if (jsonObjResponse.has("errorCode")) {
             String errorSummary = jsonObjResponse.getString("errorSummary");
-            System.out.println(errorSummary);
-            System.out.println("Please try again");
+            System.err.println(errorSummary);
+            System.err.println("Please try again");
 
             if (factorType.equals("question")) {
                 questionFactor(factor, stateToken);
@@ -434,7 +434,7 @@ public class OktaMFA {
                         pushResult = jsonTransaction.getString("status");
                     }
 
-                    System.out.println("Waiting for you to approve the Okta push notification on your device...");
+                    System.err.println("Waiting for you to approve the Okta push notification on your device...");
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException iex) {
