@@ -19,10 +19,10 @@ public final class ConfigHelper {
      * @throws IOException if a file system or permissions error occurs
      */
     public void updateConfigFile() throws IOException {
-        FileHelper.usingPath(FileHelper.getAwsDirectory().resolve("config"), (reader, writer) -> {
+        FileHelper.usingPath(FileHelper.getAwsDirectory().resolve("config"), reader -> {
             Configuration configuration = new Configuration(reader, environment);
             configuration.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, environment.awsRegion);
-            configuration.save(writer);
-        });
+            return configuration;
+        }, Configuration::save);
     }
 }
