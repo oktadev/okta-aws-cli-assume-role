@@ -38,7 +38,7 @@ if [ $? -ne 0 ]
 then
 echo '
 function aws {
-    withokta aws $@
+    withokta "aws --profile $1" $@
 }
 ' >> "${bash_functions}"
 fi

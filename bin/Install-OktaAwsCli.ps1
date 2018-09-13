@@ -31,8 +31,10 @@ function Install-OktaAwsCli {
     New-Item -ItemType File -Path $HOME\.okta\uptodate | Out-Null
     # .NET apparently doesn't default to TLS 1.2 and GitHub requires it
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+    $LatestReleaseResponse = Invoke-RestMethod -Uri "https://api.github.com/repos/oktadeveloper/okta-aws-cli-assume-role/releases/latest"
+    $Asset = $LatestReleaseResponse.assets | Where-Object { $_.content_type -eq "application/java-archive" }
     $Client = New-Object System.Net.WebClient
-    $Client.DownloadFile("https://github.com/oktadeveloper/okta-aws-cli-assume-role/releases/download/v1.0.2/okta-aws-cli-1.0.2.jar", "$Home\.okta\okta-aws-cli.jar")
+    $Client.DownloadFile($Asset.browser_download_url, "$Home\.okta\okta-aws-cli.jar")
     Add-Content -Path $Home/.okta/config.properties -Value "
 #OktaAWSCLI
 OKTA_ORG=acmecorp.okta.com.changeme.local

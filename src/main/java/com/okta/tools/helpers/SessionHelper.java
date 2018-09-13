@@ -73,11 +73,11 @@ public final class SessionHelper {
 
     private void logoutMultipleAccounts(String profileName) throws IOException {
         cookieHelper.clearCookies();
-        FileHelper.usingPath(FileHelper.getOktaDirectory().resolve("profiles"), (reader, writer) -> {
+        FileHelper.usingPath(FileHelper.getOktaDirectory().resolve("profiles"), reader -> {
             MultipleProfile multipleProfile = new MultipleProfile(reader);
             multipleProfile.deleteProfile(profileName);
-            multipleProfile.save(writer);
-        });
+            return multipleProfile;
+        }, MultipleProfile::save);
     }
 
     public void updateCurrentSession(Instant expiryInstant, String profileName) throws IOException {
@@ -94,11 +94,11 @@ public final class SessionHelper {
     }
 
     public void addOrUpdateProfile(Instant start) throws IOException {
-        FileHelper.usingPath(FileHelper.getOktaDirectory().resolve("profiles"), (reader, writer) -> {
+        FileHelper.usingPath(FileHelper.getOktaDirectory().resolve("profiles"), reader -> {
             MultipleProfile multipleProfile = new MultipleProfile(reader);
             multipleProfile.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, start);
-            multipleProfile.save(writer);
-        });
+            return multipleProfile;
+        }, MultipleProfile::save);
     }
 
     public boolean sessionIsActive(Instant startInstant, Session session) {

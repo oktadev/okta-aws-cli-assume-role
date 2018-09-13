@@ -110,15 +110,18 @@ final class FileHelper {
         return filePath;
     }
 
-    static void usingPath(Path path, PathRW pathRW) throws IOException {
-        try (Reader reader = getReader(path);
-             Writer writer = getWriter(path)) {
-            pathRW.useFile(reader, writer);
+    static <T> void usingPath(Path path, PathR<T> pathR, PathTW<T> pathTW) throws IOException {
+        T t;
+        try (Reader reader = getReader(path)) {
+            t = pathR.useFile(reader);
+        }
+        try (Writer writer = getWriter(path)) {
+            pathTW.useFile(t, writer);
         }
     }
 
-    public interface PathRW {
-        void useFile(Reader reader, Writer writer) throws IOException;
+    public interface PathTW<T> {
+        void useFile(T t, Writer writer) throws IOException;
     }
 
     static <T> T readingPath(Path path, PathR<T> pathR) throws IOException {
