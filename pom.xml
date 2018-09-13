@@ -26,7 +26,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <aws-java-sdk.version>1.11.407</aws-java-sdk.version>
         <okta.version>1.2.0</okta.version>
-        <joda-time.version>2.10</joda-time.version>
         <json.version>20180813</json.version>
         <log4j.version>2.11.1</log4j.version>
         <junit.jupiter.version>5.3.1</junit.jupiter.version>
@@ -39,7 +38,6 @@
     </properties>
 
     <dependencies>
-        <!-- runtime dependencies -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-core</artifactId>
@@ -49,26 +47,6 @@
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sts</artifactId>
             <version>${aws-java-sdk.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-            <version>${joda-time.version}</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
@@ -115,35 +93,11 @@
             <artifactId>opensaml-xmlsec-impl</artifactId>
             <version>${opensaml.version}</version>
         </dependency>
-
-        <!-- Runtime dependencies -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-nop</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.jupiter.version}</version>
             <scope>test</scope>
-        </dependency>
-        <!-- To avoid compiler warnings about @API annotations in JUnit code -->
-        <dependency>
-            <groupId>org.apiguardian</groupId>
-            <artifactId>apiguardian-api</artifactId>
-            <version>1.0.0</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- Dynamic dependency of commons-configuration -->
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>1.9.3</version>
-            <scope>runtime</scope>
         </dependency>
     </dependencies>
 
@@ -210,7 +164,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
+                <version>2.22.0</version>
                 <configuration>
                     <includes>
                         <include>**/Test*.java</include>
@@ -219,13 +173,6 @@
                         <include>**/*TestCase.java</include>
                     </includes>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.platform</groupId>
-                        <artifactId>junit-platform-surefire-provider</artifactId>
-                        <version>${junit.platform.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>
