@@ -85,48 +85,6 @@ See Open Source Licenses below for complete copy of the Apache 2.0 license
 
 -------------------
 
-FasterXML Jackson Annotations
-Version (if any):
-2.0.6
-Brief Description:
-This project contains core low-level incremental ("streaming") parser and generator abstractions used by Jackson Data Processor. It also includes the default implementation of handler types (parser, generator) that handle JSON format. The core abstractions are not JSON specific, although naming does contain 'JSON' in many places, due to historical reasons. Only packages that specifically contain word 'json' are JSON-specific.
-
-Copyright (c) 2007- Tatu Saloranta, tatu.saloranta@iki.fi
-
-See Open Source Licenses below for complete copy of the Apache 2.0 license
-
--------------------
-
-FasterXML Jackson Databind
-Version (if any):
-2.0.6
-Brief Description:
-This project contains core low-level incremental ("streaming") parser and generator abstractions used by Jackson Data Processor. It also includes the default implementation of handler types (parser, generator) that handle JSON format. The core abstractions are not JSON specific, although naming does contain 'JSON' in many places, due to historical reasons. Only packages that specifically contain word 'json' are JSON-specific.
-
-Copyright (c) 2007- Tatu Saloranta, tatu.saloranta@iki.fi
-
-See Open Source Licenses below for complete copy of the Apache 2.0 license
-
--------------------
-
-Joda Time
-Version (if any):
-2.9.3
-Brief Description:
-Joda-Time provides a quality replacement for the Java date and time classes.
-
-Copyright 2001-2005 Stephen Colebourne
-
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
-See Open Source Licenses below for complete copy of the Apache 2.0 license
-
--------------------
-
 org.json
 Version (if any):
 201602012
