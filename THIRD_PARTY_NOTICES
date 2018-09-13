@@ -85,30 +85,6 @@ See Open Source Licenses below for complete copy of the Apache 2.0 license
 
 -------------------
 
-FasterXML Jackson Annotations
-Version (if any):
-2.0.6
-Brief Description:
-This project contains core low-level incremental ("streaming") parser and generator abstractions used by Jackson Data Processor. It also includes the default implementation of handler types (parser, generator) that handle JSON format. The core abstractions are not JSON specific, although naming does contain 'JSON' in many places, due to historical reasons. Only packages that specifically contain word 'json' are JSON-specific.
-
-Copyright (c) 2007- Tatu Saloranta, tatu.saloranta@iki.fi
-
-See Open Source Licenses below for complete copy of the Apache 2.0 license
-
--------------------
-
-FasterXML Jackson Databind
-Version (if any):
-2.0.6
-Brief Description:
-This project contains core low-level incremental ("streaming") parser and generator abstractions used by Jackson Data Processor. It also includes the default implementation of handler types (parser, generator) that handle JSON format. The core abstractions are not JSON specific, although naming does contain 'JSON' in many places, due to historical reasons. Only packages that specifically contain word 'json' are JSON-specific.
-
-Copyright (c) 2007- Tatu Saloranta, tatu.saloranta@iki.fi
-
-See Open Source Licenses below for complete copy of the Apache 2.0 license
-
--------------------
-
 org.json
 Version (if any):
 201602012
