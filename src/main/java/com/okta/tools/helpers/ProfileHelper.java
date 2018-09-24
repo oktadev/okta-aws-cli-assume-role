@@ -6,11 +6,15 @@ import com.okta.tools.OktaAwsCliEnvironment;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ProfileHelper {
 
     private final CredentialsHelper credentialsHelper;
     private OktaAwsCliEnvironment environment;
+    private final Pattern assumedRoleUserPattern = Pattern.compile(
+            "^arn:aws:sts::(?<account>\\d{12}):assumed-role/(?<roleName>[^/]*)/(?<userName>.*$)");
 
     public ProfileHelper(CredentialsHelper credentialsHelper, OktaAwsCliEnvironment environment) {
         this.credentialsHelper = credentialsHelper;
@@ -31,17 +35,17 @@ public class ProfileHelper {
         credentialsHelper.updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
     }
 
-    public String getProfileName(AssumeRoleWithSAMLResult assumeResult, String oktaProfile) {
+    public String getProfileName(AssumeRoleWithSAMLResult assumeResult) {
         String credentialsProfileName;
-        if (StringUtils.isNotBlank(oktaProfile)) {
-            credentialsProfileName = oktaProfile;
+        if (StringUtils.isNotBlank(environment.oktaProfile)) {
+            credentialsProfileName = environment.oktaProfile;
         } else {
             credentialsProfileName = assumeResult.getAssumedRoleUser().getArn();
-            if (credentialsProfileName.startsWith("arn:aws:sts::")) {
-                credentialsProfileName = credentialsProfileName.substring(13);
-            }
-            if (credentialsProfileName.contains(":assumed-role")) {
-                credentialsProfileName = credentialsProfileName.replaceAll(":assumed-role", "");
+            Matcher matcher = assumedRoleUserPattern.matcher(credentialsProfileName);
+            if (matcher.matches()) {
+                credentialsProfileName = matcher.group("roleName") + "_" + matcher.group("account");
+            } else {
+                credentialsProfileName = "temp";
             }
         }
 
