@@ -81,7 +81,7 @@ final class OktaAwsCliAssumeRole {
     RunResult run(Instant startInstant) throws Exception {
         init();
 
-        environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
+        environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(environment.awsRoleToAssume);
 
         if (currentSession.isPresent() && sessionHelper.sessionIsActive(startInstant, currentSession.get()) &&
                 StringUtils.isBlank(environment.oktaProfile)) {

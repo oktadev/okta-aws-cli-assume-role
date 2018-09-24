@@ -23,7 +23,7 @@ public class MenuHelper {
         int selection = -1;
         while (selection == -1) {
             //prompt user for selection
-            System.out.print("Selection: ");
+            System.err.print("Selection: ");
             String selectInput = scanner.nextLine();
             try {
                 selection = Integer.parseInt(selectInput) - 1;

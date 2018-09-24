@@ -52,16 +52,16 @@ public class RoleHelper {
         } else if (roleIdpPairs.size() > 1) {
             List<AccountOption> accountOptions = getAvailableRoles(samlResponse);
 
-            System.out.println("\nPlease choose the role you would like to assume: ");
+            System.err.println("\nPlease choose the role you would like to assume: ");
             //Gather list of applicable AWS roles
             int i = 0;
             int j = -1;
 
             for (AccountOption accountOption : accountOptions) {
-                System.out.println(accountOption.accountName);
+                System.err.println(accountOption.accountName);
                 for (RoleOption roleOption : accountOption.roleOptions) {
                     roleArns.add(roleOption.roleArn);
-                    System.out.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
+                    System.err.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
                     if (roleOption.roleArn.equals(environment.awsRoleToAssume)) {
                         j = i;
                     }
@@ -69,7 +69,7 @@ public class RoleHelper {
                 }
             }
             if ((environment.awsRoleToAssume != null && !environment.awsRoleToAssume.isEmpty()) && j == -1) {
-                System.out.println("No match for role " + environment.awsRoleToAssume);
+                System.err.println("No match for role " + environment.awsRoleToAssume);
             }
 
             // Default to no selection
@@ -78,7 +78,7 @@ public class RoleHelper {
             // If config.properties has matching role, use it and don't prompt user to select
             if (j >= 0) {
                 selection = j;
-                System.out.println("Selected option " + (j + 1) + " based on OKTA_AWS_ROLE_TO_ASSUME value");
+                System.err.println("Selected option " + (j + 1) + " based on OKTA_AWS_ROLE_TO_ASSUME value");
             } else {
                 //Prompt user for role selection
                 selection = MenuHelper.promptForMenuSelection(roleArns.size());
@@ -88,7 +88,7 @@ public class RoleHelper {
             principalArn = roleIdpPairs.get(roleArn);
         } else {
             Map.Entry<String, String> role = roleIdpPairs.entrySet().iterator().next();
-            System.out.println("Auto select role as only one is available : " + role.getKey());
+            System.err.println("Auto select role as only one is available : " + role.getKey());
             roleArn = role.getKey();
             principalArn = role.getValue();
         }
