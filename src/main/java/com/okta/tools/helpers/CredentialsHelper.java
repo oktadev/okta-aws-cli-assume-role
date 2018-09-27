@@ -25,7 +25,7 @@ public final class CredentialsHelper {
     void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
             throws IOException {
         FileHelper.usingPath(FileHelper.getAwsDirectory().resolve("credentials"), reader -> {
-            Credentials credentials = new Credentials(reader, environment);
+            Credentials credentials = new Credentials(reader);
             credentials.addOrUpdateProfile(profileName, awsAccessKey, awsSecretKey, awsSessionToken);
             return credentials;
         }, Credentials::save);

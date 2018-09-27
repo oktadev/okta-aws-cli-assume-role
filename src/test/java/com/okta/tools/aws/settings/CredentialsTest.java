@@ -15,7 +15,6 @@
  */
 package com.okta.tools.aws.settings;
 
-import com.okta.tools.OktaAwsCliEnvironment;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -35,19 +34,10 @@ class CredentialsTest {
     private String accessKey = "accesskey";
     private String secretKey = "secretkey";
     private String sessionToken = "sessiontoken";
-    private String manualRole = "[" + roleName + "_source]\n"
+    private String manualRole = "[" + roleName + "]\n"
             + Credentials.ACCES_KEY_ID + " = " + accessKey + "\n"
             + Credentials.SECRET_ACCESS_KEY + " = " + secretKey + "\n"
             + Credentials.SESSION_TOKEN + " = " + sessionToken;
-    private String manualRoleCustomSuffix = "[" + roleName + "_custom]\n"
-            + Credentials.ACCES_KEY_ID + " = " + accessKey + "\n"
-            + Credentials.SECRET_ACCESS_KEY + " = " + secretKey + "\n"
-            + Credentials.SESSION_TOKEN + " = " + sessionToken;
-    private OktaAwsCliEnvironment environmentWithCustomSuffix =
-            new OktaAwsCliEnvironment(false, null, null,
-                    null, null, null, null,
-                    null, 0, null,
-                    null, false, "_custom");
 
     /*
      * Test writing a new credentials profile to a blank credentials file.
@@ -64,23 +54,6 @@ class CredentialsTest {
         String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
 
         assertEquals(manualRole, given);
-    }
-
-    /*
-     * Test writing a new credentials profile to a blank credentials file with custom suffix.
-     */
-    @Test
-    void addOrUpdateProfileToNewCredentialsFileCustomSuffix() throws IOException {
-        final StringReader credentialsReader = new StringReader("");
-        final StringWriter credentialsWriter = new StringWriter();
-        final Credentials credentials = new Credentials(credentialsReader, environmentWithCustomSuffix);
-
-        credentials.addOrUpdateProfile(roleName, accessKey, secretKey, sessionToken);
-        credentials.save(credentialsWriter);
-
-        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
-
-        assertEquals(manualRoleCustomSuffix, given);
     }
 
     /*
@@ -102,24 +75,6 @@ class CredentialsTest {
     }
 
     /*
-     * Test writing a new credentials profile to an existing credentials file with custom suffix.
-     */
-    @Test
-    void addOrUpdateProfileToExistingCredentialsFileCustomSuffix() throws IOException {
-        final StringReader credentialsReader = new StringReader(existingCredentials);
-        final StringWriter credentialsWriter = new StringWriter();
-        final Credentials credentials = new Credentials(credentialsReader, environmentWithCustomSuffix);
-
-        credentials.addOrUpdateProfile(roleName, accessKey, secretKey, sessionToken);
-        credentials.save(credentialsWriter);
-
-        String expected = existingCredentials + "\n\n" + manualRoleCustomSuffix;
-        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
-
-        assertEquals(expected, given);
-    }
-
-    /*
      * Test updating an existing profile.
      */
     @Test
@@ -130,34 +85,7 @@ class CredentialsTest {
 
         final String updatedPrefix = "updated_";
         final String expected = existingCredentials + "\n\n"
-                + "[" + roleName + "_source]\n"
-                + Credentials.ACCES_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
-                + Credentials.SECRET_ACCESS_KEY + " = " + updatedPrefix + secretKey + "\n"
-                + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken;
-
-        credentials.addOrUpdateProfile(roleName, updatedPrefix + accessKey, updatedPrefix + secretKey, updatedPrefix + sessionToken);
-        credentials.save(credentialsWriter);
-
-        String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
-
-        assertEquals(expected, given);
-    }
-
-    /*
-     * Test updating an existing profile with custom suffix.
-     *
-     * Leaves the entry with the previous suffix in place by design.
-     */
-    @Test
-    void addOrUpdateProfileToExistingProfileCustomSuffix() throws IOException {
-        final StringReader credentialsReader = new StringReader(existingCredentials + "\n\n" + manualRole);
-        final StringWriter credentialsWriter = new StringWriter();
-        final Credentials credentials = new Credentials(credentialsReader, environmentWithCustomSuffix);
-
-        final String updatedPrefix = "updated_";
-        final String expected = existingCredentials + "\n\n"
-                + manualRole + "\n\n"
-                + "[" + roleName + "_custom]\n"
+                + "[" + roleName + "]\n"
                 + Credentials.ACCES_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
                 + Credentials.SECRET_ACCESS_KEY + " = " + updatedPrefix + secretKey + "\n"
                 + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken;

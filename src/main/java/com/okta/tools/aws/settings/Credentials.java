@@ -31,7 +31,6 @@ public class Credentials extends Settings {
     static final String ACCES_KEY_ID = "aws_access_key_id";
     static final String SECRET_ACCESS_KEY = "aws_secret_access_key";
     static final String SESSION_TOKEN = "aws_session_token";
-    private final OktaAwsCliEnvironment environment;
 
     /**
      * Create a Credentials object from a given {@link Reader}. The data given by this {@link Reader} should
@@ -40,13 +39,8 @@ public class Credentials extends Settings {
      * @param reader The settings we want to work with. N.B.: The reader is consumed by the constructor.
      * @throws IOException Thrown when we cannot read or load from the given {@param reader}.
      */
-    public Credentials(Reader reader, OktaAwsCliEnvironment environment) throws IOException {
+    public Credentials(Reader reader) throws IOException {
         super(reader);
-        this.environment = environment;
-    }
-
-    Credentials(Reader reader) throws IOException {
-        this(reader, new OktaAwsCliEnvironment());
     }
 
     /**
@@ -58,7 +52,6 @@ public class Credentials extends Settings {
      * @param awsSessionToken The session token to use for the profile.
      */
     public void addOrUpdateProfile(String name, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
-        name = DEFAULT_PROFILE_NAME.equals(name) ? DEFAULT_PROFILE_NAME : name + environment.credentialsSuffix;
         setProperty(name, ACCES_KEY_ID, awsAccessKey);
         setProperty(name, SECRET_ACCESS_KEY, awsSecretKey);
         setProperty(name, SESSION_TOKEN, awsSessionToken);
