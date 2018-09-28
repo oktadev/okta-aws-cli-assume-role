@@ -15,18 +15,17 @@ public class OktaAwsCliEnvironment {
     public String awsRoleToAssume;
 
     public int stsDuration;
-    public final String awsRegion;
     public final boolean oktaEnvMode;
 
     public OktaAwsCliEnvironment()
     {
-        this(false, null, null, null, null, null, null, null, 0, null, false);
+        this(false, null, null, null, null, null, null, null, 0, false);
     }
 
     public OktaAwsCliEnvironment(boolean browserAuth, String oktaOrg,
                                  String oktaUsername, Supplier<String> oktaPassword, String oktaCookiesPath,
                                  String oktaProfile, String oktaAwsAppUrl, String awsRoleToAssume,
-                                 int stsDuration, String awsRegion,
+                                 int stsDuration,
                                  boolean oktaEnvMode) {
         this.browserAuth = browserAuth;
         this.oktaOrg = oktaOrg;
@@ -37,7 +36,6 @@ public class OktaAwsCliEnvironment {
         this.oktaAwsAppUrl = oktaAwsAppUrl;
         this.awsRoleToAssume = awsRoleToAssume;
         this.stsDuration = stsDuration;
-        this.awsRegion = awsRegion;
         this.oktaEnvMode = oktaEnvMode;
     }
 }
