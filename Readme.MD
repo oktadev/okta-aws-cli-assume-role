@@ -19,7 +19,6 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
 - [Troubleshooting](#troubleshooting)
     - [I get "You have no factors enrolled"](#i-get-you-have-no-factors-enrolled)
     - [I have Duo, but I get "None of your factors are supported"](#i-have-duo-but-i-get-none-of-your-factors-are-supported)
-    - [I can pick a role, but I get "not authorized to perform: sts:AssumeRole"](#i-can-pick-a-role-but-i-get-not-authorized-to-perform-stsassumerole)
 - [Getting help](#getting-help)
 - [License](#license)
 
@@ -136,11 +135,8 @@ Here is the list of parameters that can be environment variables or settings in 
   - ```OKTA_BROWSER_AUTH``` set to **true** to use integrated web browser for authentication (default: **false**)
   - ```OKTA_COOKIES_PATH``` is directory path to store cookies.properties for Okta. This is particularly useful when running this tool in many concurrent processes like you might with **OKTA_ENV_MODE** (default: ~/.okta)
   - ```OKTA_PROFILE``` is the name of the AWS profile to create/reuse.  May also be specified on the commandline by ```--profile```. (default: get AWS profile name based on per-session STS user name)  
-  - ```OKTA_AWS_REGION``` is the default AWS region to store with the created profile.
   - ```OKTA_AWS_ROLE_TO_ASSUME``` is the role to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found.
   - ```OKTA_STS_DURATION``` is the duration the role will be assumed, in seconds. The maximum session duration allowed by AWS is 12 hours and this needs to be set on the role as well.  Defaults to 1hr.
-  - ```OKTA_PROFILE_PREFIX``` is the text to prepend to the section name in ~/.aws/config for a named profile.  Defaults to "profile " (necessary for use with AWS CLI).
-  - ```OKTA_CREDENTIALS_SUFFIX``` is the text to append to the section name in ~/.aws/credentals for a named profile.  Defaults to "_source" (necessary for use with AWS Tools for Windows PowerShell).
   
   - **Obtaining the AWS app url**
     - Navigate to the ```Admin Dashboard``` of you Okta organization
@@ -166,33 +162,6 @@ If you are using Duo Push, consider setting **OKTA_BROWSER_AUTH=true** in [the c
 This means that MFA is enforced, but none of the factors you have enrolled are supported.
 
 Okta's integration with Duo requires an iframe which isn't practical to interact with from a CLI context. 
-
-### I can pick a role, but I get "not authorized to perform: sts:AssumeRole"
-
-If you see an error like this:
-```plain
-User arn:aws:iam::123456789012:assumed-role/RoleName/user.name@example.com is not authorized to perform:
-sts:AssumeRole on resource: arn:aws:iam::123456789012:role/RoleName 
-```
-
-Then you will need to attach an inline policy like this to the role to allow the role to assume itself:
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "sts:AssumeRole"
-            ],
-            "Resource": [
-                "arn:aws:iam::123456789012:role/RoleName"
-            ]
-        }
-    ]
-}
-```
 
 ## Getting help
 Have a question or see a bug? Post a question on the [Okta Dev Forums](https://devforum.okta.com/) or email developers@okta.com. For feature requests, feel free to open an issue on this repo.

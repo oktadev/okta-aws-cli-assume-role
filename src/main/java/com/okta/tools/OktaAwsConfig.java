@@ -56,10 +56,7 @@ final class OktaAwsConfig {
                 getEnvOrConfig(properties, "OKTA_AWS_APP_URL"),
                 getEnvOrConfig(properties, "OKTA_AWS_ROLE_TO_ASSUME"),
                 getStsDurationOrDefault(getEnvOrConfig(properties, "OKTA_STS_DURATION")),
-                getAwsRegionOrDefault(getEnvOrConfig(properties, "OKTA_AWS_REGION")),
-                getEnvOrConfig(properties, "OKTA_PROFILE_PREFIX"),
-                Boolean.parseBoolean(getEnvOrConfig(properties, "OKTA_ENV_MODE")),
-                getEnvOrConfig(properties, "OKTA_CREDENTIALS_SUFFIX")
+                Boolean.parseBoolean(getEnvOrConfig(properties, "OKTA_ENV_MODE"))
         );
     }
 

@@ -10,6 +10,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -93,15 +94,15 @@ public final class SessionHelper {
         );
     }
 
-    public void addOrUpdateProfile(Instant start) throws IOException {
+    public void addOrUpdateProfile(Instant sessionExpiry) throws IOException {
         FileHelper.usingPath(FileHelper.getOktaDirectory().resolve("profiles"), reader -> {
             MultipleProfile multipleProfile = new MultipleProfile(reader);
-            multipleProfile.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, start);
+            multipleProfile.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, sessionExpiry);
             return multipleProfile;
         }, MultipleProfile::save);
     }
 
     public boolean sessionIsActive(Instant startInstant, Session session) {
-        return startInstant.isBefore(session.expiry);
+        return startInstant.isBefore(session.expiry) && Objects.equals(session.profileName, environment.oktaProfile);
     }
 }

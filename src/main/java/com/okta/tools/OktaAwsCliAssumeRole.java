@@ -39,7 +39,6 @@ final class OktaAwsCliAssumeRole {
     private OktaAwsCliEnvironment environment;
 
     private SessionHelper sessionHelper;
-    private ConfigHelper configHelper;
     private RoleHelper roleHelper;
     private CredentialsHelper credentialsHelper;
     private ProfileHelper profileHelper;
@@ -60,7 +59,6 @@ final class OktaAwsCliAssumeRole {
     private void init() throws Exception {
         CookieHelper cookieHelper = new CookieHelper(environment);
         sessionHelper = new SessionHelper(environment, cookieHelper);
-        configHelper = new ConfigHelper(environment);
         roleHelper = new RoleHelper(environment);
         credentialsHelper  = new CredentialsHelper(environment);
         profileHelper = new ProfileHelper(credentialsHelper, environment);
@@ -83,8 +81,7 @@ final class OktaAwsCliAssumeRole {
 
         environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(environment.awsRoleToAssume);
 
-        if (currentSession.isPresent() && sessionHelper.sessionIsActive(startInstant, currentSession.get()) &&
-                StringUtils.isBlank(environment.oktaProfile)) {
+        if (currentSession.isPresent() && sessionHelper.sessionIsActive(startInstant, currentSession.get())) {
             RunResult runResult = new RunResult();
             runResult.profileName = currentSession.get().profileName;
             return runResult;
@@ -137,7 +134,6 @@ final class OktaAwsCliAssumeRole {
     private void updateConfig(AssumeRoleWithSAMLRequest assumeRequest, Instant sessionExpiry, String profileName) throws IOException {
         environment.oktaProfile = profileName;
         environment.awsRoleToAssume = assumeRequest.getRoleArn();
-        configHelper.updateConfigFile();
         sessionHelper.addOrUpdateProfile(sessionExpiry);
         sessionHelper.updateCurrentSession(sessionExpiry, profileName);
     }
