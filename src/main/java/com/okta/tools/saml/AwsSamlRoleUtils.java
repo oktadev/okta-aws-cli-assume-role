@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Okta
+ * Copyright 2018 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
  */
 package com.okta.tools.saml;
 
+import com.okta.tools.helpers.HttpHelper;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -65,7 +65,7 @@ public final class AwsSamlRoleUtils {
                 new BasicNameValuePair("RelayState", "")
         ), StandardCharsets.UTF_8);
         httpPost.setEntity(samlForm);
-        try (CloseableHttpClient httpClient = HttpClients.createSystem();
+        try (CloseableHttpClient httpClient = HttpHelper.createClient();
              CloseableHttpResponse samlSigninResponse = httpClient.execute(httpPost)) {
             return Jsoup.parse(
                     samlSigninResponse.getEntity().getContent(),
