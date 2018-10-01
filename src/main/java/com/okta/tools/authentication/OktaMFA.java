@@ -379,7 +379,7 @@ public class OktaMFA {
             }
 
             if (factorType.equals("token:software:totp")) {
-                totpFactor(factor, stateToken);
+                sessionToken = totpFactor(factor, stateToken);
             }
         }
 
