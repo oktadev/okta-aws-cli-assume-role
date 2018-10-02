@@ -37,8 +37,11 @@ grep '^#OktaAWSCLI' "${bash_functions}" > /dev/null 2>&1
 if [ $? -ne 0 ]
 then
 echo '
-function aws {
+function okta-aws {
     withokta "aws --profile $1" $@
+}
+function okta-sls {
+    withokta "sls --stage $1" $@
 }
 ' >> "${bash_functions}"
 fi
@@ -56,10 +59,10 @@ export PATH="$HOME/bin:$PATH"
 function withokta
     java -Djava.net.useSystemProxies com.okta.tools.WithOkta $argv
 end
-function aws
+function okta-aws
     withokta "aws --profile $argv[1]" $argv
 end
-function sls
+function okta-sls
     withokta "sls --stage $argv[1]" $argv
 end
 ' >> "${fishConfig}"

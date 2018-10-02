@@ -69,11 +69,11 @@ function With-Okta {
         $env:OKTA_PROFILE = $OriginalOKTA_PROFILE
     }
 }
-function aws {
+function okta-aws {
     Param([string]$Profile)
     With-Okta -Profile $Profile aws --profile $Profile @args
 }
-function sls {
+function okta-sls {
     Param([string]$Profile)
     With-Okta -Profile $Profile sls --stage $Profile @args
 }

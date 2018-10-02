@@ -81,7 +81,7 @@ Copy scripts from `.okta/bin` to somewhere on your PATH.
 Verify your setup with a simple command:
 
 ```bash
-aws test sts get-caller-identity
+okta-aws test sts get-caller-identity
 ```
 
 This will prompt for Okta credentials, log you into AWS, let you pick a role, and store a session profile called **test** for you.
@@ -89,7 +89,7 @@ This will prompt for Okta credentials, log you into AWS, let you pick a role, an
 Run the program again to see session resumption (you won't be asked for Okta credentials until the session expires):
 
 ```bash
-aws test sts get-caller-identity
+okta-aws test sts get-caller-identity
 ```
 
 ## Compiling the application
