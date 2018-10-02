@@ -122,7 +122,7 @@ final class OktaAwsCliAssumeRole {
         Instant sessionExpiry = startInstant.plus(assumeRequest.getDurationSeconds() - 30, ChronoUnit.SECONDS);
         AssumeRoleWithSAMLResult assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
 
-        String profileName = profileHelper.getProfileName(assumeResult, environment.oktaProfile);
+        String profileName = profileHelper.getProfileName(assumeResult);
         if (!environment.oktaEnvMode) {
             profileHelper.createAwsProfile(assumeResult, profileName);
             updateConfig(assumeRequest, sessionExpiry, profileName);

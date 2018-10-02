@@ -5,7 +5,7 @@ import com.okta.tools.aws.settings.Credentials;
 
 import java.io.IOException;
 
-public final class CredentialsHelper {
+public class CredentialsHelper {
 
     private final OktaAwsCliEnvironment environment;
 
