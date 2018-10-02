@@ -36,19 +36,16 @@ public class ProfileHelper {
     }
 
     public String getProfileName(AssumeRoleWithSAMLResult assumeResult) {
-        String credentialsProfileName;
         if (StringUtils.isNotBlank(environment.oktaProfile)) {
-            credentialsProfileName = environment.oktaProfile;
-        } else {
-            credentialsProfileName = assumeResult.getAssumedRoleUser().getArn();
-            Matcher matcher = assumedRoleUserPattern.matcher(credentialsProfileName);
-            if (matcher.matches()) {
-                credentialsProfileName = matcher.group("roleName") + "_" + matcher.group("account");
-            } else {
-                credentialsProfileName = "temp";
-            }
+            return environment.oktaProfile;
         }
 
-        return credentialsProfileName;
+        String credentialsProfileName = assumeResult.getAssumedRoleUser().getArn();
+        Matcher matcher = assumedRoleUserPattern.matcher(credentialsProfileName);
+        if (matcher.matches()) {
+            return matcher.group("roleName") + "_" + matcher.group("account");
+        }
+
+        return "temp";
     }
 }
