@@ -69,6 +69,18 @@ function With-Okta {
         $env:OKTA_PROFILE = $OriginalOKTA_PROFILE
     }
 }
+function Okta-ListRoles {
+    $InternetOptions = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+    if ($InternetOptions.ProxyServer) {
+        ($ProxyHost, $ProxyPort) = $InternetOptions.ProxyServer.Split(":")
+    }
+    if ($InternetOptions.ProxyOverride) {
+        $NonProxyHosts = [System.String]::Join("|", ($InternetOptions.ProxyOverride.Replace("<local>", "").Split(";") | Where-Object {$_}))
+    } else {
+        $NonProxyHosts = ""
+    }
+    java "-Dhttp.proxyHost=$ProxyHost" "-Dhttp.proxyPort=$ProxyPort" "-Dhttps.proxyHost=$ProxyHost" "-Dhttps.proxyPort=$ProxyPort" "-Dhttp.nonProxyHosts=$NonProxyHosts" -classpath $HOME\.okta\* com.okta.tools.ListRoles
+}
 function okta-aws {
     Param([string]$Profile)
     With-Okta -Profile $Profile aws --profile $Profile @args
