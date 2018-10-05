@@ -32,6 +32,8 @@
         <ini4j.version>0.5.4</ini4j.version>
         <jsoup.version>1.11.3</jsoup.version>
         <opensaml.version>3.3.0</opensaml.version>
+        <slf4j.version>1.7.25</slf4j.version>
+        <openjfx.version>11</openjfx.version>
     </properties>
 
     <dependencies>
@@ -92,6 +94,12 @@
         </dependency>
 
         <!-- Runtime dependencies -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>runtime</scope>
+        </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-web</artifactId>
