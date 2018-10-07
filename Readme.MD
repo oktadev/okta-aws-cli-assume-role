@@ -52,9 +52,18 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
    OKTA_ORG=acmecorp.oktapreview.com
    OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
    ```
-2. Run this command:
+2. Build the image locally using:
    ```shell
-   docker run -v ~/.okta/config.properties:/root/.okta/config.properties -it tomsmithokta/okta-awscli-java
+   docker build okta-awscli-java .
+   ```
+
+3. Run via:
+   ```shell
+   docker run -it --rm -v ~/.okta/config.properties:/root/.okta/config.properties okta-awscli-java
+   ```
+   Or alternatively, to have okta update your local aws config as well,
+   ```shell
+   docker run -it --rm -v ~/.aws/:/root/.aws/ -v ~/.okta/config.properties:/root/.okta/config.properties okta-awscli-java
    ```
 
 Read more at [@tom-smith-okta's okta-awscli-java Docker repo](https://hub.docker.com/r/tomsmithokta/okta-awscli-java/).
