@@ -92,6 +92,12 @@ env OKTA_PROFILE=$profile java -classpath ~/.okta/okta-aws-cli.jar com.okta.tool
 ' > "$PREFIX/bin/withokta"
 chmod +x "$PREFIX/bin/withokta"
 
+# Create okta-listroles command
+echo '#!/bin/bash
+java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.ListRoles
+' > "$PREFIX/bin/okta-listroles"
+chmod +x "$PREFIX/bin/okta-listroles"
+
 # Configure Okta AWS CLI
 oktaConfig="${HOME}/.okta/config.properties"
 grep '^#OktaAWSCLI' "${oktaConfig}" > /dev/null 2>&1

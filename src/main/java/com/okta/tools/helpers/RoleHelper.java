@@ -102,7 +102,7 @@ public class RoleHelper {
                 .withDurationSeconds(stsDuration);
     }
 
-    private List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {
+    public List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {
         Document document = AwsSamlRoleUtils.getSigninPageDocument(samlResponse);
         return AwsSamlSigninParser.parseAccountOptions(document);
     }
