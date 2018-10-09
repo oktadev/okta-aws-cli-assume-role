@@ -33,7 +33,7 @@ public class RoleHelper {
         AWSCredentialsProvider nullCredentialsProvider = new AWSStaticCredentialsProvider(nullCredentials);
         AWSSecurityTokenService sts = AWSSecurityTokenServiceClientBuilder
                 .standard()
-                .withRegion(Regions.US_EAST_1)
+                .withRegion(Regions.GovCloud)
                 .withCredentials(nullCredentialsProvider)
                 .build();
         return sts.assumeRoleWithSAML(assumeRequest);

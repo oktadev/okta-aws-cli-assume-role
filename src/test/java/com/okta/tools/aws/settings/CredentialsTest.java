@@ -28,15 +28,18 @@ class CredentialsTest {
     private String existingCredentials = "[default]\n"
             + Credentials.ACCES_KEY_ID + " = " + "defaultaccesskey" + "\n"
             + Credentials.SECRET_ACCESS_KEY + " = " + "defaultsecretkey" + "\n"
+            + Credentials.AWS_DEFAULT_REGION + " = " + "defaultregion" + "\n"
             + Credentials.SESSION_TOKEN + " = " + "defaultsessiontoken";
 
     private String roleName = "newrole";
     private String accessKey = "accesskey";
     private String secretKey = "secretkey";
+    private String awsRegion = "region";
     private String sessionToken = "sessiontoken";
     private String manualRole = "[" + roleName + "]\n"
             + Credentials.ACCES_KEY_ID + " = " + accessKey + "\n"
             + Credentials.SECRET_ACCESS_KEY + " = " + secretKey + "\n"
+            + Credentials.AWS_DEFAULT_REGION + " = " + awsRegion + "\n"
             + Credentials.SESSION_TOKEN + " = " + sessionToken;
 
     /*
@@ -48,7 +51,7 @@ class CredentialsTest {
         final StringWriter credentialsWriter = new StringWriter();
         final Credentials credentials = new Credentials(credentialsReader);
 
-        credentials.addOrUpdateProfile(roleName, accessKey, secretKey, sessionToken);
+        credentials.addOrUpdateProfile(roleName, accessKey, secretKey, awsRegion, sessionToken);
         credentials.save(credentialsWriter);
 
         String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
@@ -65,7 +68,7 @@ class CredentialsTest {
         final StringWriter credentialsWriter = new StringWriter();
         final Credentials credentials = new Credentials(credentialsReader);
 
-        credentials.addOrUpdateProfile(roleName, accessKey, secretKey, sessionToken);
+        credentials.addOrUpdateProfile(roleName, accessKey, secretKey, awsRegion, sessionToken);
         credentials.save(credentialsWriter);
 
         String expected = existingCredentials + "\n\n" + manualRole;
@@ -88,9 +91,10 @@ class CredentialsTest {
                 + "[" + roleName + "]\n"
                 + Credentials.ACCES_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
                 + Credentials.SECRET_ACCESS_KEY + " = " + updatedPrefix + secretKey + "\n"
+                + Credentials.AWS_DEFAULT_REGION + " = " + awsRegion + "\n"
                 + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken;
 
-        credentials.addOrUpdateProfile(roleName, updatedPrefix + accessKey, updatedPrefix + secretKey, updatedPrefix + sessionToken);
+        credentials.addOrUpdateProfile(roleName, updatedPrefix + accessKey, updatedPrefix + secretKey, awsRegion, updatedPrefix + sessionToken);
         credentials.save(credentialsWriter);
 
         String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');
@@ -112,10 +116,11 @@ class CredentialsTest {
                 "[default]\n"
                 + Credentials.ACCES_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
                 + Credentials.SECRET_ACCESS_KEY + " = " + updatedPrefix + secretKey + "\n"
+                + Credentials.AWS_DEFAULT_REGION + " = " + awsRegion + "\n"
                 + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken + "\n\n"
                 + manualRole;
 
-        credentials.addOrUpdateProfile("default", updatedPrefix + accessKey, updatedPrefix + secretKey, updatedPrefix + sessionToken);
+        credentials.addOrUpdateProfile("default", updatedPrefix + accessKey, updatedPrefix + secretKey, awsRegion, updatedPrefix + sessionToken);
         credentials.save(credentialsWriter);
 
         String given = org.apache.commons.lang.StringUtils.remove(credentialsWriter.toString().trim(), '\r');

@@ -19,6 +19,7 @@ class ProfileHelperTest {
 
     private static final String fakeAccessKey = "Fake-access-key";
     private static final String fakeSecretKey = "Fake-secret-key";
+    private static final String fakeAwsRegion = "Fake-region";
     private static final String fakeSessionToken = "Fake-session-token";
     private static final String fakeCredentialsProfileName = "arn:aws:sts::123456789012:assumed-role/FakeRole/fakey.mcfakerson@fake.example.com";
     private static final String fakeAssumeRoleUserArn = "arn:aws:sts::123456789012:assumed-role/FakeRole/fakey.mcfakerson@fake.example.com";
@@ -35,7 +36,7 @@ class ProfileHelperTest {
     @BeforeEach
     void setUp() {
         credentialsHelper = mock(CredentialsHelper.class);
-        environment = new OktaAwsCliEnvironment();
+        environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, null, null, 0, fakeAwsRegion, false);
         profileHelper = new ProfileHelper(credentialsHelper, environment);
         assumeRoleWithSAMLResult = new AssumeRoleWithSAMLResult();
         Credentials credentials = new Credentials(fakeAccessKey, fakeSecretKey, fakeSessionToken, fakeExpiryDate);
@@ -49,7 +50,7 @@ class ProfileHelperTest {
     void createAwsProfile() throws IOException {
         profileHelper.createAwsProfile(assumeRoleWithSAMLResult, fakeCredentialsProfileName);
 
-        verify(credentialsHelper).updateCredentialsFile(fakeCredentialsProfileName, fakeAccessKey, fakeSecretKey, fakeSessionToken);
+        verify(credentialsHelper).updateCredentialsFile(fakeCredentialsProfileName, fakeAccessKey, fakeSecretKey, fakeAwsRegion, fakeSessionToken);
     }
 
     @Test

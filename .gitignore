@@ -37,5 +37,7 @@ dependency-reduced-pom.xml
 .idea
 *.iml
 move.bat
+.factorypath
+.vscode
 
 out/oktaawscli.jar
