@@ -40,6 +40,7 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
 
 1. Run the following in a Terminal:
     ```bash
+    export PREFIX=/usr/local/bin
     curl 'https://raw.githubusercontent.com/oktadeveloper/okta-aws-cli-assume-role/master/bin/install.sh' | bash
     ```
 2. Customize **~/.okta/config.properties** and set **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
@@ -48,6 +49,7 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
    OKTA_ORG=acmecorp.oktapreview.com
    OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
    ```
+3. Make sure **/usr/local/bin** (or whatever $PREFIX/bin is) is in your PATH
 
 ### Docker
 
@@ -96,6 +98,8 @@ Run the program again to see session resumption (you won't be asked for Okta cre
 ```bash
 okta-aws test sts get-caller-identity
 ```
+
+NOTE: **okta-aws** is a function loaded from your shell profile, not a typical program or command stored in a file.
 
 ## Compiling the application
 
