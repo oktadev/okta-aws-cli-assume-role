@@ -1,9 +1,25 @@
+/*
+ * Copyright 2018 Okta
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.okta.tools.saml;
 
 import com.okta.tools.authentication.BrowserAuthentication;
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.authentication.OktaAuthentication;
 import com.okta.tools.helpers.CookieHelper;
+import com.okta.tools.helpers.HttpHelper;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -98,7 +114,7 @@ public class OktaSaml {
         HttpGet httpget = new HttpGet(appUrl);
         CookieStore cookieStore = cookieHelper.loadCookies();
 
-        try (CloseableHttpClient httpClient = HttpClients.custom().setDefaultCookieStore(cookieStore).useSystemProperties().build();
+        try (CloseableHttpClient httpClient = HttpHelper.createClient(HttpClients.custom().setDefaultCookieStore(cookieStore));
              CloseableHttpResponse oktaAwsAppResponse = httpClient.execute(httpget)) {
 
             if (oktaAwsAppResponse.getStatusLine().getStatusCode() >= 500) {
@@ -133,7 +149,7 @@ public class OktaSaml {
         httpPost.addHeader("Content-Type", "application/json");
         httpPost.addHeader("Cookie", "sid=" + sidCookie.get());
 
-        try (CloseableHttpClient httpClient = HttpClients.createSystem()) {
+        try (CloseableHttpClient httpClient = HttpHelper.createClient()) {
             CloseableHttpResponse authnResponse = httpClient.execute(httpPost);
 
             return authnResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK;

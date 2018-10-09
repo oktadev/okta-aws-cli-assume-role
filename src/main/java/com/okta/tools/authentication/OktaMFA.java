@@ -1,11 +1,26 @@
+/*
+ * Copyright 2018 Okta
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.okta.tools.authentication;
 
+import com.okta.tools.helpers.HttpHelper;
 import com.okta.tools.helpers.MenuHelper;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -351,7 +366,7 @@ public class OktaMFA {
         }
 
         // Create POST request
-        CloseableHttpClient httpClient = HttpClients.createSystem();
+        CloseableHttpClient httpClient = HttpHelper.createClient();
 
         HttpPost httpPost = new HttpPost(verifyPoint);
         httpPost.addHeader("Accept", "application/json");
@@ -408,7 +423,7 @@ public class OktaMFA {
                 // Wait for push state change
                 while (pushResult == null || pushResult.equals("WAITING")) {
                     pushResult = null;
-                    httpClient = HttpClients.createSystem();
+                    httpClient = HttpHelper.createClient();
 
                     HttpPost pollReq = new HttpPost(pollUrl);
                     pollReq.addHeader("Accept", "application/json");
