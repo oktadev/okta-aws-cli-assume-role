@@ -31,6 +31,7 @@ public class Credentials extends Settings {
     static final String ACCES_KEY_ID = "aws_access_key_id";
     static final String SECRET_ACCESS_KEY = "aws_secret_access_key";
     static final String SESSION_TOKEN = "aws_session_token";
+    static final String AWS_DEFAULT_REGION = "region";
 
     /**
      * Create a Credentials object from a given {@link Reader}. The data given by this {@link Reader} should
@@ -49,11 +50,13 @@ public class Credentials extends Settings {
      * @param name            The name of the profile.
      * @param awsAccessKey    The access key to use for the profile.
      * @param awsSecretKey    The secret key to use for the profile.
+     * @param awsRegion       The region to use for the profile.
      * @param awsSessionToken The session token to use for the profile.
      */
-    public void addOrUpdateProfile(String name, String awsAccessKey, String awsSecretKey, String awsSessionToken) {
+    public void addOrUpdateProfile(String name, String awsAccessKey, String awsSecretKey, String awsRegion, String awsSessionToken) {
         setProperty(name, ACCES_KEY_ID, awsAccessKey);
         setProperty(name, SECRET_ACCESS_KEY, awsSecretKey);
+        setProperty(name, AWS_DEFAULT_REGION, awsRegion);
         setProperty(name, SESSION_TOKEN, awsSessionToken);
     }
 }

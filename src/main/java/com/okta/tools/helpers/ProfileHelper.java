@@ -32,7 +32,10 @@ public class ProfileHelper {
         String awsSecretKey = temporaryCredentials.getAWSSecretKey();
         String awsSessionToken = temporaryCredentials.getSessionToken();
 
-        credentialsHelper.updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsSessionToken);
+        String awsRegion = environment.awsRegion;
+        
+        credentialsHelper.updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsRegion,
+                awsSessionToken);
     }
 
     public String getProfileName(AssumeRoleWithSAMLResult assumeResult) {

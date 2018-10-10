@@ -25,6 +25,7 @@ public class MultipleProfile extends Settings {
     private static final String SOURCE_PROFILE = "source_profile";
     private static final String PROFILE_EXPIRY = "profile_expiry";
     private static final String OKTA_ROLE_ARN = "okta_roleArn";
+    private static final String AWS_DEFAULT_REGION = "region";
 
     /**
      * Create a Profiles object from a given {@link Reader}. The data given by this {@link Reader} should
@@ -65,11 +66,13 @@ public class MultipleProfile extends Settings {
      *
      * @param name         The name of the profile.
      * @param roleArn      ARN of the role to assume
+     * @param awsRegion    Region to use for assumption
      * @param expiry       expiry time of the profile session.
      */
-    public void addOrUpdateProfile(String name, String roleArn, Instant expiry) {
+    public void addOrUpdateProfile(String name, String roleArn, String awsRegion, Instant expiry) {
         setProperty(name, SOURCE_PROFILE, name);
         setProperty(name, OKTA_ROLE_ARN, roleArn);
+        setProperty(name, AWS_DEFAULT_REGION, awsRegion);
         setProperty(name, PROFILE_EXPIRY, expiry.toString());
     }
 }

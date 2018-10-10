@@ -97,7 +97,7 @@ public final class SessionHelper {
     public void addOrUpdateProfile(Instant sessionExpiry) throws IOException {
         FileHelper.usingPath(FileHelper.getOktaDirectory().resolve("profiles"), reader -> {
             MultipleProfile multipleProfile = new MultipleProfile(reader);
-            multipleProfile.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, sessionExpiry);
+            multipleProfile.addOrUpdateProfile(environment.oktaProfile, environment.awsRoleToAssume, environment.awsRegion,sessionExpiry);
             return multipleProfile;
         }, MultipleProfile::save);
     }

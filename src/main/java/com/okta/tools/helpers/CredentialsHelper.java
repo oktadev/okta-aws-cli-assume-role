@@ -19,14 +19,15 @@ public class CredentialsHelper {
      * @param profileName     The profile to use
      * @param awsAccessKey    The access key to use
      * @param awsSecretKey    The secret key to use
+     * @param awsregion       The region to use
      * @param awsSessionToken The session token to use
      * @throws IOException    if a file system or permissions error occurs
      */
-    void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsSessionToken)
+    void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsRegion, String awsSessionToken)
             throws IOException {
         FileHelper.usingPath(FileHelper.getAwsDirectory().resolve("credentials"), reader -> {
             Credentials credentials = new Credentials(reader);
-            credentials.addOrUpdateProfile(profileName, awsAccessKey, awsSecretKey, awsSessionToken);
+            credentials.addOrUpdateProfile(profileName, awsAccessKey, awsSecretKey, awsRegion, awsSessionToken);
             return credentials;
         }, Credentials::save);
     }
