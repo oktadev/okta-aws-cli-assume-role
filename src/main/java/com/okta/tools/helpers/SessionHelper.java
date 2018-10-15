@@ -34,6 +34,7 @@ public final class SessionHelper {
      * @throws IOException if file system or permissions errors are encountered
      */
     public Optional<Session> getCurrentSession() throws IOException {
+        if (environment.oktaEnvMode) return Optional.empty();
         if (Files.exists(getSessionPath())) {
             try (FileReader fileReader = new FileReader(getSessionPath().toFile())) {
                 Properties properties = new Properties();
