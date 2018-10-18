@@ -24,3 +24,17 @@ Please contribute additional examples for your favored platform or password mana
    ```bash
    secret-tool lookup okta:username $OKTA_USERNAME
    ```
+
+## Example: Windows PowerShell
+
+1. Type the following into a PowerShell command
+   ```pswh
+   (Get-Credential).password | ConvertFrom-SecureString | Set-Content "$env:USERPROFILE\.okta\.password"
+   ```
+2. Type in your credentials into the resulting popup, PowerShell will encrypt your password using your user profile ([Windows Data Protection API](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.security/convertfrom-securestring)) and store it in a file named `.password` in `$env:USERPROFILE\.okta\`  
+   ![PowerShell Prompt](images/PowerShell_Prompt.png)
+4. Set `OKTA_USERNAME` if it is not already set
+5. Set `OKTA_PASSWORD_CMD` to:
+   ```property
+   OKTA_PASSWORD_CMD=@echo off & for /f \"usebackq tokens=*\" %a in (`PowerShell -Command \"(New-Object System.Management.Automation.PSCredential ($env:UserName, (Get-Content $env:USERPROFILE\\.okta\\.password | ConvertTo-SecureString))).GetNetworkCredential().Password\"`) do echo %a
+   ````

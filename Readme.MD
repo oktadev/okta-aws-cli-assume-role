@@ -26,14 +26,15 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
 
 ### Windows
 
-1. Copy the following PowerShell bootstrap script into your clipboard:
-    ```powershell
-    Invoke-RestMethod https://raw.githubusercontent.com/oktadeveloper/okta-aws-cli-assume-role/master/bin/Install-OktaAwsCli.ps1 | clip.exe
+1. Run the following in a [PowerShell console](http://technet.microsoft.com/library/hh831491.aspx#start-windows-powershell)
+    ```pwsh
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy unrestricted -Force; Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/oktadeveloper/okta-aws-cli-assume-role/master/bin/Install-OktaAwsCli.ps1')); .$profile
     ```
-2. Open a PowerShell console (regular user, NOT admin it will break)
-3. Right-click once the paste the bootstrap script into the session
-4. Right-click a second time to paste and run the install script
-5. Customize **%userprofile%\\.okta\\config.properties** to reflect your Okta and Amazon Web Services setup
+2. Customize **%userprofile%\\.okta\\config.properties** and set **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
+   ```properties
+   OKTA_ORG=acmecorp.oktapreview.com
+   OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
+   ```
 
 ### macOS/Linux
 
@@ -41,12 +42,16 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
     ```bash
     curl 'https://raw.githubusercontent.com/oktadeveloper/okta-aws-cli-assume-role/master/bin/install.sh' | bash
     ```
-2. Customize **~/.okta/config.properties** to reflect your Okta and Amazon Web Services setup
+2. Customize **~/.okta/config.properties** and set **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
+   
+   ```properties
+   OKTA_ORG=acmecorp.oktapreview.com
+   OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
+   ```
 
 ### Docker
 
-1. Copy `config.properties` to `~/.okta/config.properties` and set
-   **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
+1. Copy `config.properties` to `~/.okta/config.properties` and set **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
    
    ```properties
    OKTA_ORG=acmecorp.oktapreview.com
