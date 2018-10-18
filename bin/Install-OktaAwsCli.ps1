@@ -23,12 +23,11 @@ function Install-OktaAwsCli {
         }
         if (Test-Path $HOME\.okta\config.properties) {
             Remove-Item $HOME\.okta\config.properties
-            Test-Path = null
         }
     } else {
-        New-Item -ItemType Directory -Path $HOME\.okta
+        New-Item -ItemType Directory -Path $HOME\.okta -Force | Out-Null
     }
-    New-Item -ItemType File -Path $HOME\.okta\uptodate | Out-Null
+    New-Item -ItemType File -Path $HOME\.okta\uptodate -Force | Out-Null
     # .NET apparently doesn't default to TLS 1.2 and GitHub requires it
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
     $LatestReleaseResponse = Invoke-RestMethod -Uri "https://api.github.com/repos/oktadeveloper/okta-aws-cli-assume-role/releases/latest"
@@ -43,7 +42,7 @@ OKTA_USERNAME=$env:USERNAME
 OKTA_BROWSER_AUTH=true
 "
     if (!(Test-Path $profile)) {
-        New-Item -Path $profile -ItemType File -Force
+        New-Item -Path $profile -ItemType File -Force | Out-Null
     }
     $ProfileContent = Get-Content $profile
     if (!$ProfileContent -or !$ProfileContent.Contains("#OktaAWSCLI")) {
