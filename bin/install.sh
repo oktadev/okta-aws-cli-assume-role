@@ -56,10 +56,6 @@ if [ $? -ne 0 ]
 then
 echo '
 #OktaAWSCLI
-export PATH="$HOME/bin:$PATH"
-function withokta
-    java -Djava.net.useSystemProxies com.okta.tools.WithOkta $argv
-end
 function okta-aws
     withokta "aws --profile $argv[1]" $argv
 end
