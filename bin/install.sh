@@ -47,27 +47,19 @@ function okta-sls {
 ' >> "${bash_functions}"
 fi
 
-# Conditionally update fish profile
-fishConfig="${HOME}/.config/fish/config.fish"
-mkdir -p $(dirname "${fishConfig}")
-touch "${fishConfig}"
-grep '^#OktaAWSCLI' "${fishConfig}" > /dev/null 2>&1
-if [ $? -ne 0 ]
-then
+# Create fish shell functions
+fishFunctionsDir="${HOME}/.config/fish/functions"
+mkdir -p "${fishFunctionsDir}"
 echo '
-#OktaAWSCLI
-export PATH="$HOME/bin:$PATH"
-function withokta
-    java -Djava.net.useSystemProxies com.okta.tools.WithOkta $argv
-end
 function okta-aws
     withokta "aws --profile $argv[1]" $argv
 end
+' > "${fishFunctionsDir}/okta-aws.fish"
+echo '
 function okta-sls
     withokta "sls --stage $argv[1]" $argv
 end
-' >> "${fishConfig}"
-fi
+' >> "${fishFunctionsDir}/okta-sls.fish"
 
 # Conditionally update bash profile
 bashProfile="${HOME}/.bash_profile"
