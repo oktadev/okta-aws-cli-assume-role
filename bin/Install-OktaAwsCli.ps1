@@ -41,6 +41,9 @@ OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com.changeme.local/home/amazon_aws
 OKTA_USERNAME=$env:USERNAME
 OKTA_BROWSER_AUTH=true
 "
+    Add-Content -Path $Home/.okta/logging.properties -Value "
+com.amazonaws.auth.profile.internal.BasicProfileConfigLoader = NONE
+"
     if (!(Test-Path $profile)) {
         New-Item -Path $profile -ItemType File -Force | Out-Null
     }
@@ -48,68 +51,76 @@ OKTA_BROWSER_AUTH=true
     if (!$ProfileContent -or !$ProfileContent.Contains("#OktaAWSCLI")) {
         Add-Content -Path $profile -Value '
 #OktaAWSCLI
-function With-Okta {
+function Invoke-Java {
+    Param([string]$MainClass)
+    $InternetOptions = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+    if ($InternetOptions.ProxyEnable) {
+        $ProxyStrings = $InternetOptions.ProxyServer.Split(";")
+        $Proxies = @{}
+        ForEach ($ProxyString in $ProxyStrings) {
+            if ($ProxyString.Contains("=")) {
+                ($ProxyProtocol,$ProxyServerPort) = $ProxyString.Split("=")
+            } else {
+                ($ProxyProtocol,$ProxyServerPort) = ("http", $ProxyString)
+            }
+            ($ProxyHost, $ProxyPort) = $ProxyServerPort.Split(":")
+            $Proxies[$ProxyProtocol] = ($ProxyHost, $ProxyPort)
+        }
+        if ($Proxies.socks) {
+            ($ProxyHost, $ProxyPort) = $Proxies.socks
+            $ProxyProtocol = "socks"
+        } elseif ($Proxies.https) {
+            ($ProxyHost, $ProxyPort) = $Proxies.https
+            $ProxyProtocol = "https"
+        } elseif ($Proxies.http) {
+            ($ProxyHost, $ProxyPort) = $Proxies.http
+            $ProxyProtocol = "http"
+        }
+        if ($InternetOptions.ProxyOverride) {
+            $NonProxyHosts = [System.String]::Join("|", ($InternetOptions.ProxyOverride.Replace("<local>", "").Split(";") | Where-Object {$_}))
+        } else {
+            $NonProxyHosts = ""
+        }
+        if ($ProxyProtocol -eq "socks") {
+            java "-Djava.util.logging.config.file=$HOME\.okta\logging.properties" "-DsocksProxyHost=$ProxyHost" "-DsocksProxyPort=$ProxyPort" "-Dhttp.nonProxyHosts=$NonProxyHosts" -classpath $HOME\.okta\okta-aws-cli.jar $MainClass @args
+        } else {
+            java "-Djava.util.logging.config.file=$HOME\.okta\logging.properties" "-Dhttp.proxyHost=$ProxyHost" "-Dhttp.proxyPort=$ProxyPort" "-Dhttps.proxyHost=$ProxyHost" "-Dhttps.proxyPort=$ProxyPort" "-Dhttp.nonProxyHosts=$NonProxyHosts" -classpath $HOME\.okta\okta-aws-cli.jar $MainClass @args
+        }
+    } else {
+        java "-Djava.util.logging.config.file=$HOME\.okta\logging.properties" -classpath $HOME\.okta\okta-aws-cli.jar $MainClass @args
+    }
+}
+
+function Invoke-Okta {
     Param([string]$Profile)
+    $args[0] = (Get-Command $args[0]).Name
     $OriginalOKTA_PROFILE = $env:OKTA_PROFILE
     try {
         $env:OKTA_PROFILE = $Profile
-        $InternetOptions = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-        if ($InternetOptions.ProxyEnable) {
-            $ProxyStrings = $InternetOptions.ProxyServer.Split(";")
-            $Proxies = @{}
-            ForEach ($ProxyString in $ProxyStrings) {
-                if ($ProxyString.Contains("=")) {
-                    ($ProxyProtocol,$ProxyServerPort) = $ProxyString.Split("=")
-                } else {
-                    ($ProxyProtocol,$ProxyServerPort) = ("http", $ProxyString)
-                }
-                ($ProxyHost, $ProxyPort) = $ProxyServerPort.Split(":")
-                $Proxies[$ProxyProtocol] = ($ProxyHost, $ProxyPort)
-            }
-            if ($Proxies.socks) {
-                ($ProxyHost, $ProxyPort) = $Proxies.socks
-            } elseif ($Proxies.https) {
-                ($ProxyHost, $ProxyPort) = $Proxies.https
-            } elseif ($Proxies.http) {
-                ($ProxyHost, $ProxyPort) = $Proxies.http
-            }
-            if ($InternetOptions.ProxyOverride) {
-                $NonProxyHosts = [System.String]::Join("|", ($InternetOptions.ProxyOverride.Replace("<local>", "").Split(";") | Where-Object {$_}))
-            } else {
-                $NonProxyHosts = ""
-            }
-            if ($ProxyProtocol -eq "socks") {
-                java "-DsocksProxyHost=$ProxyHost" "-DsocksProxyPort=$ProxyPort" "-Dhttp.nonProxyHosts=$NonProxyHosts" -classpath $HOME\.okta\* com.okta.tools.WithOkta @args
-            } else {
-                java "-Dhttp.proxyHost=$ProxyHost" "-Dhttp.proxyPort=$ProxyPort" "-Dhttps.proxyHost=$ProxyHost" "-Dhttps.proxyPort=$ProxyPort" "-Dhttp.nonProxyHosts=$NonProxyHosts" -classpath $HOME\.okta\* com.okta.tools.WithOkta @args
-            }
-        } else {
-            java -classpath $HOME\.okta\* com.okta.tools.WithOkta @args
-        }
+        Invoke-Java -MainClass com.okta.tools.WithOkta @args
     } finally {
         $env:OKTA_PROFILE = $OriginalOKTA_PROFILE
     }
 }
-function Okta-ListRoles {
-    $InternetOptions = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-    if ($InternetOptions.ProxyServer) {
-        ($ProxyHost, $ProxyPort) = $InternetOptions.ProxyServer.Split(":")
-    }
-    if ($InternetOptions.ProxyOverride) {
-        $NonProxyHosts = [System.String]::Join("|", ($InternetOptions.ProxyOverride.Replace("<local>", "").Split(";") | Where-Object {$_}))
-    } else {
-        $NonProxyHosts = ""
-    }
-    java "-Dhttp.proxyHost=$ProxyHost" "-Dhttp.proxyPort=$ProxyPort" "-Dhttps.proxyHost=$ProxyHost" "-Dhttps.proxyPort=$ProxyPort" "-Dhttp.nonProxyHosts=$NonProxyHosts" -classpath $HOME\.okta\* com.okta.tools.ListRoles
+New-Alias -Name withokta -value Get-OktaRoles
+New-Alias -Name with-okta -value Invoke-Okta
+
+function Get-OktaRoles {
+    Invoke-Java -MainClass com.okta.tools.ListRoles
 }
-function okta-aws {
+New-Alias -Name okta-listroles -value Get-OktaRoles
+
+function Invoke-OktaAws {
     Param([string]$Profile)
-    With-Okta -Profile $Profile ((Get-Command aws).Name) --profile $Profile @args
+    Invoke-Okta -Profile $Profile aws --profile $Profile @args
 }
-function okta-sls {
+New-Alias -Name okta-aws -value Invoke-OktaAws
+
+function Invoke-OktaSls {
     Param([string]$Profile)
-    With-Okta -Profile $Profile sls --stage $Profile @args
+    Invoke-Okta -Profile $Profile sls --stage $Profile @args
 }
+New-Alias -Name okta-sls -value Invoke-OktaSls
 '
     }
 }

@@ -14,4 +14,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.ListRoles
+java -Djava.util.logging.config.file=~/.okta/logging.properties -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.ListRoles
