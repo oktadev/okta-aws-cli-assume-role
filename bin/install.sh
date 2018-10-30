@@ -84,6 +84,15 @@ env OKTA_PROFILE=$profile java -classpath ~/.okta/okta-aws-cli.jar com.okta.tool
 ' > "$PREFIX/bin/withokta"
 chmod +x "$PREFIX/bin/withokta"
 
+# Create okta-credential_process command
+echo '#!/bin/bash
+roleARN="$1"
+shift;
+env OKTA_AWS_ROLE_TO_ASSUME="$roleARN" \
+    java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.CredentialProcess
+' > "$PREFIX/bin/okta-credential_process"
+chmod +x "$PREFIX/bin/okta-credential_process"
+
 # Create okta-listroles command
 echo '#!/bin/bash
 java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.ListRoles
