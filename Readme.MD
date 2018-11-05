@@ -101,6 +101,10 @@ okta-aws test sts get-caller-identity
 
 NOTE: **okta-aws** is a function loaded from your shell profile, not a typical program or command stored in a file.
 
+## Reference
+* [okta-listroles(1)](docs/man/okta-listroles.1.md)
+* [okta-credential_process(1)](docs/man/okta-credential_process.1.md)
+
 ## Compiling the application
 
 The application was built and compiled with [JetBrains' IntelliJ IDEA](https://www.jetbrains.com/idea/). Note that you don't have to compile the application in order to be able to execute it, since the compiled executable (a JAR file) is available [on GitHub](https://github.com/oktadeveloper/okta-aws-cli-assume-role/releases).
