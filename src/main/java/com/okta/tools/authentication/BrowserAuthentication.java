@@ -10,7 +10,6 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import org.apache.http.client.CookieStore;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -18,9 +17,7 @@ import org.w3c.dom.NodeList;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.net.CookieHandler;
 import java.net.URI;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -61,13 +58,12 @@ public final class BrowserAuthentication extends Application {
         scrollPane.setContent(browser);
 
         URI uri = URI.create(ENVIRONMENT.oktaAwsAppUrl);
-        Map<String, List<String>> headers = new LinkedHashMap<>();
-        java.net.CookieHandler.getDefault().put(uri, headers);
+        initializeCookies(uri);
 
         webEngine.getLoadWorker().stateProperty()
                 .addListener((ov, oldState, newState) -> {
                     if (webEngine.getDocument() != null) {
-                        checkForAwsSamlSignon(stage, webEngine, uri, headers);
+                        checkForAwsSamlSignon(stage, webEngine);
                         stage.setTitle(webEngine.getLocation());
                     }
                 });
@@ -79,10 +75,16 @@ public final class BrowserAuthentication extends Application {
         stage.show();
     }
 
-    private void checkForAwsSamlSignon(Stage stage, WebEngine webEngine, URI uri, Map<String, List<String>> headers) {
+    private void initializeCookies(URI uri) throws IOException {
+        Map<String, List<String>> headers = cookieHelper.loadCookieHeaders();
+        java.net.CookieHandler.setDefault(new CookieManager(cookieHelper));
+        java.net.CookieHandler.getDefault().put(uri, headers);
+    }
+
+    private void checkForAwsSamlSignon(Stage stage, WebEngine webEngine) {
         String samlResponseForAws = getSamlResponseForAws(webEngine.getDocument());
         if (samlResponseForAws != null) {
-            finishAuthentication(stage, uri, headers, samlResponseForAws);
+            finishAuthentication(stage, samlResponseForAws);
         }
     }
 
@@ -139,21 +141,9 @@ public final class BrowserAuthentication extends Application {
         return "SAMLResponse".equals(name);
     }
 
-    private void finishAuthentication(Stage stage, URI uri, Map<String, List<String>> headers, String samlResponseForAws) {
+    private void finishAuthentication(Stage stage, String samlResponseForAws) {
         samlResponse.set(samlResponseForAws);
-        try {
-            CookieStore cookieStore = extractCookies(uri, headers);
-            cookieHelper.storeCookies(cookieStore);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            stage.close();
-            USER_AUTH_COMPLETE.countDown();
-        }
-    }
-
-    private CookieStore extractCookies(URI uri, Map<String, List<String>> headers) throws IOException {
-        List<String> cookieHeaders = CookieHandler.getDefault().get(uri, headers).get("Cookie");
-        return cookieHelper.parseCookies(uri, cookieHeaders);
+        stage.close();
+        USER_AUTH_COMPLETE.countDown();
     }
 }
