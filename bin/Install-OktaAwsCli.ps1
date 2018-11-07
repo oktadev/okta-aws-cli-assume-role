@@ -82,7 +82,7 @@ function Okta-ListRoles {
 }
 function okta-aws {
     Param([string]$Profile)
-    With-Okta -Profile $Profile aws --profile $Profile @args
+    With-Okta -Profile $Profile ((Get-Command aws).Name) --profile $Profile @args
 }
 function okta-sls {
     Param([string]$Profile)
