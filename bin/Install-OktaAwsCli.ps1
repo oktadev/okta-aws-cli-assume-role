@@ -50,20 +50,33 @@ OKTA_BROWSER_AUTH=true
 #OktaAWSCLI
 function With-Okta {
     Param([string]$Profile)
-    Write-Host $args
     $OriginalOKTA_PROFILE = $env:OKTA_PROFILE
     try {
         $env:OKTA_PROFILE = $Profile
         $InternetOptions = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
-        if ($InternetOptions.ProxyServer) {
-            ($ProxyHost, $ProxyPort) = $InternetOptions.ProxyServer.Split(":")
-        }
-        if ($InternetOptions.ProxyOverride) {
-            $NonProxyHosts = [System.String]::Join("|", ($InternetOptions.ProxyOverride.Replace("<local>", "").Split(";") | Where-Object {$_}))
+        if ($InternetOptions.ProxyEnable) {
+            if ($InternetOptions.ProxyServer) {
+                $ProxyString = $InternetOptions.ProxyServer
+                if ($ProxyString.Contains("=")) {
+                    ($ProxyProtocol,$ProxyServerPort) = $ProxyString.Split("=")
+                } else {
+                    ($ProxyProtocol,$ProxyServerPort) = ("http", $ProxyString)
+                }
+                ($ProxyHost, $ProxyPort) = $ProxyServer.Split(":")
+            }
+            if ($InternetOptions.ProxyOverride) {
+                $NonProxyHosts = [System.String]::Join("|", ($InternetOptions.ProxyOverride.Replace("<local>", "").Split(";") | Where-Object {$_}))
+            } else {
+                $NonProxyHosts = ""
+            }
+            if ($ProxyProtocol -eq "socks") {
+                java "-DsocksProxyHost=$ProxyHost" "-DsocksProxyPort=$ProxyPort" "-Dhttp.nonProxyHosts=$NonProxyHosts" -classpath $HOME\.okta\* com.okta.tools.WithOkta @args
+            } else {
+                java "-Dhttp.proxyHost=$ProxyHost" "-Dhttp.proxyPort=$ProxyPort" "-Dhttps.proxyHost=$ProxyHost" "-Dhttps.proxyPort=$ProxyPort" "-Dhttp.nonProxyHosts=$NonProxyHosts" -classpath $HOME\.okta\* com.okta.tools.WithOkta @args
+            }
         } else {
-            $NonProxyHosts = ""
+            java -classpath $HOME\.okta\* com.okta.tools.WithOkta @args
         }
-        java "-Dhttp.proxyHost=$ProxyHost" "-Dhttp.proxyPort=$ProxyPort" "-Dhttps.proxyHost=$ProxyHost" "-Dhttps.proxyPort=$ProxyPort" "-Dhttp.nonProxyHosts=$NonProxyHosts" -classpath $HOME\.okta\* com.okta.tools.WithOkta @args
     } finally {
         $env:OKTA_PROFILE = $OriginalOKTA_PROFILE
     }
