@@ -1,25 +1,34 @@
 package com.okta.tools.helpers;
 
-import com.google.common.base.Splitter;
 import com.okta.tools.OktaAwsCliEnvironment;
+import org.apache.http.Header;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.CookieStore;
 import org.apache.http.cookie.Cookie;
+import org.apache.http.cookie.CookieOrigin;
+import org.apache.http.cookie.MalformedCookieException;
 import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.cookie.BasicClientCookie;
+import org.apache.http.impl.cookie.RFC6265StrictSpec;
+import org.apache.http.message.BasicHeader;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class CookieHelper {
 
+    private static final String SET_COOKIE_HEADER_NAME = "Set-Cookie";
     private final OktaAwsCliEnvironment environment;
+    private Map<String, String> cookieHeaders = new LinkedHashMap<>();
 
     public CookieHelper(OktaAwsCliEnvironment environment) {
         this.environment = environment;
@@ -49,47 +58,67 @@ public final class CookieHelper {
         return filePath;
     }
 
-    public CookieStore parseCookies(URI uri, List<String> cookieHeaders) {
+    public CookieStore loadCookies() throws IOException {
+        Map<String, List<String>> cookieHeaders = loadCookieHeaders();
+        List<String> setCookies = cookieHeaders.getOrDefault(SET_COOKIE_HEADER_NAME, Collections.emptyList());
         CookieStore cookieStore = new BasicCookieStore();
-        for (String cookieHeader : cookieHeaders) {
-            for (String cookie : Splitter.on(";").trimResults().omitEmptyStrings().split(cookieHeader)) {
-                int indexOfEquals = cookie.indexOf('=');
-                String name = cookie.substring(0, indexOfEquals);
-                String value = cookie.substring(indexOfEquals + 1);
-                BasicClientCookie clientCookie = new BasicClientCookie(name, value);
-                clientCookie.setDomain(uri.getHost());
-                cookieStore.addCookie(clientCookie);
+        for (String setCookie : setCookies) {
+            Header header = new BasicHeader(SET_COOKIE_HEADER_NAME, setCookie);
+            CookieOrigin cookieOrigin = new CookieOrigin(environment.oktaOrg, 443, "", false);
+            try {
+                List<Cookie> cookies = new RFC6265StrictSpec().parse(header, cookieOrigin);
+                cookies.forEach(cookieStore::addCookie);
+            } catch (MalformedCookieException e) {
+                throw new RuntimeException(e);
             }
         }
         return cookieStore;
     }
 
-    public CookieStore loadCookies() throws IOException {
-        CookieStore cookieStore = new BasicCookieStore();
-        Properties loadedProperties = new Properties();
-        loadedProperties.load(new FileReader(getCookiesFilePath().toFile()));
-        loadedProperties.entrySet().stream().map(entry -> {
-            BasicClientCookie basicClientCookie = new BasicClientCookie(entry.getKey().toString(), entry.getValue().toString());
-            basicClientCookie.setDomain(environment.oktaOrg);
-
-            return basicClientCookie;
-        }).forEach(cookieStore::addCookie);
-        return cookieStore;
-    }
-
     public void storeCookies(CookieStore cookieStore) throws IOException {
-        Properties properties = new Properties();
-        cookieStore.getCookies().stream()
-                .filter(c -> environment.oktaOrg.equals(c.getDomain()))
-                .collect(Collectors.toMap(Cookie::getName, Cookie::getValue, (x, y) -> y))
-                .forEach(properties::setProperty);
-        FileHelper.writingPath(getCookiesFilePath(), writer ->
-                properties.store(writer, "")
-        );
+        List<Header> headers = new RFC6265StrictSpec().formatCookies(cookieStore.getCookies());
+        List<String> cookies = headers.stream()
+                .flatMap(header -> Stream.of(header.getElements()))
+                .flatMap(headerElement -> Stream.of(headerElement.getParameters()))
+                .map(NameValuePair::toString).collect(Collectors.toList());
+        Files.write(getCookiesFilePath(), cookies, StandardCharsets.UTF_8);
     }
 
     void clearCookies() throws IOException {
         File cookieStore = getCookiesFilePath().toFile();
         cookieStore.deleteOnExit();
+    }
+
+    public Map<String, List<String>> loadCookieHeaders() throws IOException {
+        List<String> cookiesFileLines = Files.readAllLines(getCookiesFilePath());
+        this.cookieHeaders = getCookieHeaders(cookiesFileLines)
+                .collect(Collectors.toMap(
+                        cookie -> cookie.substring(0, cookie.indexOf('=')),
+                        Function.identity(),
+                        (u,v) -> v,
+                        LinkedHashMap::new
+                ));
+        return Collections.singletonMap(SET_COOKIE_HEADER_NAME,
+                getCookieHeaders(cookiesFileLines).collect(Collectors.toList()));
+    }
+
+    private Stream<String> getCookieHeaders(List<String> cookiesFileLines) {
+        return cookiesFileLines.stream()
+                    .filter(line -> !line.trim().isEmpty() && !isComment(line));
+    }
+
+    private boolean isComment(String cookie) {
+        return cookie.startsWith("#");
+    }
+
+    public void storeCookies(Map<String, List<String>> responseHeaders) throws IOException {
+        responseHeaders.getOrDefault(SET_COOKIE_HEADER_NAME, Collections.emptyList()).forEach(cookie ->
+                cookieHeaders.put(cookie.substring(0, cookie.indexOf('=')), cookie)
+        );
+        Files.write(
+                getCookiesFilePath(),
+                cookieHeaders.values(),
+                StandardCharsets.UTF_8
+        );
     }
 }

@@ -15,27 +15,22 @@
  */
 package com.okta.tools.saml;
 
-import com.okta.tools.authentication.BrowserAuthentication;
 import com.okta.tools.OktaAwsCliEnvironment;
+import com.okta.tools.authentication.BrowserAuthentication;
 import com.okta.tools.authentication.OktaAuthentication;
 import com.okta.tools.helpers.CookieHelper;
 import com.okta.tools.helpers.HttpHelper;
-import org.apache.http.HttpStatus;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.json.JSONException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 public class OktaSaml {
 
@@ -50,17 +45,19 @@ public class OktaSaml {
     public String getSamlResponse() throws IOException {
         OktaAuthentication authentication = new OktaAuthentication(environment);
 
-        if (reuseSession()) {
-            return getSamlResponseForAwsRefresh();
-        } else if (environment.browserAuth) {
+        if (environment.browserAuth) {
             try {
                 return BrowserAuthentication.login(environment);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         } else {
-            String oktaSessionToken = authentication.getOktaSessionToken();
-            return getSamlResponseForAws(oktaSessionToken);
+            try {
+                return getSamlResponseForAwsRefresh();
+            } catch (PromptForReAuthenticationException | PromptForFactorException e) {
+                String oktaSessionToken = authentication.getOktaSessionToken();
+                return getSamlResponseForAws(oktaSessionToken);
+            }
         }
     }
 
@@ -78,9 +75,9 @@ public class OktaSaml {
         Elements samlResponseInputElement = document.select("form input[name=SAMLResponse]");
         if (samlResponseInputElement.isEmpty()) {
             if (isPasswordAuthenticationChallenge(document)) {
-                throw new IllegalStateException("Unsupported App sign on rule: 'Prompt for re-authentication'. \nPlease contact your administrator.");
+                throw new PromptForReAuthenticationException("Unsupported App sign on rule: 'Prompt for re-authentication'. \nPlease contact your administrator.");
             } else if (isPromptForFactorChallenge(document)) {
-                throw new IllegalStateException("Unsupported App sign on rule: 'Prompt for factor'. \nPlease contact your administrator.");
+                throw new PromptForFactorException("Unsupported App sign on rule: 'Prompt for factor'. \nPlease contact your administrator.");
             } else {
                 Elements errorContent = document.getElementsByClass("error-content");
                 Elements errorHeadline = errorContent.select("h1");
@@ -92,6 +89,18 @@ public class OktaSaml {
             }
         }
         return samlResponseInputElement.attr("value");
+    }
+
+    public static final class PromptForReAuthenticationException extends IllegalStateException {
+        public PromptForReAuthenticationException(String message) {
+            super(message);
+        }
+    }
+
+    public static final class PromptForFactorException extends IllegalStateException {
+        public PromptForFactorException(String message) {
+            super(message);
+        }
     }
 
     // Heuristic based on undocumented behavior observed experimentally
@@ -134,26 +143,4 @@ public class OktaSaml {
             );
         }
     }
-
-    private boolean reuseSession() throws JSONException, IOException {
-        CookieStore cookieStore = cookieHelper.loadCookies();
-
-        Optional<String> sidCookie = cookieStore.getCookies().stream().filter(cookie -> "sid".equals(cookie.getName())).findFirst().map(Cookie::getValue);
-
-        if (!sidCookie.isPresent()) {
-            return false;
-        }
-
-        HttpPost httpPost = new HttpPost("https://" + environment.oktaOrg + "/api/v1/sessions/me/lifecycle/refresh");
-        httpPost.addHeader("Accept", "application/json");
-        httpPost.addHeader("Content-Type", "application/json");
-        httpPost.addHeader("Cookie", "sid=" + sidCookie.get());
-
-        try (CloseableHttpClient httpClient = HttpHelper.createClient()) {
-            CloseableHttpResponse authnResponse = httpClient.execute(httpPost);
-
-            return authnResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
-        }
-    }
-
 }
