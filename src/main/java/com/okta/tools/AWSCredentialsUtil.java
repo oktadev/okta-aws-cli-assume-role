@@ -18,6 +18,7 @@ package com.okta.tools;
 import java.time.Instant;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.amazonaws.services.securitytoken.model.Credentials;
@@ -29,6 +30,14 @@ public interface AWSCredentialsUtil {
 
         Credentials credentials = samlResult.getCredentials();
 
+        return new BasicSessionCredentials(credentials.getAccessKeyId(), credentials.getSecretAccessKey(), credentials.getSessionToken());
+    }
+    
+    static AWSSessionCredentials getAWSCredential (OktaAwsCliEnvironment environment) throws Exception {
+        AssumeRoleWithSAMLResult samlResult = OktaAwsCliAssumeRole.withEnvironment(environment).getAssumeRoleWithSAMLResult(Instant.now());
+        
+        Credentials credentials = samlResult.getCredentials();
+        
         return new BasicSessionCredentials(credentials.getAccessKeyId(), credentials.getSecretAccessKey(), credentials.getSessionToken());
     }
 
