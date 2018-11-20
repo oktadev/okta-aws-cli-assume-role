@@ -55,15 +55,26 @@ function With-Okta {
         $env:OKTA_PROFILE = $Profile
         $InternetOptions = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
         if ($InternetOptions.ProxyEnable) {
-            if ($InternetOptions.ProxyServer) {
-                $ProxyString = $InternetOptions.ProxyServer
+            $InternetOptions = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+            $ProxyStrings = $InternetOptions.ProxyServer.Split(";")
+            $Proxies = @{}
+            ForEach ($ProxyString in $ProxyStrings) {
                 if ($ProxyString.Contains("=")) {
                     ($ProxyProtocol,$ProxyServerPort) = $ProxyString.Split("=")
                 } else {
                     ($ProxyProtocol,$ProxyServerPort) = ("http", $ProxyString)
                 }
-                ($ProxyHost, $ProxyPort) = $ProxyServer.Split(":")
+                ($ProxyHost, $ProxyPort) = $ProxyServerPort.Split(":")
+                $Proxies[$ProxyProtocol] = ($ProxyHost, $ProxyPort)
             }
+            if ($Proxies.socks) {
+                ($ProxyHost, $ProxyPort) = $Proxies.socks
+            } elseif ($Proxies.https) {
+                ($ProxyHost, $ProxyPort) = $Proxies.https
+            } elseif ($Proxies.http) {
+                ($ProxyHost, $ProxyPort) = $Proxies.http
+            }
+            ($ProxyHost, $ProxyPort)
             if ($InternetOptions.ProxyOverride) {
                 $NonProxyHosts = [System.String]::Join("|", ($InternetOptions.ProxyOverride.Replace("<local>", "").Split(";") | Where-Object {$_}))
             } else {
