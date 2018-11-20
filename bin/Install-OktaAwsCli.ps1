@@ -55,7 +55,6 @@ function With-Okta {
         $env:OKTA_PROFILE = $Profile
         $InternetOptions = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
         if ($InternetOptions.ProxyEnable) {
-            $InternetOptions = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
             $ProxyStrings = $InternetOptions.ProxyServer.Split(";")
             $Proxies = @{}
             ForEach ($ProxyString in $ProxyStrings) {
@@ -74,7 +73,6 @@ function With-Okta {
             } elseif ($Proxies.http) {
                 ($ProxyHost, $ProxyPort) = $Proxies.http
             }
-            ($ProxyHost, $ProxyPort)
             if ($InternetOptions.ProxyOverride) {
                 $NonProxyHosts = [System.String]::Join("|", ($InternetOptions.ProxyOverride.Replace("<local>", "").Split(";") | Where-Object {$_}))
             } else {
