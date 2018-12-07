@@ -81,6 +81,12 @@ OKTA_ORG=acmecorp.oktapreview.com
 OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
 ```
 
+Create `~/.okta/logging.properties` with the following content,
+
+```properties
+com.amazonaws.auth.profile.internal.BasicProfileConfigLoader = NONE
+```
+
 Copy scripts from `.okta/bin` to somewhere on your PATH.
 
 ## Usage

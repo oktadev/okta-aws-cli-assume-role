@@ -74,13 +74,21 @@ fi
 " >> "${bashProfile}"
 fi
 
+# Suppress "Your profile name includes a 'profile ' prefix" warnings from AWS Java SDK (Resolves #233)
+loggingProperties="${HOME}/.okta/logging.properties"
+echo "com.amazonaws.auth.profile.internal.BasicProfileConfigLoader = NONE
+" > "${loggingProperties}"
+
 # Create withokta command
 echo '#!/bin/bash
 command="$1"
 profile=$2
 shift;
 shift;
-env OKTA_PROFILE=$profile java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.WithOkta $command $@
+env OKTA_PROFILE=$profile java \
+    -Djava.util.logging.config.file=~/.okta/logging.properties \
+    -classpath ~/.okta/okta-aws-cli.jar \
+    com.okta.tools.WithOkta $command $@
 ' > "$PREFIX/bin/withokta"
 chmod +x "$PREFIX/bin/withokta"
 
