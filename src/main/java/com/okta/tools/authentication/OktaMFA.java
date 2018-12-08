@@ -398,6 +398,8 @@ public class OktaMFA {
             }
         }
 
+        validateStatus(jsonObjResponse);
+
         if (jsonObjResponse.has("sessionToken")) {
             sessionToken = jsonObjResponse.getString("sessionToken");
         }
@@ -468,6 +470,46 @@ public class OktaMFA {
             return sessionToken;
         } else {
             return pushResult;
+        }
+    }
+
+    private static void validateStatus(JSONObject jsonObjResponse) {
+        String status = jsonObjResponse.getString("status");
+        try {
+            TransactionState state = TransactionState.valueOf(status.toUpperCase());
+            switch (state) {
+                case MFA_REQUIRED:
+                    // attempt failed, downstream code already handles this
+                    break;
+                case SUCCESS:
+                    // MFA succeeded, let downstream code do its thing
+                    break;
+                case PASSWORD_WARN:
+                    JSONObject embedded = jsonObjResponse.getJSONObject("_embedded");
+                    JSONObject policy = embedded.getJSONObject("policy");
+                    JSONObject expiration = policy.getJSONObject("expiration");
+                    int passwordExpireDays = expiration.getInt("passwordExpireDays");
+                    System.err.format("WARN: Your password will expire in %d days.", passwordExpireDays);
+                    break;
+                case PASSWORD_EXPIRED:
+                    throw new IllegalStateException("Your password has expired");
+                case MFA_ENROLL:
+                    throw new IllegalStateException("Factor enrolment required (not yet supported)");
+                default:
+                    throw OktaAuthentication.makeException(
+                            jsonObjResponse,
+                            "Handling for the received status code is not currently implemented.\n" +
+                            "The status code received was:\n%s: %s",
+                            state.toString(),
+                            state.getDescription());
+            }
+        } catch (IllegalArgumentException e) {
+            throw OktaAuthentication.makeException(
+                    jsonObjResponse,
+                    e,
+                    "The response message contained an unrecognized value \"%s\" for property \"%s\".",
+                    status,
+                    "status");
         }
     }
 }
