@@ -18,6 +18,7 @@ public final class SessionHelper {
 
     private static final String OKTA_AWS_CLI_EXPIRY_PROPERTY = "OKTA_AWS_CLI_EXPIRY";
     private static final String OKTA_AWS_CLI_PROFILE_PROPERTY = "OKTA_AWS_CLI_PROFILE";
+    private static final String OKTA_ORG_PROPERTY = "OKTA_ORG";
 
     private final OktaAwsCliEnvironment environment;
     private final CookieHelper cookieHelper;
@@ -39,6 +40,8 @@ public final class SessionHelper {
             try (FileReader fileReader = new FileReader(getSessionPath().toFile())) {
                 Properties properties = new Properties();
                 properties.load(fileReader);
+                String oktaOrg = properties.getProperty(OKTA_ORG_PROPERTY);
+                if (oktaOrg != null && !oktaOrg.equals(environment.oktaOrg)) return Optional.empty();
                 String expiry = properties.getProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY);
                 String profileName = properties.getProperty(OKTA_AWS_CLI_PROFILE_PROPERTY);
                 Instant expiryInstant = Instant.parse(expiry);
@@ -84,6 +87,7 @@ public final class SessionHelper {
 
     public void updateCurrentSession(Instant expiryInstant, String profileName) throws IOException {
         Properties properties = new Properties();
+        properties.setProperty(OKTA_ORG_PROPERTY, environment.oktaOrg);
         properties.setProperty(OKTA_AWS_CLI_PROFILE_PROPERTY, profileName);
         properties.setProperty(OKTA_AWS_CLI_EXPIRY_PROPERTY, expiryInstant.toString());
         properties.store(new FileWriter(getSessionPath().toString()), "Saved at: " + Instant.now().toString());
