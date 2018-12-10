@@ -1,5 +1,7 @@
 # Okta AWS CLI Assume Role tool
 
+ :information_source: **Disclaimer:** This tool is community-supported and is maintained by members of the Okta team for developers and IT professionals. This tool is not an official Okta product and does not qualify for any Okta support. Anyone who chooses to use this tool must ensure that their implementation meets any applicable legal obligations including any Okta terms and conditions.
+
 New to Amazon Web Services with Okta? **Start with the [Configuring AWS in Okta](#configuring-aws-in-okta).
 
 This tool has been verified to work on macOS Sierra, High Sierra, Windows Server 2012 R2, Windows 10, and Ubuntu 16.04 LTS, and is expected to work on other Linux systems as well.
