@@ -219,12 +219,12 @@ public final class OktaAuthentication {
         }
     }
 
-    private RuntimeException makeException(JSONObject primaryAuthResult, String template, Object... args) {
+    static RuntimeException makeException(JSONObject primaryAuthResult, String template, Object... args) {
         return makeException(primaryAuthResult, null, template, args);
     }
 
     // Create an exception by formatting a string with arguments and appending the json message.
-    private RuntimeException makeException(JSONObject primaryAuthResult, Exception e, String template, Object... args) {
+    static RuntimeException makeException(JSONObject primaryAuthResult, Exception e, String template, Object... args) {
         Object[] argsWithMessageJson =
             Stream.concat(Stream.of(args), Stream.of(primaryAuthResult.toString(2))).toArray();
         String message = String.format(template + "\n\nMessage:\n%s\n", argsWithMessageJson);
