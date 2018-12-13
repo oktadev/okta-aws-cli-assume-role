@@ -47,27 +47,19 @@ function okta-sls {
 ' >> "${bash_functions}"
 fi
 
-# Conditionally update fish profile
-fishConfig="${HOME}/.config/fish/config.fish"
-mkdir -p $(dirname "${fishConfig}")
-touch "${fishConfig}"
-grep '^#OktaAWSCLI' "${fishConfig}" > /dev/null 2>&1
-if [ $? -ne 0 ]
-then
+# Create fish shell functions
+fishFunctionsDir="${HOME}/.config/fish/functions"
+mkdir -p "${fishFunctionsDir}"
 echo '
-#OktaAWSCLI
-export PATH="$HOME/bin:$PATH"
-function withokta
-    java -Djava.net.useSystemProxies com.okta.tools.WithOkta $argv
-end
 function okta-aws
     withokta "aws --profile $argv[1]" $argv
 end
+' > "${fishFunctionsDir}/okta-aws.fish"
+echo '
 function okta-sls
     withokta "sls --stage $argv[1]" $argv
 end
-' >> "${fishConfig}"
-fi
+' >> "${fishFunctionsDir}/okta-sls.fish"
 
 # Conditionally update bash profile
 bashProfile="${HOME}/.bash_profile"
@@ -82,15 +74,32 @@ fi
 " >> "${bashProfile}"
 fi
 
+# Suppress "Your profile name includes a 'profile ' prefix" warnings from AWS Java SDK (Resolves #233)
+loggingProperties="${HOME}/.okta/logging.properties"
+echo "com.amazonaws.auth.profile.internal.BasicProfileConfigLoader = NONE
+" > "${loggingProperties}"
+
 # Create withokta command
 echo '#!/bin/bash
 command="$1"
 profile=$2
 shift;
 shift;
-env OKTA_PROFILE=$profile java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.WithOkta $command $@
+env OKTA_PROFILE=$profile java \
+    -Djava.util.logging.config.file=~/.okta/logging.properties \
+    -classpath ~/.okta/okta-aws-cli.jar \
+    com.okta.tools.WithOkta $command $@
 ' > "$PREFIX/bin/withokta"
 chmod +x "$PREFIX/bin/withokta"
+
+# Create okta-credential_process command
+echo '#!/bin/bash
+roleARN="$1"
+shift;
+env OKTA_AWS_ROLE_TO_ASSUME="$roleARN" \
+    java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.CredentialProcess
+' > "$PREFIX/bin/okta-credential_process"
+chmod +x "$PREFIX/bin/okta-credential_process"
 
 # Create okta-listroles command
 echo '#!/bin/bash

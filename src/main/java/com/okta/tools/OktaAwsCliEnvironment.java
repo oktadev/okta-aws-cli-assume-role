@@ -16,7 +16,7 @@ public class OktaAwsCliEnvironment {
 
     public int stsDuration;
     public final String awsRegion;
-    public final boolean oktaEnvMode;
+    public boolean oktaEnvMode;
 
     public OktaAwsCliEnvironment()
     {

@@ -109,7 +109,7 @@ final class OktaAwsCliAssumeRole {
     AssumeRoleWithSAMLResult getAssumeRoleWithSAMLResult(Instant startInstant) throws Exception {
         init();
 
-        environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(null);
+        environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(environment.awsRoleToAssume);
 
         ProfileSAMLResult profileSAMLResult = doRequest(startInstant);
 

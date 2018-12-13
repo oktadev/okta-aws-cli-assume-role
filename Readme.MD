@@ -1,5 +1,7 @@
 # Okta AWS CLI Assume Role tool
 
+ :information_source: **Disclaimer:** This tool is community-supported and is maintained by members of the Okta team for developers and IT professionals. This tool is not an official Okta product and does not qualify for any Okta support. Anyone who chooses to use this tool must ensure that their implementation meets any applicable legal obligations including any Okta terms and conditions.
+
 New to Amazon Web Services with Okta? **Start with the [Configuring AWS in Okta](#configuring-aws-in-okta).
 
 This tool has been verified to work on macOS Sierra, High Sierra, Windows Server 2012 R2, Windows 10, and Ubuntu 16.04 LTS, and is expected to work on other Linux systems as well.
@@ -40,6 +42,7 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
 
 1. Run the following in a Terminal:
     ```bash
+    export PREFIX=/usr/local
     curl 'https://raw.githubusercontent.com/oktadeveloper/okta-aws-cli-assume-role/master/bin/install.sh' | bash
     ```
 2. Customize **~/.okta/config.properties** and set **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
@@ -48,6 +51,7 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
    OKTA_ORG=acmecorp.oktapreview.com
    OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
    ```
+3. Make sure **/usr/local/bin** (or whatever $PREFIX/bin is) is in your PATH
 
 ### Docker
 
@@ -79,6 +83,12 @@ OKTA_ORG=acmecorp.oktapreview.com
 OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
 ```
 
+Create `~/.okta/logging.properties` with the following content,
+
+```properties
+com.amazonaws.auth.profile.internal.BasicProfileConfigLoader = NONE
+```
+
 Copy scripts from `.okta/bin` to somewhere on your PATH.
 
 ## Usage
@@ -96,6 +106,12 @@ Run the program again to see session resumption (you won't be asked for Okta cre
 ```bash
 okta-aws test sts get-caller-identity
 ```
+
+NOTE: **okta-aws** is a function loaded from your shell profile, not a typical program or command stored in a file.
+
+## Reference
+* [okta-listroles(1)](docs/man/okta-listroles.1.md)
+* [okta-credential_process(1)](docs/man/okta-credential_process.1.md)
 
 ## Compiling the application
 

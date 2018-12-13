@@ -25,6 +25,7 @@ import java.time.temporal.ChronoUnit;
 public class CredentialProcess {
     public static void main(String[] args) throws Exception {
         OktaAwsCliEnvironment environment = OktaAwsConfig.loadEnvironment();
+        environment.oktaEnvMode = true;
         Instant startInstant = Instant.now();
         Duration sessionLength = Duration.of(environment.stsDuration, ChronoUnit.SECONDS);
         Instant expirationInstant = startInstant.plus(sessionLength);
