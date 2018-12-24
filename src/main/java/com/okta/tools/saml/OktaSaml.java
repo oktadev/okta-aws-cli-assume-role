@@ -84,7 +84,8 @@ public class OktaSaml {
                 if (errorHeadline.hasText()) {
                     throw new RuntimeException(errorHeadline.text());
                 } else {
-                    throw new RuntimeException("You do not have access to AWS through Okta. \nPlease contact your administrator.");
+                    System.err.println(document.toString());
+                    throw new RuntimeException("An unhandled error occurred. Please consult the server response above.");
                 }
             }
         }
