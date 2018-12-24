@@ -3,7 +3,6 @@ package com.okta.tools.helpers;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
@@ -17,6 +16,7 @@ import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -103,6 +103,17 @@ public class RoleHelper {
     }
 
     public List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {
+        Map<String, String> roles = AwsSamlRoleUtils.getRoles(samlResponse);
+        if (roles.size() == 1) {
+            String roleArn = roles.keySet().iterator().next();
+            return Collections.singletonList(
+                    new AccountOption("Account:  (" + roleArn.substring("arn:aws:iam::".length(), "arn:aws:iam::".length() + 12) + ")",
+                            Collections.singletonList(
+                                    new RoleOption(roleArn.substring(roleArn.indexOf(":role/") + ":role/".length()), roleArn)
+                            )
+                    )
+            );
+        }
         Document document = AwsSamlRoleUtils.getSigninPageDocument(samlResponse);
         return AwsSamlSigninParser.parseAccountOptions(document);
     }
