@@ -36,15 +36,15 @@ public class OktaSaml {
 
     private final OktaAwsCliEnvironment environment;
     private final CookieHelper cookieHelper;
+    private final OktaAuthentication authentication;
 
-    public OktaSaml(OktaAwsCliEnvironment environment, CookieHelper cookieHelper) {
+    public OktaSaml(OktaAwsCliEnvironment environment, CookieHelper cookieHelper, OktaAuthentication oktaAuthentication) {
         this.environment = environment;
         this.cookieHelper = cookieHelper;
+        this.authentication = oktaAuthentication;
     }
 
     public String getSamlResponse() throws IOException {
-        OktaAuthentication authentication = new OktaAuthentication(environment);
-
         if (environment.browserAuth) {
             try {
                 return BrowserAuthentication.login(environment);

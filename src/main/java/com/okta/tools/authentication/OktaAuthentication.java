@@ -37,9 +37,11 @@ public final class OktaAuthentication {
     private static final Logger logger = LogManager.getLogger(OktaAuthentication.class);
 
     private final OktaAwsCliEnvironment environment;
+    private final OktaMFA oktaMFA;
 
-    public OktaAuthentication(OktaAwsCliEnvironment environment) {
+    public OktaAuthentication(OktaAwsCliEnvironment environment, OktaMFA oktaMFA) {
         this.environment = environment;
+        this.oktaMFA = oktaMFA;
     }
 
     /**
@@ -87,7 +89,7 @@ public final class OktaAuthentication {
                 throw new IllegalStateException("Invalid value - should never happen.");
             case MFA_REQUIRED:
                 // Handle second-factor
-                return OktaMFA.promptForFactor(primaryAuthResult);
+                return oktaMFA.promptForFactor(primaryAuthResult);
             case SUCCESS:
                 if (primaryAuthResult.has(sessionProperty)) {
                     return primaryAuthResult.getString(sessionProperty);
@@ -213,7 +215,7 @@ public final class OktaAuthentication {
     private String promptForPassword() {
         if (System.console() == null) { // hack to be able to debug in an IDE
             System.err.print("Password: ");
-            return new Scanner(System.in).next();
+            return new Scanner(System.in).nextLine();
         } else {
             return new String(System.console().readPassword("Password: "));
         }

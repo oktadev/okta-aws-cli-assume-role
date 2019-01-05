@@ -159,6 +159,7 @@ Here is the list of parameters that can be environment variables or settings in 
   - ```OKTA_AWS_REGION``` is the default AWS region to store with the created profile.
   - ```OKTA_AWS_ROLE_TO_ASSUME``` is the IAM Role ARN to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found. (ex: **arn:aws:iam::123456789012:role/EC2-Admins**)
   - ```OKTA_STS_DURATION``` is the duration the role will be assumed, in seconds. The maximum session duration allowed by AWS is 12 hours and this needs to be set on the role as well.  Defaults to 1hr.
+  - ```OKTA_MFA_CHOICE``` is the provider and factor type to use if prompted for MFA.  Example: ```OKTA.push```. See [Factors documentation](https://developer.okta.com/docs/api/resources/factors#factor-type) for values. (default: use single factor or prompt user to select from usable factors).
   
   - **Obtaining the AWS app url**
     - Navigate to the ```Admin Dashboard``` of you Okta organization

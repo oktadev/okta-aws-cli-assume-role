@@ -15,6 +15,7 @@
  */
 package com.okta.tools.authentication;
 
+import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.helpers.HttpHelper;
 import com.okta.tools.helpers.MenuHelper;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -35,13 +36,19 @@ import java.util.List;
 import java.util.Scanner;
 
 public class OktaMFA {
+    private final OktaAwsCliEnvironment environment;
+
+    public OktaMFA(OktaAwsCliEnvironment environment) {
+        this.environment = environment;
+    }
+
     /**
      * Prompt the user for 2FA after primary authentication
      *
      * @param primaryAuthResponse The response from primary auth
      * @return The session token
      */
-    public static String promptForFactor(JSONObject primaryAuthResponse) {
+    public String promptForFactor(JSONObject primaryAuthResponse) {
         try {
             // User selects which factor to use
             JSONObject factor = selectFactor(primaryAuthResponse);
@@ -88,7 +95,7 @@ public class OktaMFA {
      * @param primaryAuthResponse The response from Primary Authentication
      * @return The factor prompt if invalid, session token otherwise
      */
-    private static String handleTimeoutsAndChanges(String sessionToken, JSONObject primaryAuthResponse) {
+    private String handleTimeoutsAndChanges(String sessionToken, JSONObject primaryAuthResponse) {
         if (sessionToken.equals("change factor")) {
             System.err.println("Factor change initiated");
             return promptForFactor(primaryAuthResponse);
@@ -106,9 +113,8 @@ public class OktaMFA {
      * @return A {@link JSONObject} representing the selected factor.
      * @throws JSONException if a network or protocol error occurs
      */
-    private static JSONObject selectFactor(JSONObject primaryAuthResponse) throws JSONException {
+    private JSONObject selectFactor(JSONObject primaryAuthResponse) throws JSONException {
         JSONArray factors = primaryAuthResponse.getJSONObject("_embedded").getJSONArray("factors");
-        String factorType;
 
         List<JSONObject> supportedFactors = getUsableFactors(factors);
         if (supportedFactors.isEmpty()) {
@@ -120,13 +126,22 @@ public class OktaMFA {
         }
 
         if (supportedFactors.size() > 1) {
+            if (environment.oktaMfaChoice != null) {
+                for (JSONObject factor : supportedFactors) {
+                    String provider = factor.getString("provider");
+                    String factorType = factor.getString("factorType");
+                    if ((provider + "." + factorType).equals(environment.oktaMfaChoice)) {
+                        return factor;
+                    }
+                }
+            }
             System.err.println("\nMulti-Factor authentication is required. Please select a factor to use.");
             System.err.println("Factors:");
             for (int i = 0; i < supportedFactors.size(); i++) {
                 JSONObject factor = supportedFactors.get(i);
-                factorType = factor.getString("factorType");
-                factorType = getFactorDescription(factorType, factor);
-                System.err.println("[ " + (i + 1) + " ] : " + factorType);
+                String factorType = factor.getString("factorType");
+                String factorDescription = getFactorDescription(factorType, factor);
+                System.err.println("[ " + (i + 1) + " ] : " + factorDescription);
             }
         }
 

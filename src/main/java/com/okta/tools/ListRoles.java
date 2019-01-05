@@ -16,21 +16,22 @@
 package com.okta.tools;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.okta.tools.authentication.OktaAuthentication;
+import com.okta.tools.authentication.OktaMFA;
 import com.okta.tools.helpers.CookieHelper;
 import com.okta.tools.helpers.RoleHelper;
 import com.okta.tools.models.AccountOption;
 import com.okta.tools.saml.OktaSaml;
 
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class ListRoles {
     public static void main(String[] args) throws Exception {
         OktaAwsCliEnvironment environment = OktaAwsConfig.loadEnvironment();
         CookieHelper cookieHelper = new CookieHelper(environment);
-        OktaSaml oktaSaml = new OktaSaml(environment, cookieHelper);
+        OktaMFA oktaMFA = new OktaMFA(environment);
+        OktaAuthentication oktaAuthentication = new OktaAuthentication(environment, oktaMFA);
+        OktaSaml oktaSaml = new OktaSaml(environment, cookieHelper, oktaAuthentication);
         String samlResponse = oktaSaml.getSamlResponse();
         RoleHelper roleHelper = new RoleHelper(environment);
         List<AccountOption> availableRoles = roleHelper.getAvailableRoles(samlResponse);
