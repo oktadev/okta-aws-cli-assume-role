@@ -57,6 +57,7 @@ final class OktaAwsConfig {
                 getEnvOrConfig(properties, "OKTA_AWS_ROLE_TO_ASSUME"),
                 getStsDurationOrDefault(getEnvOrConfig(properties, "OKTA_STS_DURATION")),
                 getAwsRegionOrDefault(getEnvOrConfig(properties, "OKTA_AWS_REGION")),
+                getEnvOrConfig(properties, "OKTA_MFA_CHOICE"),
                 Boolean.parseBoolean(getEnvOrConfig(properties, "OKTA_ENV_MODE"))
         );
     }

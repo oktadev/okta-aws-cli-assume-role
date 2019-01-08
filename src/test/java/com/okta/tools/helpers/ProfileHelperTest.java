@@ -36,7 +36,7 @@ class ProfileHelperTest {
     @BeforeEach
     void setUp() {
         credentialsHelper = mock(CredentialsHelper.class);
-        environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, null, null, 0, fakeAwsRegion, false);
+        environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, null, null, 0, fakeAwsRegion, null, false);
         profileHelper = new ProfileHelper(credentialsHelper, environment);
         assumeRoleWithSAMLResult = new AssumeRoleWithSAMLResult();
         Credentials credentials = new Credentials(fakeAccessKey, fakeSecretKey, fakeSessionToken, fakeExpiryDate);

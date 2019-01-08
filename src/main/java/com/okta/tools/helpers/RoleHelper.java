@@ -81,7 +81,7 @@ public class RoleHelper {
                 System.err.println("Selected option " + (j + 1) + " based on OKTA_AWS_ROLE_TO_ASSUME value");
             } else {
                 //Prompt user for role selection
-                selection = MenuHelper.promptForMenuSelection(roleArns.size());
+                selection = new MenuHelperImpl().promptForMenuSelection(roleArns.size());
             }
 
             roleArn = roleArns.get(selection);
