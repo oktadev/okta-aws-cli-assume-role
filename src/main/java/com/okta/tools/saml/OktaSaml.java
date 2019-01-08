@@ -18,30 +18,21 @@ package com.okta.tools.saml;
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.authentication.BrowserAuthentication;
 import com.okta.tools.authentication.OktaAuthentication;
-import com.okta.tools.helpers.CookieHelper;
-import com.okta.tools.helpers.HttpHelper;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 public class OktaSaml {
 
     private final OktaAwsCliEnvironment environment;
-    private final CookieHelper cookieHelper;
     private final OktaAuthentication authentication;
+    private final OktaAppClient oktaAppClient;
 
-    public OktaSaml(OktaAwsCliEnvironment environment, CookieHelper cookieHelper, OktaAuthentication oktaAuthentication) {
+    public OktaSaml(OktaAwsCliEnvironment environment, OktaAuthentication oktaAuthentication, OktaAppClient oktaAppClient) {
         this.environment = environment;
-        this.cookieHelper = cookieHelper;
         this.authentication = oktaAuthentication;
+        this.oktaAppClient = oktaAppClient;
     }
 
     public String getSamlResponse() throws IOException {
@@ -67,7 +58,7 @@ public class OktaSaml {
     }
 
     private String getSamlResponseForAwsRefresh() throws IOException {
-        Document document = launchOktaAwsApp(environment.oktaAwsAppUrl);
+        Document document = oktaAppClient.launchApp(environment.oktaAwsAppUrl);
         return getSamlResponseForAwsFromDocument(document);
     }
 
@@ -117,31 +108,6 @@ public class OktaSaml {
     }
 
     private Document launchOktaAwsAppWithSessionToken(String appUrl, String oktaSessionToken) throws IOException {
-        return launchOktaAwsApp(appUrl + "?onetimetoken=" + oktaSessionToken);
-    }
-
-    private Document launchOktaAwsApp(String appUrl) throws IOException {
-        HttpGet httpget = new HttpGet(appUrl);
-        CookieStore cookieStore = cookieHelper.loadCookies();
-
-        try (CloseableHttpClient httpClient = HttpHelper.createClient(HttpClients.custom().setDefaultCookieStore(cookieStore));
-             CloseableHttpResponse oktaAwsAppResponse = httpClient.execute(httpget)) {
-
-            if (oktaAwsAppResponse.getStatusLine().getStatusCode() >= 500) {
-                throw new RuntimeException("Server error when loading Okta AWS App: "
-                        + oktaAwsAppResponse.getStatusLine().getStatusCode());
-            } else if (oktaAwsAppResponse.getStatusLine().getStatusCode() >= 400) {
-                throw new RuntimeException("Client error when loading Okta AWS App: "
-                        + oktaAwsAppResponse.getStatusLine().getStatusCode());
-            }
-
-            cookieHelper.storeCookies(cookieStore);
-
-            return Jsoup.parse(
-                    oktaAwsAppResponse.getEntity().getContent(),
-                    StandardCharsets.UTF_8.name(),
-                    appUrl
-            );
-        }
+        return oktaAppClient.launchApp(appUrl + "?onetimetoken=" + oktaSessionToken);
     }
 }
