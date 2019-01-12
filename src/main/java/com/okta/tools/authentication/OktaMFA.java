@@ -382,6 +382,9 @@ public class OktaMFA {
                 case MFA_REQUIRED:
                     // attempt failed, downstream code already handles this
                     break;
+                case MFA_CHALLENGE:
+                    // push authentication requires polling, downstream code handles that
+                    break;
                 case SUCCESS:
                     // MFA succeeded, let downstream code do its thing
                     break;
