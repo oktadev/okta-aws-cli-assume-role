@@ -21,7 +21,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import com.amazonaws.services.securitytoken.model.Credentials;
+import com.okta.tools.authentication.*;
 import com.okta.tools.helpers.*;
+import com.okta.tools.saml.OktaAppClient;
+import com.okta.tools.saml.OktaAppClientImpl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,8 +65,15 @@ final class OktaAwsCliAssumeRole {
         roleHelper = new RoleHelper(environment);
         credentialsHelper  = new CredentialsHelper(environment);
         profileHelper = new ProfileHelper(credentialsHelper, environment);
+        MenuHelper menuHelper = new MenuHelperImpl();
+        OktaFactorSelector factorSelector = new OktaFactorSelectorImpl(environment, menuHelper);
+        OktaMFA oktaMFA = new OktaMFA(factorSelector);
+        UserConsole userConsole = new UserConsoleImpl();
+        OktaAuthnClient oktaAuthnClient = new OktaAuthnClientImpl();
+        OktaAuthentication oktaAuthentication = new OktaAuthentication(environment, oktaMFA, userConsole, oktaAuthnClient);
+        OktaAppClient oktaAppClient = new OktaAppClientImpl(cookieHelper);
 
-        oktaSaml = new OktaSaml(environment, cookieHelper);
+        oktaSaml = new OktaSaml(environment, oktaAuthentication, oktaAppClient);
 
         currentSession = sessionHelper.getCurrentSession();
 

@@ -16,7 +16,6 @@
 package com.okta.tools.authentication;
 
 import com.okta.tools.helpers.HttpHelper;
-import com.okta.tools.helpers.MenuHelper;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -29,22 +28,25 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
 
 public class OktaMFA {
+    private final OktaFactorSelector factorSelector;
+
+    public OktaMFA(OktaFactorSelector factorSelector) {
+        this.factorSelector = factorSelector;
+    }
+
     /**
      * Prompt the user for 2FA after primary authentication
      *
      * @param primaryAuthResponse The response from primary auth
      * @return The session token
      */
-    public static String promptForFactor(JSONObject primaryAuthResponse) {
+    public String promptForFactor(JSONObject primaryAuthResponse) {
         try {
             // User selects which factor to use
-            JSONObject factor = selectFactor(primaryAuthResponse);
+            JSONObject factor = factorSelector.selectFactor(primaryAuthResponse);
             String factorType = factor.getString("factorType");
             String stateToken = primaryAuthResponse.getString("stateToken");
 
@@ -88,7 +90,7 @@ public class OktaMFA {
      * @param primaryAuthResponse The response from Primary Authentication
      * @return The factor prompt if invalid, session token otherwise
      */
-    private static String handleTimeoutsAndChanges(String sessionToken, JSONObject primaryAuthResponse) {
+    private String handleTimeoutsAndChanges(String sessionToken, JSONObject primaryAuthResponse) {
         if (sessionToken.equals("change factor")) {
             System.err.println("Factor change initiated");
             return promptForFactor(primaryAuthResponse);
@@ -97,107 +99,6 @@ public class OktaMFA {
             return promptForFactor(primaryAuthResponse);
         }
         return sessionToken;
-    }
-
-    /**
-     * Handles selection of a factor from multiple choices
-     *
-     * @param primaryAuthResponse The response from Primary Authentication
-     * @return A {@link JSONObject} representing the selected factor.
-     * @throws JSONException if a network or protocol error occurs
-     */
-    private static JSONObject selectFactor(JSONObject primaryAuthResponse) throws JSONException {
-        JSONArray factors = primaryAuthResponse.getJSONObject("_embedded").getJSONArray("factors");
-        String factorType;
-
-        List<JSONObject> supportedFactors = getUsableFactors(factors);
-        if (supportedFactors.isEmpty()) {
-            if (factors.length() > 0) {
-                throw new IllegalStateException("None of your factors are supported.");
-            } else {
-                throw new IllegalStateException("You have no factors enrolled.");
-            }
-        }
-
-        if (supportedFactors.size() > 1) {
-            System.err.println("\nMulti-Factor authentication is required. Please select a factor to use.");
-            System.err.println("Factors:");
-            for (int i = 0; i < supportedFactors.size(); i++) {
-                JSONObject factor = supportedFactors.get(i);
-                factorType = factor.getString("factorType");
-                factorType = getFactorDescription(factorType, factor);
-                System.err.println("[ " + (i + 1) + " ] : " + factorType);
-            }
-        }
-
-        // Handles user factor selection
-        int selection = MenuHelper.promptForMenuSelection(supportedFactors.size());
-        return supportedFactors.get(selection);
-    }
-
-    private static String getFactorDescription(String factorType, JSONObject factor) {
-        String provider = factor.getString("provider");
-        switch (factorType) {
-            case "push":
-                return "Okta Verify (Push)";
-            case "question":
-                return "Security Question";
-            case "sms":
-                return "SMS Verification";
-            case "call":
-                return "Phone Verification"; // Unsupported
-            case "token:software:totp":
-                switch (provider) {
-                    case "OKTA":
-                        return "Okta Verify (TOTP)";
-                    case "GOOGLE":
-                        return "Google Authenticator";
-                    default:
-                        return provider + " " + factorType;
-                }
-            case "email":
-                return "Email Verification";  // Unsupported
-            case "token":
-                switch (provider) {
-                    case "SYMANTEC":
-                        return "Symantec VIP";
-                    case "RSA":
-                        return "RSA SecurID";
-                    default:
-                        return provider + " " + factorType;
-                }
-            case "web":
-                return "Duo Push"; // Unsupported
-            case "token:hardware":
-                return "Yubikey";
-            default:
-                return provider + " " + factorType;
-        }
-    }
-
-    /**
-     * Selects the supported factors from a list of factors
-     *
-     * @param factors The list of factors
-     * @return A {@link List<JSONObject>} of supported factors
-     */
-    private static List<JSONObject> getUsableFactors(JSONArray factors) {
-        List<JSONObject> eligibleFactors = new ArrayList<>();
-
-        for (int i = 0; i < factors.length(); i++) {
-            JSONObject factor = factors.getJSONObject(i);
-
-            String factorType = factor.getString("factorType");
-            if (!Arrays.asList(
-                    "web", // Factors that only work on the web cannot be verified via the CLI
-                    "call", // Call factor support isn't implemented yet
-                    "email"  // Email factor support isn't implemented yet
-            ).contains(factorType)) {
-                eligibleFactors.add(factor);
-            }
-        }
-
-        return eligibleFactors;
     }
 
     /**
