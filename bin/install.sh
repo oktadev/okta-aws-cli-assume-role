@@ -129,3 +129,9 @@ OKTA_USERNAME=$env:USERNAME
 OKTA_BROWSER_AUTH=true
 EOF
 fi
+cat <<EOF | sed "s#$HOME#~#g"
+Customize ${oktaConfig} and verify your setup with:
+
+    okta-aws test sts get-caller-identity
+
+EOF
