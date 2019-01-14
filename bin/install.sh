@@ -46,6 +46,16 @@ function okta-sls {
 EOF
 fi
 
+# Print advice for ~/.bash_profile
+echo "Add the following to ~/.bash_profile or ~/.profile:"
+echo
+cat <<EOF
+#OktaAWSCLI
+if [ -f "${bash_functions}" ]; then
+    . "${bash_functions}"
+fi
+EOF
+
 # Create fish shell functions
 fishFunctionsDir="${dotokta}/fish_functions"
 mkdir -p "${fishFunctionsDir}"
@@ -59,17 +69,6 @@ function okta-sls
     withokta "sls --stage $argv[1]" $argv
 end
 EOF
-
-# Conditionally update bash profile
-bashProfile="${HOME}/.bash_profile"
-if ! grep '^#OktaAWSCLI' "${bashProfile}" &>/dev/null; then
-    cat <<EOF >>"${bashProfile}"
-#OktaAWSCLI
-if [ -f "${bash_functions}" ]; then
-    . "${bash_functions}"
-fi
-EOF
-fi
 
 # Suppress "Your profile name includes a 'profile ' prefix" warnings
 # from AWS Java SDK (Resolves #233)
