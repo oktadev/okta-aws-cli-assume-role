@@ -47,7 +47,7 @@ EOF
 fi
 
 # Create fish shell functions
-fishFunctionsDir="${HOME}/.config/fish/functions"
+fishFunctionsDir="${dotokta}/fish_functions"
 mkdir -p "${fishFunctionsDir}"
 cat <<'EOF' >"${fishFunctionsDir}/okta-aws.fish"
 function okta-aws
