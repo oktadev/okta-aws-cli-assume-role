@@ -14,9 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-PREFIX=${PREFIX:=/usr/local}
-
-dotokta=${HOME}/.okta
+dotokta=${PREFIX:=~/.okta}
 repo_url="https://github.com/oktadeveloper/okta-aws-cli-assume-role"
 
 if ! java -version &>/dev/null; then
@@ -47,6 +45,7 @@ EOF
 fi
 
 # Print advice for ~/.bash_profile
+echo
 echo "Add the following to ~/.bash_profile or ~/.profile:"
 echo
 cat <<EOF
@@ -55,6 +54,7 @@ if [ -f "${bash_functions}" ]; then
     . "${bash_functions}"
 fi
 EOF
+echo
 
 # Create fish shell functions
 fishFunctionsDir="${dotokta}/fish_functions"
@@ -77,8 +77,10 @@ cat <<EOF >"${loggingProperties}"
 com.amazonaws.auth.profile.internal.BasicProfileConfigLoader = NONE
 EOF
 
+mkdir -p "${dotokta}/bin"
+
 # Create withokta command
-cat <<'EOF' >"${PREFIX}/bin/withokta"
+cat <<'EOF' >"${dotokta}/bin/withokta"
 #!/bin/bash
 command="$1"
 profile=$2
@@ -89,24 +91,24 @@ env OKTA_PROFILE=$profile java \
     -classpath ~/.okta/okta-aws-cli.jar \
     com.okta.tools.WithOkta $command $@
 EOF
-chmod +x "${PREFIX}/bin/withokta"
+chmod +x "${dotokta}/bin/withokta"
 
 # Create okta-credential_process command
-cat <<'EOF' >"${PREFIX}/bin/okta-credential_process"
+cat <<'EOF' >"${dotokta}/bin/okta-credential_process"
 #!/bin/bash
 roleARN="$1"
 shift;
 env OKTA_AWS_ROLE_TO_ASSUME="$roleARN" \
     java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.CredentialProcess
 EOF
-chmod +x "${PREFIX}/bin/okta-credential_process"
+chmod +x "${dotokta}/bin/okta-credential_process"
 
 # Create okta-listroles command
-cat <<EOF >"${PREFIX}/bin/okta-listroles"
+cat <<EOF >"${dotokta}/bin/okta-listroles"
 #!/bin/bash
 java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.ListRoles
 EOF
-chmod +x "${PREFIX}/bin/okta-listroles"
+chmod +x "${dotokta}/bin/okta-listroles"
 
 # Configure Okta AWS CLI
 oktaConfig="${dotokta}/config.properties"
