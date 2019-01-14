@@ -17,7 +17,7 @@
 repo_url="https://github.com/oktadeveloper/okta-aws-cli-assume-role"
 dotokta=${PREFIX:=~/.okta}
 
-echo "Installing into ${dotokta}"
+echo "Installing into ${dotokta}" | sed "s#$HOME#~#g"
 
 if ! java -version &>/dev/null; then
     echo "Warning: Java is not installed. Make sure to install that" >&2
@@ -31,11 +31,11 @@ releaseUrl=$(curl --head --silent ${repo_url}/releases/latest | grep "Location:"
 releaseTag=$(echo $releaseUrl | awk 'BEGIN{FS="/"}{print $8}' | tr -d '\r')
 url=${repo_url}/releases/download/${releaseTag}/okta-aws-cli-${releaseTag:1}.jar
 dest=${dotokta}/$(basename ${url})
-echo "Fetching ${url} → ${dest}"
-curl -L "${url}" --output "${dest}"
+echo "Fetching ${url} → ${dest}" | sed "s#$HOME#~#g"
+curl -Ls -o "${dest}" "${url}"
 
 jarpath="${dotokta}/okta-aws-cli.jar"
-echo "Symlinking ${jarpath} → $(basename ${dest})"
+echo "Symlinking ${jarpath} → $(basename ${dest})" | sed "s#$HOME#~#g"
 ln -s $(basename ${dest}) "${jarpath}"
 
 # bash functions
@@ -51,21 +51,6 @@ function okta-sls {
 }
 EOF
 fi
-
-# Print advice for ~/.bash_profile
-echo
-echo "Add the following to ~/.bash_profile or ~/.profile:"
-echo
-cat <<EOF | sed "s#$HOME#\$HOME#g"
-#OktaAWSCLI
-if [[ -d ${dotokta} ]]; then
-    if [ -f "${bash_functions}" ]; then
-        . "${bash_functions}"
-    fi
-    PATH="${dotokta}/bin:\$PATH"
-fi
-EOF
-echo
 
 # Create fish shell functions
 fishFunctionsDir="${dotokta}/fish_functions"
@@ -144,10 +129,22 @@ OKTA_USERNAME=$env:USERNAME
 OKTA_BROWSER_AUTH=true
 EOF
 fi
-echo
-cat <<EOF | sed "s#$HOME#~#g"
-Customize ${oktaConfig} and verify your setup with:
 
-    okta-aws PROFILE_NAME sts get-caller-identity
-
+# Print advice for ~/.bash_profile
+shellstmt=$(cat <<EOF | sed "s#$HOME#\$HOME#g"
+#OktaAWSCLI
+if [[ -d ${dotokta} ]]; then
+    if [ -f ${bash_functions} ]; then
+        . ${bash_functions}
+    fi
+    if ! echo ":\$PATH:" | grep ":\$HOME/.okta/bin:" &>/dev/null; then
+        PATH="${dotokta}/bin:\$PATH"
+    fi
+fi
 EOF
+)
+eval "$shellstmt"
+echo
+echo "Add the following to ~/.bash_profile or ~/.profile:"
+echo
+echo "$shellstmt"
