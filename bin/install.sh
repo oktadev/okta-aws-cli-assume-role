@@ -58,8 +58,11 @@ echo "Add the following to ~/.bash_profile or ~/.profile:"
 echo
 cat <<EOF | sed "s#$HOME#\$HOME#g"
 #OktaAWSCLI
-if [ -f "${bash_functions}" ]; then
-    . "${bash_functions}"
+if [[ -d ${dotokta} ]]; then
+    if [ -f "${bash_functions}" ]; then
+        . "${bash_functions}"
+    fi
+    PATH="${dotokta}/bin:\$PATH"
 fi
 EOF
 echo
@@ -120,7 +123,10 @@ chmod +x "${dotokta}/bin/okta-listroles"
 
 # Configure Okta AWS CLI
 oktaConfig="${dotokta}/config.properties"
-if ! grep '^#OktaAWSCLI' "${oktaConfig}" &>/dev/null; then
+if [[ -e "${oktaConfig}" ]]; then
+    echo "Found $(echo ${oktaConfig} | sed "s#$HOME#~#g")"
+else
+    echo "Creating example $(echo ${oktaConfig} | sed "s#$HOME#~#g")"
     cat <<EOF >"${oktaConfig}"
 #OktaAWSCLI
 OKTA_ORG=acmecorp.okta.com.changeme.local
@@ -129,9 +135,10 @@ OKTA_USERNAME=$env:USERNAME
 OKTA_BROWSER_AUTH=true
 EOF
 fi
+echo
 cat <<EOF | sed "s#$HOME#~#g"
 Customize ${oktaConfig} and verify your setup with:
 
-    okta-aws test sts get-caller-identity
+    okta-aws PROFILE_NAME sts get-caller-identity
 
 EOF
