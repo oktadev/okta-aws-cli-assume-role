@@ -121,6 +121,15 @@ java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.ListRoles
 EOF
 chmod +x "${dotokta}/bin/okta-listroles"
 
+# awscli
+cat <<'EOF' >"${dotokta}/bin/awscli"
+#!/bin/bash
+java -Djava.util.logging.config.file=~/.okta/logging.properties \
+     -classpath ~/.okta/okta-aws-cli.jar \
+     com.okta.tools.awscli $@
+EOF
+chmod +x "${dotokta}/bin/awscli"
+
 # Configure Okta AWS CLI
 oktaConfig="${dotokta}/config.properties"
 if [[ -e "${oktaConfig}" ]]; then
