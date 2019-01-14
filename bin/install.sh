@@ -17,7 +17,7 @@
 repo_url="https://github.com/oktadeveloper/okta-aws-cli-assume-role"
 dotokta=${PREFIX:=~/.okta}
 
-echo "Installing into ${dotokta}..."
+echo "Installing into ${dotokta}"
 
 if ! java -version &>/dev/null; then
     echo "Warning: Java is not installed. Make sure to install that" >&2
@@ -29,10 +29,14 @@ fi
 mkdir -p ${dotokta}
 releaseUrl=$(curl --head --silent ${repo_url}/releases/latest | grep "Location:" | cut -c11-)
 releaseTag=$(echo $releaseUrl | awk 'BEGIN{FS="/"}{print $8}' | tr -d '\r')
-url="${repo_url}/releases/download/${releaseTag}/okta-aws-cli-${releaseTag:1}.jar"
-dest="${dotokta}/okta-aws-cli.jar"
+url=${repo_url}/releases/download/${releaseTag}/okta-aws-cli-${releaseTag:1}.jar
+dest=${dotokta}/$(basename ${url})
 echo "Fetching ${url} → ${dest}"
 curl -L "${url}" --output "${dest}"
+
+jarpath="${dotokta}/okta-aws-cli.jar"
+echo "Symlinking ${jarpath} → $(basename ${dest})"
+ln -s $(basename ${dest}) "${jarpath}"
 
 # bash functions
 bash_functions="${dotokta}/bash_functions"
