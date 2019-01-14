@@ -56,7 +56,7 @@ fi
 echo
 echo "Add the following to ~/.bash_profile or ~/.profile:"
 echo
-cat <<EOF
+cat <<EOF | sed "s#$HOME#\$HOME#g"
 #OktaAWSCLI
 if [ -f "${bash_functions}" ]; then
     . "${bash_functions}"
