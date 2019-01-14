@@ -36,6 +36,7 @@ curl -L "${repo_url}/releases/download/${releaseTag}/okta-aws-cli-${releaseTag:1
 bash_functions="${dotokta}/bash_functions"
 if ! grep '^#OktaAWSCLI' "${bash_functions}" &>/dev/null; then
     cat <<'EOF' >>"${bash_functions}"
+#OktaAWSCLI
 function okta-aws {
     withokta "aws --profile $1" $@
 }
