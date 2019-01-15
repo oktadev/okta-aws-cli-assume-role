@@ -116,7 +116,8 @@ EOF
 chmod +x "${dotokta}/bin/awscli"
 
 # Configure Okta AWS CLI
-oktaConfig="${dotokta}/config.properties"
+mkdir -p ${HOME}/.okta                       # `config.properties` must
+oktaConfig="${HOME}/.okta/config.properties" # reside in ~/.okta.
 if [[ -e "${oktaConfig}" ]]; then
     echo "Found $(echo ${oktaConfig} | sed "s#$HOME#~#g")"
 else
