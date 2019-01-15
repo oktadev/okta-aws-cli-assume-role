@@ -44,7 +44,7 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
    `PREFIX` value (default: `~/.okta`):
 
     ```bash
-    PREFIX=~/.okta bash <(curl -fsSL 'https://raw.githubusercontent.com/oktadeveloper/okta-aws-cli-assume-role/master/bin/install.sh) -i
+    PREFIX=~/.okta bash <(curl -fsSL https://raw.githubusercontent.com/oktadeveloper/okta-aws-cli-assume-role/master/bin/install.sh) -i
     ```
 
 2. Customize **~/.okta/config.properties** and set **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
