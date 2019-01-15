@@ -15,9 +15,57 @@
 # limitations under the License.
 #
 repo_url="https://github.com/oktadeveloper/okta-aws-cli-assume-role"
-dotokta=${PREFIX:=~/.okta}
+dotokta="${HOME}/.okta"
 
-echo "Installing into ${dotokta}" | sed "s#$HOME#~#g"
+printusage() {
+    cat <<EOF >&2
+usage: $(basename $0) [-h | -i]
+       install Okta AWS CLI Assume Role tool
+EOF
+}
+
+printhelp() {
+    cat <<EOF | sed "s#$HOME#~#g"
+Installation script for Okta AWS CLI Assume Role
+================================================
+
+To execute:
+
+    $(basename $0) -i
+
+This command
+
+1. Installs files into a filesystem location that can be configured
+   with the PREFIX environment variable (default: ${dotokta}) and
+2. Prints instructions for setting up shell functions and scripts.
+
+This script checks for (and installs if necessary) the file
+~/.okta/config.properties regardless of the value of PREFIX.
+
+For details, see ${repo_url}.
+EOF
+}
+
+while getopts ":ih" opt; do
+    case ${opt} in
+        h)
+            printhelp
+            exit
+            ;;
+        i)
+            install=1
+            ;;
+        \?)
+            printusage
+            exit 64
+            ;;
+    esac
+done
+shift $((OPTIND -1))
+if [[ -z "$install" || "$#" -gt 0 ]]; then
+    printusage
+    exit 64
+fi
 
 if ! java -version &>/dev/null; then
     echo "Warning: Java is not installed. Make sure to install that" >&2
@@ -26,20 +74,26 @@ if ! aws --version &>/dev/null; then
     echo "Warning: AWS CLI is not installed. Make sure to install that" >&2
 fi
 
-mkdir -p ${dotokta}
+PREFIX="${PREFIX:=$dotokta}"
+mkdir -p "${PREFIX}"
+PREFIX="$(cd -P -- "${PREFIX}" && pwd)"
+echo "Installing into ${PREFIX}" | sed "s#$HOME#~#g"
+
+mkdir -p ${PREFIX}
 releaseUrl=$(curl --head --silent ${repo_url}/releases/latest | grep "Location:" | cut -c11-)
 releaseTag=$(echo $releaseUrl | awk 'BEGIN{FS="/"}{print $8}' | tr -d '\r')
 url=${repo_url}/releases/download/${releaseTag}/okta-aws-cli-${releaseTag:1}.jar
-dest=${dotokta}/$(basename ${url})
-echo "Fetching ${url} → ${dest}" | sed "s#$HOME#~#g"
+dest=${PREFIX}/$(basename ${url})
+echo "Latest release JAR file: ${url}"
+echo "Fetching JAR file → ${dest}" | sed "s#$HOME#~#g"
 curl -Ls -o "${dest}" "${url}"
 
-jarpath="${dotokta}/okta-aws-cli.jar"
+jarpath="${PREFIX}/okta-aws-cli.jar"
 echo "Symlinking ${jarpath} → $(basename ${dest})" | sed "s#$HOME#~#g"
 ln -s $(basename ${dest}) "${jarpath}"
 
 # bash functions
-bash_functions="${dotokta}/bash_functions"
+bash_functions="${PREFIX}/bash_functions"
 if ! grep '^#OktaAWSCLI' "${bash_functions}" &>/dev/null; then
     cat <<'EOF' >>"${bash_functions}"
 #OktaAWSCLI
@@ -53,7 +107,7 @@ EOF
 fi
 
 # Create fish shell functions
-fishFunctionsDir="${dotokta}/fish_functions"
+fishFunctionsDir="${PREFIX}/fish_functions"
 mkdir -p "${fishFunctionsDir}"
 cat <<'EOF' >"${fishFunctionsDir}/okta-aws.fish"
 function okta-aws
@@ -68,15 +122,15 @@ EOF
 
 # Suppress "Your profile name includes a 'profile ' prefix" warnings
 # from AWS Java SDK (Resolves #233)
-loggingProperties="${dotokta}/logging.properties"
+loggingProperties="${PREFIX}/logging.properties"
 cat <<EOF >"${loggingProperties}"
 com.amazonaws.auth.profile.internal.BasicProfileConfigLoader = NONE
 EOF
 
-mkdir -p "${dotokta}/bin"
+mkdir -p "${PREFIX}/bin"
 
 # Create withokta command
-cat <<'EOF' >"${dotokta}/bin/withokta"
+cat <<'EOF' >"${PREFIX}/bin/withokta"
 #!/bin/bash
 command="$1"
 profile=$2
@@ -87,33 +141,33 @@ env OKTA_PROFILE=$profile java \
     -classpath ~/.okta/okta-aws-cli.jar \
     com.okta.tools.WithOkta $command $@
 EOF
-chmod +x "${dotokta}/bin/withokta"
+chmod +x "${PREFIX}/bin/withokta"
 
 # Create okta-credential_process command
-cat <<'EOF' >"${dotokta}/bin/okta-credential_process"
+cat <<'EOF' >"${PREFIX}/bin/okta-credential_process"
 #!/bin/bash
 roleARN="$1"
 shift;
 env OKTA_AWS_ROLE_TO_ASSUME="$roleARN" \
     java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.CredentialProcess
 EOF
-chmod +x "${dotokta}/bin/okta-credential_process"
+chmod +x "${PREFIX}/bin/okta-credential_process"
 
 # Create okta-listroles command
-cat <<EOF >"${dotokta}/bin/okta-listroles"
+cat <<EOF >"${PREFIX}/bin/okta-listroles"
 #!/bin/bash
 java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.ListRoles
 EOF
-chmod +x "${dotokta}/bin/okta-listroles"
+chmod +x "${PREFIX}/bin/okta-listroles"
 
 # awscli
-cat <<'EOF' >"${dotokta}/bin/awscli"
+cat <<'EOF' >"${PREFIX}/bin/awscli"
 #!/bin/bash
 java -Djava.util.logging.config.file=~/.okta/logging.properties \
      -classpath ~/.okta/okta-aws-cli.jar \
      com.okta.tools.awscli $@
 EOF
-chmod +x "${dotokta}/bin/awscli"
+chmod +x "${PREFIX}/bin/awscli"
 
 # Configure Okta AWS CLI
 mkdir -p ${HOME}/.okta                       # `config.properties` must
@@ -134,13 +188,11 @@ fi
 # Print advice for ~/.bash_profile
 shellstmt=$(cat <<EOF | sed "s#$HOME#\$HOME#g"
 #OktaAWSCLI
-if [[ -d ${dotokta} ]]; then
-    if [ -f ${bash_functions} ]; then
-        . ${bash_functions}
-    fi
-    if ! echo ":\$PATH:" | grep ":\$HOME/.okta/bin:" &>/dev/null; then
-        PATH="${dotokta}/bin:\$PATH"
-    fi
+if [[ -f "${bash_functions}" ]]; then
+    . "${bash_functions}"
+fi
+if [[ -d "${PREFIX}/bin" && ":\$PATH:" != *":${PREFIX}/bin:"* ]]; then
+    PATH="${PREFIX}/bin:\$PATH"
 fi
 EOF
 )
