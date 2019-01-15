@@ -196,7 +196,6 @@ if [[ -d "${PREFIX}/bin" && ":\$PATH:" != *":${PREFIX}/bin:"* ]]; then
 fi
 EOF
 )
-eval "$shellstmt"
 echo
 echo "Add the following to ~/.bash_profile or ~/.profile:"
 echo
