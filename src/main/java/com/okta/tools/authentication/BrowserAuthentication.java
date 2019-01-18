@@ -67,6 +67,12 @@ public final class BrowserAuthentication extends Application {
                         stage.setTitle(webEngine.getLocation());
                     }
                 });
+
+        webEngine.getLoadWorker().exceptionProperty()
+            .addListener((ov, oldState, newState) -> {
+                System.out.format("exception(%s => %s)\n%s\n", oldState, newState, webEngine.getLoadWorker().getException());
+            });
+
         webEngine.load(uri.toASCIIString());
 
         scene.setRoot(scrollPane);
