@@ -28,8 +28,8 @@ class SettingsTest {
                 ""
         );
         String writtenSettings = writeSettings(settings);
-        String expected =
-                "\n";
+        String expected = normalizeNewlines(
+                "\n");
         assertEquals(expected, writtenSettings);
     }
 
@@ -39,8 +39,8 @@ class SettingsTest {
                 "\n\n\n"
         );
         String writtenSettings = writeSettings(settings);
-        String expected =
-                "\n";
+        String expected = normalizeNewlines(
+                "\n");
         assertEquals(expected, writtenSettings);
     }
 
@@ -50,9 +50,9 @@ class SettingsTest {
                 "key=value"
         );
         String writtenSettings = writeSettings(settings);
-        String expected =
+        String expected = normalizeNewlines(
                 "key = value\n" +
-                "\n";
+                "\n");
         assertEquals(expected, writtenSettings);
     }
 
@@ -69,14 +69,14 @@ class SettingsTest {
         );
         String writtenSettings = writeSettings(settings);
         // Extra spaces in the output appear not to affect AWS CLI
-        String expected =
+        String expected = normalizeNewlines(
                 "[profile development]\n" +
                 "aws_access_key_id = foo\n" + // DIVERGENCE: extra space
                 "aws_secret_access_key = bar\n" + // DIVERGENCE: extra space
                 "s3 = \n" + // DIVERGENCE: extra space
                 "  max_concurrent_requests = 20\n" +
                 "  max_queue_size = 10000\n" +
-                "\n";
+                "\n");
         assertEquals(expected, writtenSettings);
     }
 
@@ -178,10 +178,10 @@ class SettingsTest {
         );
         settings.setProperty("default", "key", "value");
         String writtenSettings = writeSettings(settings);
-        String expected =
+        String expected = normalizeNewlines(
                 "[default]\n" +
                 "key = value\n" +
-                "\n";
+                "\n");
         assertEquals(expected, writtenSettings);
     }
 
@@ -200,14 +200,14 @@ class SettingsTest {
         settings.setProperty("profile development", "  max_concurrent_requests", "30");
         String writtenSettings = writeSettings(settings);
         // Extra spaces in the output appear not to affect AWS CLI
-        String expected =
+        String expected = normalizeNewlines(
                 "[profile development]\n" +
                 "s3 = \n" + // DIVERGENCE: extra space
                 "  max_queue_size = 10000\n" +
                 "aws_access_key_id = foo\n" + // DIVERGENCE: extra space
                 "aws_secret_access_key = bar\n" + // DIVERGENCE: extra space
                 "  max_concurrent_requests = 30\n" + // WAT! This is not what you likely wanted
-                "\n";
+                "\n");
         assertEquals(expected, writtenSettings);
     }
 
@@ -220,16 +220,16 @@ class SettingsTest {
         );
         settings.clearSection("myCoolSection");
         String writtenSettings = writeSettings(settings);
-        String expected =
+        String expected = normalizeNewlines(
                 "[anotherSection]\n" +
-                "\n";
+                "\n");
         assertEquals(expected, writtenSettings);
     }
 
     @Test
     void containsProperty() throws IOException {
         Settings settings = settingsFromConfig(
-                "[myCoolSection]\n" +
+            "[myCoolSection]\n" +
                 "stuffInSection=isAlsoCool\n" +
                 "[anotherSection]\n"
         );
@@ -290,5 +290,9 @@ class SettingsTest {
         assertTrue(myCoolSection.containsKey("stuffInSection"));
         assertEquals("isAlsoCool", myCoolSection.get("stuffInSection"));
         assertEquals("isLessCool", myCoolSection.get("moreStuff"));
+    }
+
+    private String normalizeNewlines(String lineFeedOnlyString) {
+        return lineFeedOnlyString.replaceAll("\n", System.getProperty("line.separator"));
     }
 }
