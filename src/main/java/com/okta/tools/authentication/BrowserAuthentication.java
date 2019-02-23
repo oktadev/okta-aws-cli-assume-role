@@ -3,6 +3,7 @@ package com.okta.tools.authentication;
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.helpers.CookieHelper;
 import com.okta.tools.util.NodeListIterable;
+import com.sun.javafx.webkit.WebConsoleListener;
 import javafx.application.Application;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -72,6 +73,10 @@ public final class BrowserAuthentication extends Application {
             .addListener((ov, oldState, newState) -> {
                 System.out.format("exception(%s => %s)\n%s\n", oldState, newState, webEngine.getLoadWorker().getException());
             });
+
+        WebConsoleListener.setDefaultListener((webView, message, lineNumber, sourceId) -> {
+            System.out.println("WebConsoleListener: " + message + "[at " + lineNumber + "]");
+        });
 
         webEngine.load(uri.toASCIIString());
 
