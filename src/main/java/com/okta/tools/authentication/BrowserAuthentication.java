@@ -2,6 +2,7 @@ package com.okta.tools.authentication;
 
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.helpers.CookieHelper;
+import com.okta.tools.io.SubresourceIntegrityStrippingHack;
 import com.okta.tools.util.NodeListIterable;
 import com.sun.javafx.webkit.WebConsoleListener;
 import javafx.application.Application;
@@ -61,6 +62,7 @@ public final class BrowserAuthentication extends Application {
         URI uri = URI.create(ENVIRONMENT.oktaAwsAppUrl);
         initializeCookies(uri);
 
+        SubresourceIntegrityStrippingHack.overrideHttpsProtocolHandler(ENVIRONMENT);
         webEngine.getLoadWorker().stateProperty()
                 .addListener((ov, oldState, newState) -> {
                     if (webEngine.getDocument() != null) {
@@ -75,7 +77,7 @@ public final class BrowserAuthentication extends Application {
             });
 
         WebConsoleListener.setDefaultListener((webView, message, lineNumber, sourceId) -> {
-            System.out.println("WebConsoleListener: " + message + "[at " + lineNumber + "]");
+            System.out.println("WebConsoleListener: " + message + "[" + webEngine.getLocation() + ":" + lineNumber + "]");
         });
 
         webEngine.load(uri.toASCIIString());
