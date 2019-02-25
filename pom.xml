@@ -20,7 +20,7 @@
 
     <groupId>com.okta.developer</groupId>
     <artifactId>okta-aws-cli</artifactId>
-    <version>1.0.9-SNAPSHOT</version>
+    <version>1.0.9</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
