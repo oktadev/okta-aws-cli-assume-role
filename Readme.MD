@@ -57,7 +57,7 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
 
 ### Docker
 
-1. Copy `config.properties` to `~/.okta/config.properties` and set **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
+1. Create `~/.okta/config.properties` and set **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
    
    ```properties
    OKTA_ORG=acmecorp.oktapreview.com
@@ -77,7 +77,7 @@ Create a `.okta` directory in your home directory. For example, `~/.okta`.
 Download the latest release JAR and put it in `.okta`:
 https://github.com/oktadeveloper/okta-aws-cli-assume-role/releases
 
-Copy `config.properties` to `~/.okta/config.properties` and set
+Create `~/.okta/config.properties` and set
 **OKTA_ORG** and **OKTA_AWS_APP_URL** appropriately. For example,
 
 ```properties
@@ -132,16 +132,8 @@ Use ```git clone https://github.com/oktadeveloper/okta-aws-cli-assume-role.git``
 
 ```bash
 mvn package
-cp target/okta-aws-cli-*.jar out/oktaawscli.jar
+cp target/okta-aws-cli-*.jar ~/.okta/okta-aws-cli.jar
 ```
-
-### Opening the project with IntelliJ Idea
-
-- Open the IntelliJ Idea IDE and browse to the ```okta-aws-cli-assume-role``` folder you have cloned from GitHub inside the ```Projects``` folder.
-- Go to ```File => Project Structure``` and in the Libraries menu, fix the Java references that don't match your local setup.
-- Go to ```Build => Make Project``` in order to compile the project.
-- The project also builds the JAR artifact, so if you browse to the ```out``` sub-folder, you will see the ```oktaawscli.jar``` JAR artifact.
-- Make sure the ```awscli.command``` file is in the ```out``` sub-folder.
 
 ## Configuring AWS in Okta
 
@@ -168,7 +160,7 @@ Here is the list of parameters that can be environment variables or settings in 
     - Select the ```Applications``` tab and click on your AWS Application 
     - Under the ```General``` menu, scroll down to find the ```App Embed Link``` section 
     - Your link is located under ```EMBED LINK``` 
-  - Replace the example values in ```config.properties``` with your values
+  - Replace the example values in ```~/.okta/config.properties``` with your values
 
 Note: environment variables take precedence over the config file.
 

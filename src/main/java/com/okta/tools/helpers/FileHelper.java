@@ -1,3 +1,18 @@
+/*
+ * Copyright 2019 Okta
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.okta.tools.helpers;
 
 import java.io.*;
@@ -21,9 +36,9 @@ final class FileHelper {
     private static Path getDirectory(String name, Path dirContext) throws IOException {
         Path directory = dirContext.resolve(name);
 
-        if (!Files.exists(directory)) {
+        if (!directory.toFile().exists()) {
             Files.createDirectory(directory);
-        } else if (!Files.isDirectory(directory)) {
+        } else if (!directory.toFile().isDirectory()) {
             throw new IllegalStateException(directory + " exists, but is not a directory. Please rename it!");
         }
 
@@ -101,9 +116,9 @@ final class FileHelper {
     static Path getFilePath(Path directoryPath, String fileName) throws IOException {
         Path filePath = directoryPath.resolve(fileName);
 
-        if (!Files.exists(filePath)) {
+        if (!filePath.toFile().exists()) {
             Files.createFile(filePath);
-        } else if (!Files.isRegularFile(filePath)) {
+        } else if (!filePath.toFile().isFile()) {
             throw new IllegalStateException(filePath + " exists, but is not a regular file. Please rename it!");
         }
 

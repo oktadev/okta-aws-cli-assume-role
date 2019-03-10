@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Okta
+ * Copyright 2019 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class CredentialsTest {
 
     private String existingCredentials = "[default]\n"
-            + Credentials.ACCES_KEY_ID + " = " + "defaultaccesskey" + "\n"
+            + Credentials.ACCESS_KEY_ID + " = " + "defaultaccesskey" + "\n"
             + Credentials.SECRET_ACCESS_KEY + " = " + "defaultsecretkey" + "\n"
             + Credentials.AWS_DEFAULT_REGION + " = " + "defaultregion" + "\n"
             + Credentials.SESSION_TOKEN + " = " + "defaultsessiontoken";
@@ -37,7 +37,7 @@ class CredentialsTest {
     private String awsRegion = "region";
     private String sessionToken = "sessiontoken";
     private String manualRole = "[" + roleName + "]\n"
-            + Credentials.ACCES_KEY_ID + " = " + accessKey + "\n"
+            + Credentials.ACCESS_KEY_ID + " = " + accessKey + "\n"
             + Credentials.SECRET_ACCESS_KEY + " = " + secretKey + "\n"
             + Credentials.AWS_DEFAULT_REGION + " = " + awsRegion + "\n"
             + Credentials.SESSION_TOKEN + " = " + sessionToken;
@@ -89,7 +89,7 @@ class CredentialsTest {
         final String updatedPrefix = "updated_";
         final String expected = existingCredentials + "\n\n"
                 + "[" + roleName + "]\n"
-                + Credentials.ACCES_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
+                + Credentials.ACCESS_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
                 + Credentials.SECRET_ACCESS_KEY + " = " + updatedPrefix + secretKey + "\n"
                 + Credentials.AWS_DEFAULT_REGION + " = " + awsRegion + "\n"
                 + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken;
@@ -114,7 +114,7 @@ class CredentialsTest {
         final String updatedPrefix = "updated_";
         final String expected =
                 "[default]\n"
-                + Credentials.ACCES_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
+                + Credentials.ACCESS_KEY_ID + " = " + updatedPrefix + accessKey + "\n"
                 + Credentials.SECRET_ACCESS_KEY + " = " + updatedPrefix + secretKey + "\n"
                 + Credentials.AWS_DEFAULT_REGION + " = " + awsRegion + "\n"
                 + Credentials.SESSION_TOKEN + " = " + updatedPrefix + sessionToken + "\n\n"

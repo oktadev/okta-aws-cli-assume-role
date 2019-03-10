@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Okta
+ * Copyright 2019 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,8 @@ import java.util.Map;
 public final class AwsSamlRoleUtils {
     private static final String AWS_ROLE_SAML_ATTRIBUTE = "https://aws.amazon.com/SAML/Attributes/Role";
 
+    private AwsSamlRoleUtils() {}
+
     public static Map<String, String> getRoles(String samlResponse) {
         Map<String, String> roles = new LinkedHashMap<>();
         for (String roleIdpPair : getRoleIdpPairs(samlResponse)) {
@@ -54,7 +56,7 @@ public final class AwsSamlRoleUtils {
             Assertion assertion = SamlResponseUtils.getAssertion(samlResponse);
             return AssertionUtils.getAttributeValues(assertion, AWS_ROLE_SAML_ATTRIBUTE);
         } catch (ParserConfigurationException | UnmarshallingException | SAXException | IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 

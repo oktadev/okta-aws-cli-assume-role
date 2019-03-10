@@ -1,12 +1,5 @@
-package com.okta.tools;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 /*
- * Copyright 2017 Okta
+ * Copyright 2019 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +13,12 @@ import java.util.Map;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.okta.tools;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class WithOkta {
     public static void main(String[] args) throws Exception {
@@ -35,6 +34,7 @@ public class WithOkta {
             args = removeProfileArguments(args);
         }
         awsProcessBuilder.command(args);
+        System.out.println(awsProcessBuilder.command());
         Process awsSubProcess = awsProcessBuilder.start();
         int exitCode = awsSubProcess.waitFor();
         System.exit(exitCode);

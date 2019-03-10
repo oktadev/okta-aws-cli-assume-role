@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2018 Okta
+# Copyright 2019 Okta
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -100,6 +100,9 @@ if ! grep '^#OktaAWSCLI' "${bash_functions}" &>/dev/null; then
 function okta-aws {
     withokta "aws --profile $1" $@
 }
+function okta-aws {
+    withokta "aws --profile $1" $@
+}
 function okta-sls {
     withokta "sls --stage $1" $@
 }
@@ -136,6 +139,10 @@ command="$1"
 profile=$2
 shift;
 shift;
+if [ "$3" == "logout" ]
+then
+    command="logout"
+fi
 env OKTA_PROFILE=$profile java \
     -Djava.util.logging.config.file=~/.okta/logging.properties \
     -classpath ~/.okta/okta-aws-cli.jar \
@@ -163,9 +170,7 @@ chmod +x "${PREFIX}/bin/okta-listroles"
 # awscli
 cat <<'EOF' >"${PREFIX}/bin/awscli"
 #!/bin/bash
-java -Djava.util.logging.config.file=~/.okta/logging.properties \
-     -classpath ~/.okta/okta-aws-cli.jar \
-     com.okta.tools.awscli $@
+withokta aws default $@
 EOF
 chmod +x "${PREFIX}/bin/awscli"
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Okta
+ * Copyright 2019 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import org.opensaml.core.xml.io.UnmarshallingException;
 import org.opensaml.saml.saml2.core.Assertion;
 import org.opensaml.saml.saml2.core.Response;
 import org.opensaml.saml.saml2.core.impl.ResponseUnmarshaller;
-import org.opensaml.xmlsec.config.JavaCryptoValidationInitializer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
@@ -35,12 +34,13 @@ import java.io.IOException;
 import java.util.Base64;
 
 final class SamlResponseUtils {
+    private SamlResponseUtils() {}
+
     static {
         try {
-            new JavaCryptoValidationInitializer().init();
             InitializationService.initialize();
         } catch (InitializationException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 
@@ -78,11 +78,11 @@ final class SamlResponseUtils {
 
     private static Assertion getAssertion(Response response) {
         if (!response.getEncryptedAssertions().isEmpty())
-            throw new RuntimeException("Encrypted assertions are not supported");
+            throw new IllegalStateException("Encrypted assertions are not supported");
         else if (response.getAssertions().isEmpty())
-            throw new RuntimeException("No assertions in SAML response");
+            throw new IllegalStateException("No assertions in SAML response");
         else if (response.getAssertions().size() > 1)
-            throw new RuntimeException("More than one assertion in SAML response");
+            throw new IllegalStateException("More than one assertion in SAML response");
         else
             return response.getAssertions().get(0);
     }

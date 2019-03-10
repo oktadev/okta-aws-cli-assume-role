@@ -26,5 +26,5 @@ public interface OktaFactorSelector {
      * @return A {@link JSONObject} representing the selected factor.
      * @throws JSONException if a network or protocol error occurs
      */
-    JSONObject selectFactor(JSONObject primaryAuthResponse) throws JSONException;
+    JSONObject selectFactor(JSONObject primaryAuthResponse);
 }

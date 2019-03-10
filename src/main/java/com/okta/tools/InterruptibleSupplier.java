@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.okta.tools.models;
+package com.okta.tools;
 
-import org.apache.http.StatusLine;
-
-public class AuthResult {
-    public final StatusLine statusLine;
-    public final String responseContent;
-
-    public AuthResult(StatusLine statusLine, String responseContent) {
-        this.statusLine = statusLine;
-        this.responseContent = responseContent;
-    }
+public interface InterruptibleSupplier<T> {
+    T get() throws InterruptedException;
 }

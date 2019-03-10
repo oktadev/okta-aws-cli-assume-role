@@ -18,7 +18,6 @@ package com.okta.tools.authentication;
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.helpers.MenuHelper;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -26,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class OktaFactorSelectorImpl implements OktaFactorSelector {
+    public static final String FACTOR_TYPE = "factorType";
     private final OktaAwsCliEnvironment environment;
     private final MenuHelper menuHelper;
 
@@ -35,23 +35,26 @@ public class OktaFactorSelectorImpl implements OktaFactorSelector {
     }
 
     @Override
-    public JSONObject selectFactor(JSONObject primaryAuthResponse) throws JSONException {
+    public JSONObject selectFactor(JSONObject primaryAuthResponse) {
         JSONArray factors = primaryAuthResponse.getJSONObject("_embedded").getJSONArray("factors");
 
         List<JSONObject> supportedFactors = getUsableFactors(factors);
-        if (supportedFactors.isEmpty()) {
-            if (factors.length() > 0) {
-                throw new IllegalStateException("None of your factors are supported.");
-            } else {
-                throw new IllegalStateException("You have no factors enrolled.");
-            }
-        }
+        ensureUsableFactors(factors, supportedFactors);
 
+        JSONObject oktaMfaChoice = presentMfaMenu(supportedFactors);
+        if (oktaMfaChoice != null) return oktaMfaChoice;
+
+        // Handles user factor selection
+        int selection = menuHelper.promptForMenuSelection(supportedFactors.size());
+        return supportedFactors.get(selection);
+    }
+
+    private JSONObject presentMfaMenu(List<JSONObject> supportedFactors) {
         if (supportedFactors.size() > 1) {
             if (environment.oktaMfaChoice != null) {
                 for (JSONObject factor : supportedFactors) {
                     String provider = factor.getString("provider");
-                    String factorType = factor.getString("factorType");
+                    String factorType = factor.getString(FACTOR_TYPE);
                     if ((provider + "." + factorType).equals(environment.oktaMfaChoice)) {
                         return factor;
                     }
@@ -61,15 +64,22 @@ public class OktaFactorSelectorImpl implements OktaFactorSelector {
             System.err.println("Factors:");
             for (int i = 0; i < supportedFactors.size(); i++) {
                 JSONObject factor = supportedFactors.get(i);
-                String factorType = factor.getString("factorType");
+                String factorType = factor.getString(FACTOR_TYPE);
                 String factorDescription = getFactorDescription(factorType, factor);
                 System.err.println("[ " + (i + 1) + " ] : " + factorDescription);
             }
         }
+        return null;
+    }
 
-        // Handles user factor selection
-        int selection = menuHelper.promptForMenuSelection(supportedFactors.size());
-        return supportedFactors.get(selection);
+    private void ensureUsableFactors(JSONArray factors, List<JSONObject> supportedFactors) {
+        if (supportedFactors.isEmpty()) {
+            if (factors.length() > 0) {
+                throw new IllegalStateException("None of your factors are supported.");
+            } else {
+                throw new IllegalStateException("You have no factors enrolled.");
+            }
+        }
     }
 
     /**
@@ -84,7 +94,7 @@ public class OktaFactorSelectorImpl implements OktaFactorSelector {
         for (int i = 0; i < factors.length(); i++) {
             JSONObject factor = factors.getJSONObject(i);
 
-            String factorType = factor.getString("factorType");
+            String factorType = factor.getString(FACTOR_TYPE);
             if (!Arrays.asList(
                     "web", // Factors that only work on the web cannot be verified via the CLI
                     "call", // Call factor support isn't implemented yet

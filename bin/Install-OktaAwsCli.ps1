@@ -1,5 +1,5 @@
 #
-# Copyright 2018 Okta
+# Copyright 2019 Okta
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ function Invoke-Java {
 }
 
 function Invoke-Okta {
-    Param([string]$Profile)
+    Param([string]$Profile = "default")
     $args[0] = (Get-Command $args[0]).Name
     $OriginalOKTA_PROFILE = $env:OKTA_PROFILE
     try {
@@ -115,6 +115,7 @@ function Invoke-OktaAws {
     Invoke-Okta -Profile $Profile aws --profile $Profile @args
 }
 New-Alias -Name okta-aws -value Invoke-OktaAws
+New-Alias -Name awscli -value Invoke-OktaAws
 
 function Invoke-OktaSls {
     Param([string]$Profile)

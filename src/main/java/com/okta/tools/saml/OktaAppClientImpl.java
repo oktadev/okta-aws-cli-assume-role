@@ -44,10 +44,10 @@ public class OktaAppClientImpl implements OktaAppClient {
              CloseableHttpResponse oktaAwsAppResponse = httpClient.execute(httpget)) {
 
             if (oktaAwsAppResponse.getStatusLine().getStatusCode() >= 500) {
-                throw new RuntimeException("Server error when loading Okta AWS App: "
+                throw new IllegalStateException("Server error when loading Okta AWS App: "
                         + oktaAwsAppResponse.getStatusLine().getStatusCode());
             } else if (oktaAwsAppResponse.getStatusLine().getStatusCode() >= 400) {
-                throw new RuntimeException("Client error when loading Okta AWS App: "
+                throw new IllegalStateException("Client error when loading Okta AWS App: "
                         + oktaAwsAppResponse.getStatusLine().getStatusCode());
             }
 

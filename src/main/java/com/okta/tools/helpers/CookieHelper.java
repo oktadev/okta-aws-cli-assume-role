@@ -1,3 +1,18 @@
+/*
+ * Copyright 2019 Okta
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.okta.tools.helpers;
 
 import com.okta.tools.OktaAwsCliEnvironment;
@@ -51,7 +66,7 @@ public final class CookieHelper {
             );
         }
 
-        if (!Files.exists(filePath)) {
+        if (!filePath.toFile().exists()) {
             Files.createFile(filePath);
         }
 
@@ -59,8 +74,8 @@ public final class CookieHelper {
     }
 
     public CookieStore loadCookies() throws IOException {
-        Map<String, List<String>> cookieHeaders = loadCookieHeaders();
-        List<String> setCookies = cookieHeaders.getOrDefault(SET_COOKIE_HEADER_NAME, Collections.emptyList());
+        Map<String, List<String>> multiValueCookieHeaders = loadCookieHeaders();
+        List<String> setCookies = multiValueCookieHeaders.getOrDefault(SET_COOKIE_HEADER_NAME, Collections.emptyList());
         CookieStore cookieStore = new BasicCookieStore();
         for (String setCookie : setCookies) {
             Header header = new BasicHeader(SET_COOKIE_HEADER_NAME, setCookie);
@@ -69,7 +84,7 @@ public final class CookieHelper {
                 List<Cookie> cookies = new RFC6265StrictSpec().parse(header, cookieOrigin);
                 cookies.forEach(cookieStore::addCookie);
             } catch (MalformedCookieException e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
         }
         return cookieStore;

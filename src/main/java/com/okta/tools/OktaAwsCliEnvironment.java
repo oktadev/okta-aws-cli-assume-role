@@ -1,12 +1,25 @@
+/*
+ * Copyright 2019 Okta
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.okta.tools;
-
-import java.util.function.Supplier;
 
 public class OktaAwsCliEnvironment {
     public final boolean browserAuth;
     public final String oktaOrg;
     public final String oktaUsername;
-    public final Supplier<String> oktaPassword;
+    public final InterruptibleSupplier<String> oktaPassword;
     public final String oktaCookiesPath;
     public String oktaProfile;
 
@@ -25,7 +38,7 @@ public class OktaAwsCliEnvironment {
     }
 
     public OktaAwsCliEnvironment(boolean browserAuth, String oktaOrg,
-                                 String oktaUsername, Supplier<String> oktaPassword, String oktaCookiesPath,
+                                 String oktaUsername, InterruptibleSupplier<String> oktaPassword, String oktaCookiesPath,
                                  String oktaProfile, String oktaAwsAppUrl, String awsRoleToAssume,
                                  int stsDuration, String awsRegion,
                                  String oktaMfaChoice, boolean oktaEnvMode) {
@@ -42,4 +55,5 @@ public class OktaAwsCliEnvironment {
         this.oktaMfaChoice = oktaMfaChoice;
         this.oktaEnvMode = oktaEnvMode;
     }
+
 }
