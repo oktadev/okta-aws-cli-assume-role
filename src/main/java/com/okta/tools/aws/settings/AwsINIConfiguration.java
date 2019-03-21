@@ -16,37 +16,39 @@
  */
 package com.okta.tools.aws.settings;
 
-import org.apache.commons.configuration2.*;
+import org.apache.commons.configuration2.BaseHierarchicalConfiguration;
+import org.apache.commons.configuration2.FileBasedConfiguration;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.SubnodeConfiguration;
 import org.apache.commons.configuration2.convert.ListDelimiterHandler;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.ex.ConfigurationRuntimeException;
 import org.apache.commons.configuration2.tree.*;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nonnull;
 import java.io.*;
 import java.util.*;
 
 /**
  * <p>Customized copy of INIConfiguration tuned for use with AWS INI-like files.</p>
  * <p>Changes to support indented properties:
- *     <ul>
- *         <li>Right trim lines (original trims left and right)</li>
- *         <li>Right trim keys (original trims left and right)</li>
- *     </ul>
+ * <ul>
+ * <li>Right trim lines (original trims left and right)</li>
+ * <li>Right trim keys (original trims left and right)</li>
+ * </ul>
  * </p>
  */
 public class AwsINIConfiguration extends BaseHierarchicalConfiguration implements
-        FileBasedConfiguration
-{
+        FileBasedConfiguration {
     /**
      * The characters that signal the start of a comment line.
      */
-    protected static final String COMMENT_CHARS = "#;";
+    private static final String COMMENT_CHARS = "#;";
 
     /**
      * The characters used to separate keys from values.
      */
-    protected static final String SEPARATOR_CHARS = "=:";
+    private static final String SEPARATOR_CHARS = "=:";
 
     /**
      * Constant for the line separator.
@@ -66,26 +68,13 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
     /**
      * The separator used when writing an INI file.
      */
-    private String separatorUsedInOutput = " = ";
+    private static final String SEPARATOR_USED_IN_OUTPUT = " = ";
 
     /**
      * Create a new empty INI Configuration.
      */
-    public AwsINIConfiguration()
-    {
+    AwsINIConfiguration() {
         super();
-    }
-
-    /**
-     * Creates a new instance of {@code INIConfiguration} with the
-     * content of the specified {@code HierarchicalConfiguration}.
-     *
-     * @param c the configuration to be copied
-     * @since 2.0
-     */
-    public AwsINIConfiguration(HierarchicalConfiguration<ImmutableNode> c)
-    {
-        super(c);
     }
 
     /**
@@ -95,36 +84,12 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * @return the current separator for writing the INI output
      * @since 2.2
      */
-    public String getSeparatorUsedInOutput()
-    {
+    private String getSeparatorUsedInOutput() {
         beginRead(false);
-        try
-        {
-            return separatorUsedInOutput;
-        }
-        finally
-        {
+        try {
+            return SEPARATOR_USED_IN_OUTPUT;
+        } finally {
             endRead();
-        }
-    }
-
-    /**
-     * Allows setting the key and value separator which is used for the creation
-     * of the resulting INI output
-     *
-     * @param separator String of the new separator for INI output
-     * @since 2.2
-     */
-    public void setSeparatorUsedInOutput(String separator)
-    {
-        beginWrite(false);
-        try
-        {
-            this.separatorUsedInOutput = separator;
-        }
-        finally
-        {
-            endWrite();
         }
     }
 
@@ -132,27 +97,19 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * Save the configuration to the specified writer.
      *
      * @param writer - The writer to save the configuration to.
-     * @throws ConfigurationException If an error occurs while writing the
-     *         configuration
-     * @throws IOException if an I/O error occurs
      */
     @Override
-    public void write(Writer writer) throws ConfigurationException, IOException
-    {
+    public void write(Writer writer) {
         PrintWriter out = new PrintWriter(writer);
         boolean first = true;
         final String separator = getSeparatorUsedInOutput();
 
         beginRead(false);
-        try
-        {
+        try {
             for (ImmutableNode node : getModel().getNodeHandler().getRootNode()
-                    .getChildren())
-            {
-                if (isSectionNode(node))
-                {
-                    if (!first)
-                    {
+                    .getChildren()) {
+                if (isSectionNode(node)) {
+                    if (!first) {
                         out.println();
                     }
                     out.print("[");
@@ -160,23 +117,18 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
                     out.print("]");
                     out.println();
 
-                    for (ImmutableNode child : node.getChildren())
-                    {
+                    for (ImmutableNode child : node.getChildren()) {
                         writeProperty(out, child.getNodeName(),
                                 child.getValue(), separator);
                     }
-                }
-                else
-                {
+                } else {
                     writeProperty(out, node.getNodeName(), node.getValue(), separator);
                 }
                 first = false;
             }
             out.println();
             out.flush();
-        }
-        finally
-        {
+        } finally {
             endRead();
         }
     }
@@ -187,13 +139,10 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * be merged with the current configuration.
      *
      * @param in the reader to read the configuration from.
-     * @throws ConfigurationException If an error occurs while reading the
-     *         configuration
      * @throws IOException if an I/O error occurs
      */
     @Override
-    public void read(Reader in) throws ConfigurationException, IOException
-    {
+    public void read(Reader in) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(in);
         Map<String, ImmutableNode.Builder> sectionBuilders = new LinkedHashMap<>();
         ImmutableNode.Builder rootBuilder = new ImmutableNode.Builder();
@@ -207,17 +156,15 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * Creates a new root node from the builders constructed while reading the
      * configuration file.
      *
-     * @param rootBuilder the builder for the top-level section
+     * @param rootBuilder     the builder for the top-level section
      * @param sectionBuilders a map storing the section builders
      * @return the root node of the newly created hierarchy
      */
     private static ImmutableNode createNewRootNode(
             ImmutableNode.Builder rootBuilder,
-            Map<String, ImmutableNode.Builder> sectionBuilders)
-    {
+            Map<String, ImmutableNode.Builder> sectionBuilders) {
         for (Map.Entry<String, ImmutableNode.Builder> e : sectionBuilders
-                .entrySet())
-        {
+                .entrySet()) {
             rootBuilder.addChild(e.getValue().name(e.getKey()).create());
         }
         return rootBuilder.create();
@@ -228,60 +175,59 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * structure of builders for constructing the {@code ImmutableNode} objects
      * representing the data.
      *
-     * @param in the reader
-     * @param rootBuilder the builder for the top-level section
+     * @param in              the reader
+     * @param rootBuilder     the builder for the top-level section
      * @param sectionBuilders a map storing the section builders
      * @throws IOException if an I/O error occurs
      */
     private void createNodeBuilders(BufferedReader in,
                                     ImmutableNode.Builder rootBuilder,
                                     Map<String, ImmutableNode.Builder> sectionBuilders)
-            throws IOException
-    {
+            throws IOException {
         ImmutableNode.Builder sectionBuilder = rootBuilder;
         String line = in.readLine();
-        while (line != null)
-        {
+        while (line != null) {
             line = StringUtils.stripEnd(line, null);
-            if (!isCommentLine(line))
-            {
-                if (isSectionLine(line))
-                {
-                    String section = line.substring(1, line.length() - 1);
-                    sectionBuilder = sectionBuilders.get(section);
-                    if (sectionBuilder == null)
-                    {
-                        sectionBuilder = new ImmutableNode.Builder();
-                        sectionBuilders.put(section, sectionBuilder);
-                    }
-                }
-
-                else
-                {
-                    String key;
-                    String value = "";
-                    int index = findSeparator(line);
-                    if (index >= 0)
-                    {
-                        key = line.substring(0, index);
-                        value = parseValue(line.substring(index + 1), in);
-                    }
-                    else
-                    {
-                        key = line;
-                    }
-                    key = StringUtils.stripEnd(key, null);
-                    if (key.length() < 1)
-                    {
-                        // use space for properties with no key
-                        key = " ";
-                    }
-                    createValueNodes(sectionBuilder, key, value);
-                }
-            }
+            sectionBuilder = createBuildersForLine(in, sectionBuilders, sectionBuilder, line);
 
             line = in.readLine();
         }
+    }
+
+    private ImmutableNode.Builder createBuildersForLine(BufferedReader in, Map<String, ImmutableNode.Builder> sectionBuilders, ImmutableNode.Builder sectionBuilder, @Nonnull String line) throws IOException {
+        if (!isCommentLine(line)) {
+            if (isSectionLine(line)) {
+                sectionBuilder = createSectionBuilder(sectionBuilders, line);
+            } else {
+                createValueBuilder(in, sectionBuilder, line);
+            }
+        }
+        return sectionBuilder;
+    }
+
+    private void createValueBuilder(BufferedReader in, ImmutableNode.Builder sectionBuilder, String line) throws IOException {
+        String key;
+        String value = "";
+        int index = findSeparator(line);
+        if (index >= 0) {
+            key = line.substring(0, index);
+            value = parseValue(line.substring(index + 1), in);
+        } else {
+            key = line;
+        }
+        key = StringUtils.stripEnd(key, null);
+        if (key.length() < 1) {
+            // use space for properties with no key
+            key = " ";
+        }
+        createValueNodes(sectionBuilder, key, value);
+    }
+
+    private ImmutableNode.Builder createSectionBuilder(Map<String, ImmutableNode.Builder> sectionBuilders, String line) {
+        ImmutableNode.Builder sectionBuilder;
+        String section = line.substring(1, line.length() - 1);
+        sectionBuilder = sectionBuilders.computeIfAbsent(section, x -> new ImmutableNode.Builder());
+        return sectionBuilder;
     }
 
     /**
@@ -290,17 +236,15 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * a node is created. Otherwise only a single node is added to the section.
      *
      * @param sectionBuilder the section builder for adding new nodes
-     * @param key the key
-     * @param value the value string
+     * @param key            the key
+     * @param value          the value string
      */
     private void createValueNodes(ImmutableNode.Builder sectionBuilder,
-                                  String key, String value)
-    {
+                                  String key, String value) {
         Collection<String> values =
                 getListDelimiterHandler().split(value, false);
 
-        for (String v : values)
-        {
+        for (String v : values) {
             sectionBuilder.addChild(new ImmutableNode.Builder().name(key)
                     .value(v).create());
         }
@@ -309,12 +253,11 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
     /**
      * Writes data about a property into the given stream.
      *
-     * @param out the output stream
-     * @param key the key
+     * @param out   the output stream
+     * @param key   the key
      * @param value the value
      */
-    private void writeProperty(PrintWriter out, String key, Object value, String separator)
-    {
+    private void writeProperty(PrintWriter out, String key, Object value, String separator) {
         out.print(key);
         out.print(separator);
         out.print(escapeValue(value.toString()));
@@ -338,99 +281,113 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * C:\\Windows;C:\\Windows\\system32
      * </pre>
      *
-     * @param val the value to be parsed
+     * @param val    the value to be parsed
      * @param reader the reader (needed if multiple lines have to be read)
      * @throws IOException if an IO error occurs
      */
-    private static String parseValue(String val, BufferedReader reader) throws IOException
-    {
+    private static String parseValue(String val, BufferedReader reader) throws IOException {
         StringBuilder propertyValue = new StringBuilder();
-        boolean lineContinues;
+        LoopState loopState = new LoopState();
+        loopState.lineContinues = false;
         String value = val.trim();
 
-        do
-        {
-            boolean quoted = value.startsWith("\"") || value.startsWith("'");
-            boolean stop = false;
-            boolean escape = false;
-
-            char quote = quoted ? value.charAt(0) : 0;
-
-            int i = quoted ? 1 : 0;
-
-            StringBuilder result = new StringBuilder();
-            char lastChar = 0;
-            while (i < value.length() && !stop)
-            {
-                char c = value.charAt(i);
-
-                if (quoted)
-                {
-                    if ('\\' == c && !escape)
-                    {
-                        escape = true;
-                    }
-                    else if (!escape && quote == c)
-                    {
-                        stop = true;
-                    }
-                    else if (escape && quote == c)
-                    {
-                        escape = false;
-                        result.append(c);
-                    }
-                    else
-                    {
-                        if (escape)
-                        {
-                            escape = false;
-                            result.append('\\');
-                        }
-
-                        result.append(c);
-                    }
-                }
-                else
-                {
-                    if (isCommentChar(c) && Character.isWhitespace(lastChar))
-                    {
-                        stop = true;
-                    }
-                    else
-                    {
-                        result.append(c);
-                    }
-                }
-
-                i++;
-                lastChar = c;
-            }
-
-            String v = result.toString();
-            if (!quoted)
-            {
-                v = v.trim();
-                lineContinues = lineContinues(v);
-                if (lineContinues)
-                {
-                    // remove trailing "\"
-                    v = v.substring(0, v.length() - 1).trim();
-                }
-            }
-            else
-            {
-                lineContinues = lineContinues(value, i);
-            }
-            propertyValue.append(v);
-
-            if (lineContinues)
-            {
-                propertyValue.append(LINE_SEPARATOR);
-                value = reader.readLine();
-            }
-        } while (lineContinues && value != null);
+        do {
+            value = parseLine(reader, propertyValue, loopState, value);
+        } while (loopState.lineContinues && value != null);
 
         return propertyValue.toString();
+    }
+
+    private static String parseLine(BufferedReader reader, StringBuilder propertyValue, LoopState loopState, String value) throws IOException {
+        loopState.quoted = value.startsWith("\"") || value.startsWith("'");
+        loopState.stop = false;
+        loopState.escape = false;
+
+        char quote = loopState.quoted ? value.charAt(0) : 0;
+
+        int i = loopState.quoted ? 1 : 0;
+
+        StringBuilder result = new StringBuilder();
+        char lastChar = 0;
+        i = collectValue(loopState, value, quote, i, result, lastChar);
+
+        String v = result.toString();
+        v = checkForLineContinuation(loopState, value, i, v);
+        propertyValue.append(v);
+
+        value = handleLineContinuation(reader, propertyValue, loopState, value);
+        return value;
+    }
+
+    private static String handleLineContinuation(BufferedReader reader, StringBuilder propertyValue, LoopState loopState, String value) throws IOException {
+        if (loopState.lineContinues) {
+            propertyValue.append(LINE_SEPARATOR);
+            value = reader.readLine();
+        }
+        return value;
+    }
+
+    private static String checkForLineContinuation(LoopState loopState, String value, int i, String v) {
+        if (!loopState.quoted) {
+            v = v.trim();
+            loopState.lineContinues = lineContinues(v);
+            if (loopState.lineContinues) {
+                // remove trailing "\"
+                v = v.substring(0, v.length() - 1).trim();
+            }
+        } else {
+            loopState.lineContinues = lineContinues(value, i);
+        }
+        return v;
+    }
+
+    private static int collectValue(LoopState loopState, String value, char quote, int i, StringBuilder result, char lastChar) {
+        while (i < value.length() && !loopState.stop) {
+            char c = value.charAt(i);
+
+            if (loopState.quoted) {
+                parseQuoted(loopState, quote, result, c);
+            } else {
+                parseUnquoted(loopState, result, lastChar, c);
+            }
+
+            i++;
+            lastChar = c;
+        }
+        return i;
+    }
+
+    private static void parseUnquoted(LoopState loopState, StringBuilder result, char lastChar, char c) {
+        if (isCommentChar(c) && Character.isWhitespace(lastChar)) {
+            loopState.stop = true;
+        } else {
+            result.append(c);
+        }
+    }
+
+    private static void parseQuoted(LoopState loopState, char quote, StringBuilder result, char c) {
+        if ('\\' == c && !loopState.escape) {
+            loopState.escape = true;
+        } else if (!loopState.escape && quote == c) {
+            loopState.stop = true;
+        } else if (loopState.escape && quote == c) {
+            loopState.escape = false;
+            result.append(c);
+        } else {
+            if (loopState.escape) {
+                loopState.escape = false;
+                result.append('\\');
+            }
+
+            result.append(c);
+        }
+    }
+
+    private static final class LoopState {
+        boolean lineContinues;
+        boolean quoted;
+        boolean stop;
+        boolean escape;
     }
 
     /**
@@ -439,8 +396,7 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * @param line the string to check
      * @return a flag whether this line continues
      */
-    private static boolean lineContinues(String line)
-    {
+    private static boolean lineContinues(String line) {
         String s = line.trim();
         return s.equals(LINE_CONT)
                 || (s.length() > 2 && s.endsWith(LINE_CONT) && Character
@@ -454,22 +410,17 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * marker can be found at the end.
      *
      * @param line the line to check
-     * @param pos the start position
+     * @param pos  the start position
      * @return a flag whether this line continues
      */
-    private static boolean lineContinues(String line, int pos)
-    {
+    private static boolean lineContinues(String line, int pos) {
         String s;
 
-        if (pos >= line.length())
-        {
+        if (pos >= line.length()) {
             s = line;
-        }
-        else
-        {
+        } else {
             int end = pos;
-            while (end < line.length() && !isCommentChar(line.charAt(end)))
-            {
+            while (end < line.length() && !isCommentChar(line.charAt(end))) {
                 end++;
             }
             s = line.substring(pos, end);
@@ -484,8 +435,7 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * @param c the character
      * @return a flag whether this character starts a comment
      */
-    private static boolean isCommentChar(char c)
-    {
+    private static boolean isCommentChar(char c) {
         return COMMENT_CHARS.indexOf(c) >= 0;
     }
 
@@ -499,13 +449,11 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * @param line the line to be checked
      * @return the index of the separator character or -1 if none is found
      */
-    private static int findSeparator(String line)
-    {
+    private static int findSeparator(String line) {
         int index =
                 findSeparatorBeforeQuote(line,
                         findFirstOccurrence(line, QUOTE_CHARACTERS));
-        if (index < 0)
-        {
+        if (index < 0) {
             index = findFirstOccurrence(line, SEPARATOR_CHARS);
         }
         return index;
@@ -515,25 +463,19 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * Checks for the occurrence of the specified separators in the given line.
      * The index of the first separator is returned.
      *
-     * @param line the line to be investigated
+     * @param line       the line to be investigated
      * @param separators a string with the separator characters to look for
      * @return the lowest index of a separator character or -1 if no separator
-     *         is found
+     * is found
      */
-    private static int findFirstOccurrence(String line, String separators)
-    {
+    private static int findFirstOccurrence(String line, String separators) {
         int index = -1;
 
-        for (int i = 0; i < separators.length(); i++)
-        {
+        for (int i = 0; i < separators.length(); i++) {
             char sep = separators.charAt(i);
             int pos = line.indexOf(sep);
-            if (pos >= 0)
-            {
-                if (index < 0 || pos < index)
-                {
-                    index = pos;
-                }
+            if (pos >= 0 && (index < 0 || pos < index)) {
+                index = pos;
             }
         }
 
@@ -546,21 +488,18 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * separator, it is considered the "real" separator in this line - even if
      * there are other separators before.
      *
-     * @param line the line to be investigated
+     * @param line       the line to be investigated
      * @param quoteIndex the index of the quote character
      * @return the index of the separator before the quote or &lt; 0 if there is
-     *         none
+     * none
      */
-    private static int findSeparatorBeforeQuote(String line, int quoteIndex)
-    {
+    private static int findSeparatorBeforeQuote(String line, int quoteIndex) {
         int index = quoteIndex - 1;
-        while (index >= 0 && Character.isWhitespace(line.charAt(index)))
-        {
+        while (index >= 0 && Character.isWhitespace(line.charAt(index))) {
             index--;
         }
 
-        if (index >= 0 && SEPARATOR_CHARS.indexOf(line.charAt(index)) < 0)
-        {
+        if (index >= 0 && SEPARATOR_CHARS.indexOf(line.charAt(index)) < 0) {
             index = -1;
         }
 
@@ -574,8 +513,7 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      *
      * @param value the string to be escaped
      */
-    private String escapeValue(String value)
-    {
+    private String escapeValue(String value) {
         return String.valueOf(getListDelimiterHandler().escape(
                 escapeComments(value), ListDelimiterHandler.NOOP_TRANSFORMER));
     }
@@ -586,25 +524,19 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * @param value the value to be escaped
      * @return the value with comment characters escaped
      */
-    private static String escapeComments(String value)
-    {
+    private static String escapeComments(String value) {
         boolean quoted = false;
 
-        for (int i = 0; i < COMMENT_CHARS.length() && !quoted; i++)
-        {
+        for (int i = 0; i < COMMENT_CHARS.length() && !quoted; i++) {
             char c = COMMENT_CHARS.charAt(i);
-            if (value.indexOf(c) != -1)
-            {
+            if (value.indexOf(c) != -1) {
                 quoted = true;
             }
         }
 
-        if (quoted)
-        {
+        if (quoted) {
             return '"' + value.replaceAll("\"", "\\\\\\\"") + '"';
-        }
-        else
-        {
+        } else {
             return value;
         }
     }
@@ -614,12 +546,10 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      *
      * @param line The line to check.
      * @return true if the line is empty or starts with one of the comment
-     *         characters
+     * characters
      */
-    protected boolean isCommentLine(String line)
-    {
-        if (line == null)
-        {
+    private boolean isCommentLine(String line) {
+        if (line == null) {
             return false;
         }
         // blank lines are also treated as comment lines
@@ -632,10 +562,8 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * @param line The line to check.
      * @return true if the line contains a section
      */
-    protected boolean isSectionLine(String line)
-    {
-        if (line == null)
-        {
+    private boolean isSectionLine(String line) {
+        if (line == null) {
             return false;
         }
         return line.startsWith("[") && line.endsWith("]");
@@ -647,35 +575,26 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      *
      * @return a set containing the sections.
      */
-    public Set<String> getSections()
-    {
+    Set<String> getSections() {
         Set<String> sections = new LinkedHashSet<>();
         boolean globalSection = false;
         boolean inSection = false;
 
         beginRead(false);
-        try
-        {
+        try {
             for (ImmutableNode node : getModel().getNodeHandler().getRootNode()
-                    .getChildren())
-            {
-                if (isSectionNode(node))
-                {
+                    .getChildren()) {
+                if (isSectionNode(node)) {
                     inSection = true;
                     sections.add(node.getNodeName());
-                }
-                else
-                {
-                    if (!inSection && !globalSection)
-                    {
+                } else {
+                    if (!inSection && !globalSection) {
                         globalSection = true;
                         sections.add(null);
                     }
                 }
             }
-        }
-        finally
-        {
+        } finally {
             endRead();
         }
 
@@ -704,25 +623,17 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * </ul>
      *
      * @param name the name of the section in question; <b>null</b> represents
-     *        the global section
+     *             the global section
      * @return a configuration containing only the properties of the specified
-     *         section
+     * section
      */
-    public SubnodeConfiguration getSection(String name)
-    {
-        if (name == null)
-        {
+    SubnodeConfiguration getSection(String name) {
+        if (name == null) {
             return getGlobalSection();
-        }
-
-        else
-        {
-            try
-            {
+        } else {
+            try {
                 return (SubnodeConfiguration) configurationAt(name, true);
-            }
-            catch (ConfigurationRuntimeException iex)
-            {
+            } catch (ConfigurationRuntimeException iex) {
                 // the passed in key does not map to exactly one node
                 // obtain the node for the section, create it on demand
                 InMemoryNodeModel parentModel = getSubConfigurationParentModel();
@@ -738,8 +649,7 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      *
      * @return the sub configuration for the global section
      */
-    private SubnodeConfiguration getGlobalSection()
-    {
+    private SubnodeConfiguration getGlobalSection() {
         InMemoryNodeModel parentModel = getSubConfigurationParentModel();
         NodeSelector selector = new NodeSelector(null); // selects parent
         parentModel.trackNode(selector, this);
@@ -756,8 +666,7 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * @param node the node in question
      * @return a flag whether this node represents a section
      */
-    private static boolean isSectionNode(ImmutableNode node)
-    {
+    private static boolean isSectionNode(ImmutableNode node) {
         return node.getValue() == null;
     }
 
@@ -768,45 +677,38 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
      * by this model applies a filter on the children of the root node so that
      * only nodes are visible that are no sub sections.
      */
-    private static class GlobalSectionNodeModel extends TrackedNodeModel
-    {
+    private static class GlobalSectionNodeModel extends TrackedNodeModel {
         /**
          * Creates a new instance of {@code GlobalSectionNodeModel} and
          * initializes it with the given underlying model.
          *
          * @param modelSupport the underlying {@code InMemoryNodeModel}
-         * @param selector the {@code NodeSelector}
+         * @param selector     the {@code NodeSelector}
          */
-        public GlobalSectionNodeModel(InMemoryNodeModelSupport modelSupport,
-                                      NodeSelector selector)
-        {
+        GlobalSectionNodeModel(InMemoryNodeModelSupport modelSupport,
+                               NodeSelector selector) {
             super(modelSupport, selector, true);
         }
 
         @Override
-        public NodeHandler<ImmutableNode> getNodeHandler()
-        {
-            return new NodeHandlerDecorator<ImmutableNode>()
-            {
+        public NodeHandler<ImmutableNode> getNodeHandler() {
+            return new NodeHandlerDecorator<ImmutableNode>() {
                 @Override
-                public List<ImmutableNode> getChildren(ImmutableNode node)
-                {
+                public List<ImmutableNode> getChildren(ImmutableNode node) {
                     List<ImmutableNode> children = super.getChildren(node);
                     return filterChildrenOfGlobalSection(node, children);
                 }
 
                 @Override
                 public List<ImmutableNode> getChildren(ImmutableNode node,
-                                                       String name)
-                {
+                                                       String name) {
                     List<ImmutableNode> children =
                             super.getChildren(node, name);
                     return filterChildrenOfGlobalSection(node, children);
                 }
 
                 @Override
-                public int getChildrenCount(ImmutableNode node, String name)
-                {
+                public int getChildrenCount(ImmutableNode node, String name) {
                     List<ImmutableNode> children =
                             (name != null) ? super.getChildren(node, name)
                                     : super.getChildren(node);
@@ -814,8 +716,7 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
                 }
 
                 @Override
-                public ImmutableNode getChild(ImmutableNode node, int index)
-                {
+                public ImmutableNode getChild(ImmutableNode node, int index) {
                     List<ImmutableNode> children = super.getChildren(node);
                     return filterChildrenOfGlobalSection(node, children).get(
                             index);
@@ -823,16 +724,14 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
 
                 @Override
                 public int indexOfChild(ImmutableNode parent,
-                                        ImmutableNode child)
-                {
+                                        ImmutableNode child) {
                     List<ImmutableNode> children = super.getChildren(parent);
                     return filterChildrenOfGlobalSection(parent, children)
                             .indexOf(child);
                 }
 
                 @Override
-                protected NodeHandler<ImmutableNode> getDecoratedNodeHandler()
-                {
+                protected NodeHandler<ImmutableNode> getDecoratedNodeHandler() {
                     return AwsINIConfiguration.GlobalSectionNodeModel.super.getNodeHandler();
                 }
 
@@ -847,23 +746,17 @@ public class AwsINIConfiguration extends BaseHierarchicalConfiguration implement
                  * @return a list with the filtered children
                  */
                 private List<ImmutableNode> filterChildrenOfGlobalSection(
-                        ImmutableNode node, List<ImmutableNode> children)
-                {
+                        ImmutableNode node, List<ImmutableNode> children) {
                     List<ImmutableNode> filteredList;
-                    if (node == getRootNode())
-                    {
+                    if (node == getRootNode()) {
                         filteredList =
                                 new ArrayList<>(children.size());
-                        for (ImmutableNode child : children)
-                        {
-                            if (!isSectionNode(child))
-                            {
+                        for (ImmutableNode child : children) {
+                            if (!isSectionNode(child)) {
                                 filteredList.add(child);
                             }
                         }
-                    }
-                    else
-                    {
+                    } else {
                         filteredList = children;
                     }
 

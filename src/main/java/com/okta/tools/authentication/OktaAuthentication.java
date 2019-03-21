@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Okta
+ * Copyright 2019 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,14 @@ package com.okta.tools.authentication;
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.models.AuthResult;
 import org.apache.http.HttpStatus;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 public final class OktaAuthentication {
-    private static final Logger logger = LogManager.getLogger(OktaAuthentication.class);
+    private static final Logger logger = Logger.getLogger(OktaAuthentication.class.getName());
 
     private final OktaAwsCliEnvironment environment;
     private final OktaMFA oktaMFA;
@@ -46,7 +45,7 @@ public final class OktaAuthentication {
      * @return The session token
      * @throws IOException If an error occurs during the api call or during the processing of the result.
      */
-    public String getOktaSessionToken() throws IOException {
+    public String getOktaSessionToken() throws IOException, InterruptedException {
         // Returns an Okta Authentication Transaction object.
         // See: https://developer.okta.com/docs/api/resources/authn#authentication-transaction-model
         JSONObject primaryAuthResult = new JSONObject(getPrimaryAuthResponse(environment.oktaOrg));
@@ -123,7 +122,7 @@ public final class OktaAuthentication {
      * @return The response of the authentication
      * @throws IOException If an error occurs during the api call or during the processing of the result.
      */
-    private String getPrimaryAuthResponse(String oktaOrg) throws IOException {
+    private String getPrimaryAuthResponse(String oktaOrg) throws IOException, InterruptedException {
         while (true) {
             AuthResult response = oktaAuthnClient.primaryAuthentication(getUsername(), getPassword(), oktaOrg);
             int requestStatus = response.statusLine.getStatusCode();
@@ -145,12 +144,12 @@ public final class OktaAuthentication {
      */
     private void primaryAuthFailureHandler(int responseStatus, String oktaOrg) {
         if (responseStatus == 400 || responseStatus == 401) {
-            logger.error("Invalid username or password.");
+            logger.severe("Invalid username or password.");
         } else if (responseStatus == 500) {
-            logger.error("\nUnable to establish connection with: " + oktaOrg +
-                    " \nPlease verify that your Okta org url is correct and try again");
+            logger.severe(() -> "Unable to establish connection with: " + oktaOrg +
+                    "\nPlease verify that your Okta org url is correct and try again");
         } else if (responseStatus != 200) {
-            throw new RuntimeException("Failed : HTTP error code : " + responseStatus);
+            throw new IllegalStateException("Failed : HTTP error code : " + responseStatus);
         }
     }
 
@@ -163,7 +162,7 @@ public final class OktaAuthentication {
         }
     }
 
-    private String getPassword() {
+    private String getPassword() throws InterruptedException {
         if (environment.oktaPassword == null) {
             return userConsole.promptForPassword();
         } else {

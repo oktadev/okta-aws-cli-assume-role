@@ -1,8 +1,21 @@
+/*
+ * Copyright 2019 Okta
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.okta.tools;
 
 import org.apache.commons.lang.SystemUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -10,12 +23,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.function.Supplier;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 final class OktaAwsConfig {
 
-    private static final Logger logger = LogManager.getLogger(OktaAwsConfig.class);
+    private static final Logger logger = Logger.getLogger(OktaAwsConfig.class.getName());
 
     private static final String CONFIG_FILENAME = "config.properties";
 
@@ -28,10 +41,10 @@ final class OktaAwsConfig {
         Optional<Path> path = getConfigFile();
         if (path.isPresent()) {
             try (InputStream config = new FileInputStream(path.get().toFile())) {
-                logger.debug("Reading config settings from file: " + path.get().toAbsolutePath().toString());
+                logger.finer(() -> "Reading config settings from file: " + path.get().toAbsolutePath().toString());
                 properties.load(new InputStreamReader(config));
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
         } else {
             try (InputStream config = properties.getClass().getResourceAsStream("/config.properties")) {
@@ -39,10 +52,10 @@ final class OktaAwsConfig {
                     properties.load(new InputStreamReader(config));
                 } else {
                     // Don't fail if no config.properties found in classpath as we will fallback to env variables
-                    logger.debug("No config.properties file found in working directory, ~/.okta, or the class loader");
+                    logger.finer(() -> "No config.properties file found in working directory, ~/.okta, or the class loader");
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
         }
 
@@ -62,12 +75,12 @@ final class OktaAwsConfig {
         );
     }
 
-    private static Supplier<String> deferProgram(String oktaPasswordCommand) {
+    private static InterruptibleSupplier<String> deferProgram(String oktaPasswordCommand) {
         if (oktaPasswordCommand == null) return null;
         return () -> runProgram(oktaPasswordCommand);
     }
 
-    private static String runProgram(String oktaPasswordCommand) {
+    private static String runProgram(String oktaPasswordCommand) throws InterruptedException {
         ProcessBuilder processBuilder = new ProcessBuilder();
         if (SystemUtils.IS_OS_WINDOWS) {
             processBuilder.command("cmd", "/C", oktaPasswordCommand);
@@ -80,7 +93,7 @@ final class OktaAwsConfig {
             int exitCode = passwordCommandProcess.waitFor();
             if (exitCode == 0) return password;
             throw new IllegalStateException("password command failed with exit code " + exitCode);
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             throw new IllegalStateException("password command failed", e);
         }
     }
@@ -95,13 +108,13 @@ final class OktaAwsConfig {
 
     private static Optional<Path> getConfigFile() {
         Path configInWorkingDir = Paths.get(CONFIG_FILENAME);
-        if (Files.isRegularFile(configInWorkingDir)) {
+        if (configInWorkingDir.toFile().isFile()) {
             return Optional.of(configInWorkingDir);
         }
         Path userHome = Paths.get(System.getProperty("user.home"));
         Path oktaDir = userHome.resolve(".okta");
         Path configInOktaDir = oktaDir.resolve(CONFIG_FILENAME);
-        if (Files.isRegularFile(configInOktaDir)) {
+        if (configInOktaDir.toFile().isFile()) {
             return Optional.of(configInOktaDir);
         }
         return Optional.empty();
@@ -110,10 +123,10 @@ final class OktaAwsConfig {
     private static String getEnvOrConfig(Properties properties, String propertyName) {
         String envValue = System.getenv(propertyName);
         if (envValue != null) {
-            logger.debug("Using " + propertyName + "  value from the environment.");
+            logger.finer(() -> "Using " + propertyName + "  value from the environment.");
             return envValue;
         } else {
-            logger.debug("Using " + propertyName + "  value from the config file." );
+            logger.finer(() -> "Using " + propertyName + "  value from the config file." );
             return properties.getProperty(propertyName);
         }
     }

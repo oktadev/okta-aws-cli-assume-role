@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Okta
+ * Copyright 2019 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,8 +58,7 @@ public final class HttpHelper {
 
         @Override
         public Socket createSocket(HttpContext context) throws IOException {
-            Socket socket = HttpHelper.createSocket(context);
-            return socket != null ? socket : PlainConnectionSocketFactory.INSTANCE.createSocket(context);
+            return HttpHelper.createSocket(context, PlainConnectionSocketFactory.INSTANCE::createSocket);
         }
 
         @Override
@@ -75,15 +74,18 @@ public final class HttpHelper {
 
         @Override
         public Socket createSocket(HttpContext context) throws IOException {
-            Socket socket = HttpHelper.createSocket(context);
-            return socket != null ? socket : super.createSocket(context);
+            return HttpHelper.createSocket(context, super::createSocket);
         }
     }
 
-    private static Socket createSocket(HttpContext context) {
+    private interface SocketCreator {
+        Socket createSocket(HttpContext context) throws IOException;
+    }
+
+    private static Socket createSocket(HttpContext context, SocketCreator socketCreator) throws IOException {
         HttpHost httpTargetHost = (HttpHost) context.getAttribute(HttpCoreContext.HTTP_TARGET_HOST);
         URI uri = URI.create(httpTargetHost.toURI());
         Proxy proxy = ProxySelector.getDefault().select(uri).iterator().next();
-        return proxy.type().equals(Proxy.Type.SOCKS) ? new Socket(proxy) : null;
+        return proxy.type().equals(Proxy.Type.SOCKS) ? new Socket(proxy) : socketCreator.createSocket(context);
     }
 }

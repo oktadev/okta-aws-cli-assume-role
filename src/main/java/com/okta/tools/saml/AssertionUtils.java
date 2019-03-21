@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Okta
+ * Copyright 2019 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 final class AssertionUtils {
+    private AssertionUtils() {}
+
     static Collection<String> getAttributeValues(Assertion assertion, String attributeName) {
         return assertion.getAttributeStatements()
                 .stream()
@@ -36,13 +38,9 @@ final class AssertionUtils {
     }
 
     private static String getAttributeValue(XMLObject attributeValue) {
-        return
-                attributeValue == null ?
-                        null :
-                        attributeValue instanceof XSString ?
-                                ((XSString) attributeValue).getValue() :
-                                attributeValue instanceof XSAnyImpl ?
-                                        ((XSAnyImpl) attributeValue).getTextContent() :
-                                        attributeValue.toString();
+        if (attributeValue == null) return null;
+        if (attributeValue instanceof XSString) return ((XSString) attributeValue).getValue();
+        if (attributeValue instanceof XSAnyImpl) return ((XSAnyImpl) attributeValue).getTextContent();
+        return attributeValue.toString();
     }
 }

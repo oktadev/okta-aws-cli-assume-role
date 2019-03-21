@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Okta
+ * Copyright 2019 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 public class OktaSaml {
+    private static final Logger LOGGER = Logger.getLogger(OktaSaml.class.getName());
 
     private final OktaAwsCliEnvironment environment;
     private final OktaAuthentication authentication;
@@ -35,13 +37,9 @@ public class OktaSaml {
         this.oktaAppClient = oktaAppClient;
     }
 
-    public String getSamlResponse() throws IOException {
+    public String getSamlResponse() throws IOException, InterruptedException {
         if (environment.browserAuth) {
-            try {
-                return BrowserAuthentication.login(environment);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            return BrowserAuthentication.login(environment);
         } else {
             try {
                 return getSamlResponseForAwsRefresh();
@@ -73,10 +71,10 @@ public class OktaSaml {
                 Elements errorContent = document.getElementsByClass("error-content");
                 Elements errorHeadline = errorContent.select("h1");
                 if (errorHeadline.hasText()) {
-                    throw new RuntimeException(errorHeadline.text());
+                    throw new IllegalStateException(errorHeadline.text());
                 } else {
-                    System.err.println(document.toString());
-                    throw new RuntimeException("An unhandled error occurred. Please consult the server response above.");
+                    LOGGER.fine(document::toString);
+                    throw new IllegalStateException("An unhandled error occurred. Please consult the server response above.");
                 }
             }
         }

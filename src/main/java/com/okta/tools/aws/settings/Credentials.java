@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Okta
+ * Copyright 2019 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package com.okta.tools.aws.settings;
 
-import com.okta.tools.OktaAwsCliEnvironment;
-
 import java.io.IOException;
 import java.io.Reader;
 
@@ -28,7 +26,7 @@ import java.io.Reader;
 public class Credentials extends Settings {
 
     // Keys used in aws credentials files
-    static final String ACCES_KEY_ID = "aws_access_key_id";
+    static final String ACCESS_KEY_ID = "aws_access_key_id";
     static final String SECRET_ACCESS_KEY = "aws_secret_access_key";
     static final String SESSION_TOKEN = "aws_session_token";
     static final String AWS_DEFAULT_REGION = "region";
@@ -54,9 +52,15 @@ public class Credentials extends Settings {
      * @param awsSessionToken The session token to use for the profile.
      */
     public void addOrUpdateProfile(String name, String awsAccessKey, String awsSecretKey, String awsRegion, String awsSessionToken) {
-        setProperty(name, ACCES_KEY_ID, awsAccessKey);
+        setProperty(name, ACCESS_KEY_ID, awsAccessKey);
         setProperty(name, SECRET_ACCESS_KEY, awsSecretKey);
         setProperty(name, AWS_DEFAULT_REGION, awsRegion);
         setProperty(name, SESSION_TOKEN, awsSessionToken);
+    }
+
+    public void removeCredentialsFromProfile(String name) {
+        clearProperty(name, ACCESS_KEY_ID);
+        clearProperty(name, SECRET_ACCESS_KEY);
+        clearProperty(name, SESSION_TOKEN);
     }
 }

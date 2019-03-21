@@ -21,24 +21,24 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Logger;
 
 public class OktaAuthnClientImpl implements OktaAuthnClient {
-    private static final Logger logger = LogManager.getLogger(OktaAuthnClientImpl.class);
+    private static final Logger logger = Logger.getLogger(OktaAuthnClientImpl.class.getName());
+    private static final String CONTENT_TYPE_APPLICATION_JSON = "application/json";
 
     @Override
     public AuthResult primaryAuthentication(String username, String password, String oktaOrg) throws IOException {
         // Okta authn API docs: https://developer.okta.com/docs/api/resources/authn#primary-authentication
         HttpPost httpPost = new HttpPost("https://" + oktaOrg + "/api/v1/authn");
 
-        httpPost.addHeader("Accept", "application/json");
-        httpPost.addHeader("Content-Type", "application/json");
+        httpPost.addHeader("Accept", CONTENT_TYPE_APPLICATION_JSON);
+        httpPost.addHeader("Content-Type", CONTENT_TYPE_APPLICATION_JSON);
         httpPost.addHeader("Cache-Control", "no-cache");
 
         JSONObject authnRequest = new JSONObject();
@@ -46,10 +46,10 @@ public class OktaAuthnClientImpl implements OktaAuthnClient {
         authnRequest.put("password", password);
 
         StringEntity entity = new StringEntity(authnRequest.toString(), StandardCharsets.UTF_8);
-        entity.setContentType("application/json");
+        entity.setContentType(CONTENT_TYPE_APPLICATION_JSON);
         httpPost.setEntity(entity);
 
-        logger.debug("Calling okta authn service at " + httpPost.getURI());
+        logger.finer("Calling okta authn service at " + httpPost.getURI());
         try (CloseableHttpClient httpClient = HttpHelper.createClient()) {
             CloseableHttpResponse authnResponse = httpClient.execute(httpPost);
 

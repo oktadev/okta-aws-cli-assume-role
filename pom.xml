@@ -20,20 +20,29 @@
 
     <groupId>com.okta.developer</groupId>
     <artifactId>okta-aws-cli</artifactId>
-    <version>1.0.11-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
+
+    <repositories>
+        <repository>
+            <id>shibboleth-nexus-releases</id>
+            <name>Shibboleth Nexux Releases</name>
+            <url>https://build.shibboleth.net/nexus/content/repositories/releases/</url>
+        </repository>
+    </repositories>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <aws-java-sdk.version>1.11.410</aws-java-sdk.version>
+        <aws-java-sdk.version>1.11.515</aws-java-sdk.version>
         <okta.version>1.2.0</okta.version>
         <json.version>20180813</json.version>
-        <log4j.version>2.11.1</log4j.version>
-        <junit.jupiter.version>5.3.1</junit.jupiter.version>
+        <commons-configuration2.version>2.4</commons-configuration2.version>
+        <httpcomponents-httpclient.version>4.5.5</httpcomponents-httpclient.version>
+        <junit.jupiter.version>5.4.0</junit.jupiter.version>
         <ini4j.version>0.5.4</ini4j.version>
         <jsoup.version>1.11.3</jsoup.version>
-        <opensaml.version>3.3.0</opensaml.version>
-        <slf4j.version>1.7.25</slf4j.version>
-        <openjfx.version>11</openjfx.version>
+        <opensaml.version>3.4.2</opensaml.version>
+        <slf4j.version>1.7.26</slf4j.version>
+        <openjfx.version>11.0.2</openjfx.version>
     </properties>
 
     <dependencies>
@@ -48,24 +57,19 @@
             <version>${aws-java-sdk.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>${commons-configuration2.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${httpcomponents-httpclient.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>${json.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-configuration2</artifactId>
-            <version>2.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>${log4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -103,7 +107,8 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-web</artifactId>
-            <version>11</version>
+            <version>${openjfx.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- Test dependencies -->
@@ -165,7 +170,7 @@
                                         implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.okta.tools.awscli</mainClass>
+                                    <mainClass>com.okta.tools.WithOkta</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>

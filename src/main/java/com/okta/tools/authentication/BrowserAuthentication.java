@@ -1,10 +1,24 @@
+/*
+ * Copyright 2019 Okta
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.okta.tools.authentication;
 
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.helpers.CookieHelper;
 import com.okta.tools.io.SubresourceIntegrityStrippingHack;
 import com.okta.tools.util.NodeListIterable;
-import com.sun.javafx.webkit.WebConsoleListener;
 import javafx.application.Application;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -24,23 +38,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 
 public final class BrowserAuthentication extends Application {
+    private static final Logger LOGGER = Logger.getLogger(BrowserAuthentication.class.getName());
+
     // Trade-off: JavaFX app model makes interacting with UI state challenging
     // Experienced JavaFX devs welcomed to suggest solutions to this
     private static final CountDownLatch USER_AUTH_COMPLETE = new CountDownLatch(1);
 
     // Trade-off: JavaFX app model makes passing parameters to UI challenging
     // Experienced JavaFX devs welcomed to suggest solutions to this
-    private static OktaAwsCliEnvironment ENVIRONMENT;
+    private static OktaAwsCliEnvironment environment;
     private static CookieHelper cookieHelper;
 
     // The value of samlResponse is only valid if USER_AUTH_COMPLETE has counted down to zero
     private static final AtomicReference<String> samlResponse = new AtomicReference<>();
 
     public static String login(OktaAwsCliEnvironment environment) throws InterruptedException {
-        ENVIRONMENT = environment;
-        cookieHelper = new CookieHelper(ENVIRONMENT);
+        BrowserAuthentication.environment = environment;
+        cookieHelper = new CookieHelper(BrowserAuthentication.environment);
         launch();
         USER_AUTH_COMPLETE.await();
         return samlResponse.get();
@@ -59,10 +76,10 @@ public final class BrowserAuthentication extends Application {
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setContent(browser);
 
-        URI uri = URI.create(ENVIRONMENT.oktaAwsAppUrl);
+        URI uri = URI.create(environment.oktaAwsAppUrl);
         initializeCookies(uri);
 
-        SubresourceIntegrityStrippingHack.overrideHttpsProtocolHandler(ENVIRONMENT);
+        SubresourceIntegrityStrippingHack.overrideHttpsProtocolHandler(environment);
         webEngine.getLoadWorker().stateProperty()
                 .addListener((ov, oldState, newState) -> {
                     if (webEngine.getDocument() != null) {
@@ -72,13 +89,9 @@ public final class BrowserAuthentication extends Application {
                 });
 
         webEngine.getLoadWorker().exceptionProperty()
-            .addListener((ov, oldState, newState) -> {
-                System.out.format("exception(%s => %s)\n%s\n", oldState, newState, webEngine.getLoadWorker().getException());
-            });
-
-        WebConsoleListener.setDefaultListener((webView, message, lineNumber, sourceId) -> {
-            System.out.println("WebConsoleListener: " + message + "[" + webEngine.getLocation() + ":" + lineNumber + "]");
-        });
+            .addListener((observable, oldValue, newValue) ->
+                LOGGER.severe(() -> String.format("exception(%s => %s)%n%s%n", oldValue, newValue, webEngine.getLoadWorker().getException()))
+            );
 
         webEngine.load(uri.toASCIIString());
 
@@ -111,12 +124,14 @@ public final class BrowserAuthentication extends Application {
         NodeList formNodes = document.getElementsByTagName("form");
         for (Node form : new NodeListIterable(formNodes)) {
             NamedNodeMap formAttributes = form.getAttributes();
-            if (formAttributes == null) continue;
-            Node formActionAttribute = formAttributes.getNamedItem("action");
-            if (formActionAttribute == null) continue;
-            String formAction = formActionAttribute.getTextContent();
-            if ("https://signin.aws.amazon.com/saml".equals(formAction)) {
-                return form;
+            if (formAttributes != null) {
+                Node formActionAttribute = formAttributes.getNamedItem("action");
+                if (formActionAttribute != null) {
+                    String formAction = formActionAttribute.getTextContent();
+                    if ("https://signin.aws.amazon.com/saml".equals(formAction)) {
+                        return form;
+                    }
+                }
             }
         }
         return null;

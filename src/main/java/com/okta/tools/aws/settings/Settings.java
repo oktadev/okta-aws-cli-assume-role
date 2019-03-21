@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Okta
+ * Copyright 2019 Okta
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.okta.tools.aws.settings;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.IOException;
@@ -31,10 +30,7 @@ import java.util.stream.Collectors;
  */
 public abstract class Settings {
 
-    private final AwsINIConfiguration settings;
-
-    // the name of the aws cli "default" profile
-    static final String DEFAULT_PROFILE_NAME = "default";
+    private final AwsINIConfiguration awsINIConfiguration;
 
     /**
      * Create a Settings object from a given {@link java.io.Reader}. The data given by this {@link java.io.Reader} should
@@ -44,55 +40,50 @@ public abstract class Settings {
      * @throws IOException Thrown when we cannot read or load from the given {@param reader}.
      */
     Settings(Reader reader) throws IOException {
-        settings = new AwsINIConfiguration();
-        try {
-            settings.read(reader);
-        } catch (ConfigurationException e) {
-            throw new IOException(e);
-        }
+        awsINIConfiguration = new AwsINIConfiguration();
+        awsINIConfiguration.read(reader);
     }
 
     /**
      * Save the settings object to a given {@link java.io.Writer}. The caller is responsible for closing {@param writer}.
      *
      * @param writer The writer we use to write the settings to.
-     * @throws IOException Thrown when we cannot write to {@param writer}.
      */
-    public void save(Writer writer) throws IOException {
-        try {
-            settings.write(writer);
-        } catch (ConfigurationException e) {
-            throw new IOException(e);
-        }
+    public void save(Writer writer) {
+        awsINIConfiguration.write(writer);
     }
 
     String getProperty(String section, String key) {
-        return settings.getSection(section).get(String.class, key);
+        return awsINIConfiguration.getSection(section).get(String.class, key);
     }
 
     void setProperty(String section, String key, String value) {
-        settings.getSection(section).setProperty(key, value);
+        awsINIConfiguration.getSection(section).setProperty(key, value);
+    }
+
+    void clearProperty(String section, String key) {
+        awsINIConfiguration.getSection(section).clearProperty(key);
     }
 
     void clearSection(String section) {
-        settings.getSection(section).clear();
+        awsINIConfiguration.getSection(section).clear();
     }
 
     boolean containsProperty(String section, String key) {
-        return settings.getSection(section).containsKey(key);
+        return awsINIConfiguration.getSection(section).containsKey(key);
     }
 
     boolean isEmpty() {
-        return settings.isEmpty();
+        return awsINIConfiguration.isEmpty();
     }
 
     Set<String> getSections() {
-        return settings.getSections();
+        return awsINIConfiguration.getSections();
     }
 
     @VisibleForTesting
     Map<String, Object> sectionToMap(String section) {
-        return settings.getSection(section).getNodeModel().getRootNode().getChildren().stream()
+        return awsINIConfiguration.getSection(section).getNodeModel().getRootNode().getChildren().stream()
                 .collect(Collectors.toMap(ImmutableNode::getNodeName, ImmutableNode::getValue));
     }
 }
