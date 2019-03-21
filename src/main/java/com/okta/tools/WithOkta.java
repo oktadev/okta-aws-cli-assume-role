@@ -19,8 +19,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class WithOkta {
+    private static final Logger logger = Logger.getLogger(WithOkta.class.getName());
+
     public static void main(String[] args) throws Exception {
         if (LogoutHandler.handleLogout(args)) return;
         OktaAwsCliEnvironment environment = OktaAwsConfig.loadEnvironment();
@@ -34,7 +37,7 @@ public class WithOkta {
             args = removeProfileArguments(args);
         }
         awsProcessBuilder.command(args);
-        System.out.println(awsProcessBuilder.command());
+        logger.fine(() -> "AWS CLI command line: " + awsProcessBuilder.command().toString());
         Process awsSubProcess = awsProcessBuilder.start();
         int exitCode = awsSubProcess.waitFor();
         System.exit(exitCode);
