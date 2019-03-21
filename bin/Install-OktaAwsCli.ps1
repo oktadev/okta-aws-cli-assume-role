@@ -102,7 +102,7 @@ function Invoke-Okta {
         $env:OKTA_PROFILE = $OriginalOKTA_PROFILE
     }
 }
-New-Alias -Name withokta -value Get-OktaRoles
+New-Alias -Name withokta -value Invoke-Okta
 New-Alias -Name with-okta -value Invoke-Okta
 
 function Get-OktaRoles {
