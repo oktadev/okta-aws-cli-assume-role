@@ -100,9 +100,6 @@ if ! grep '^#OktaAWSCLI' "${bash_functions}" &>/dev/null; then
 function okta-aws {
     withokta "aws --profile $1" $@
 }
-function okta-aws {
-    withokta "aws --profile $1" $@
-}
 function okta-sls {
     withokta "sls --stage $1" $@
 }
