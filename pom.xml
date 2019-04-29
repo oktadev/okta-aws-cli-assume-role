@@ -124,6 +124,11 @@
             <version>2.22.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>edu.monash</groupId>
+            <artifactId>u2fhost4j</artifactId>
+            <version>0.0.1</version>
+        </dependency>
     </dependencies>
 
     <distributionManagement>
