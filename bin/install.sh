@@ -98,10 +98,10 @@ if ! grep '^#OktaAWSCLI' "${bash_functions}" &>/dev/null; then
     cat <<'EOF' >>"${bash_functions}"
 #OktaAWSCLI
 function okta-aws {
-    withokta "aws --profile $1" $@
+    withokta "aws --profile $1" "$@"
 }
 function okta-sls {
-    withokta "sls --stage $1" $@
+    withokta "sls --stage $1" "$@"
 }
 EOF
 fi
@@ -143,7 +143,7 @@ fi
 env OKTA_PROFILE=$profile java \
     -Djava.util.logging.config.file=~/.okta/logging.properties \
     -classpath ~/.okta/okta-aws-cli.jar \
-    com.okta.tools.WithOkta $command $@
+    com.okta.tools.WithOkta $command "$@"
 EOF
 chmod +x "${PREFIX}/bin/withokta"
 
@@ -167,7 +167,7 @@ chmod +x "${PREFIX}/bin/okta-listroles"
 # awscli
 cat <<'EOF' >"${PREFIX}/bin/awscli"
 #!/bin/bash
-withokta aws default $@
+withokta aws default "$@"
 EOF
 chmod +x "${PREFIX}/bin/awscli"
 
