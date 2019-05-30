@@ -42,7 +42,7 @@
         <jsoup.version>1.11.3</jsoup.version>
         <opensaml.version>3.4.2</opensaml.version>
         <slf4j.version>1.7.26</slf4j.version>
-        <openjfx.version>11.0.2</openjfx.version>
+        <openjfx.version>12.0.1</openjfx.version>
     </properties>
 
     <dependencies>
@@ -104,7 +104,41 @@
             <version>${slf4j.version}</version>
             <scope>runtime</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx</artifactId>
+            <version>${openjfx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-web</artifactId>
+            <version>${openjfx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${openjfx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>${openjfx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${openjfx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-media</artifactId>
+            <version>${openjfx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${openjfx.version}</version>
+        </dependency>
 
         <!-- Test dependencies -->
         <dependency>
@@ -145,8 +179,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -185,7 +219,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.1</version>
+                <version>3.1.2</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -211,7 +245,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.2</version>
                 <configuration>
-                    <mainClass>HelloFX</mainClass>
+                    <mainClass>com.okta.tools.WithOkta</mainClass>
                 </configuration>
             </plugin>
         </plugins>
