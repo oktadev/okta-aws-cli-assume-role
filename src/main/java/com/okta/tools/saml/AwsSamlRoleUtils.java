@@ -46,7 +46,7 @@ public final class AwsSamlRoleUtils {
             String[] parts = roleIdpPair.split(",");
             String principalArn = parts[0];
             String roleArn = parts[1];
-            roles.put(roleArn, principalArn);
+            roles.put(principalArn, roleArn);
         }
         return roles;
     }
