@@ -29,12 +29,15 @@ public class SubresourceIntegrityStrippingHack {
 
     public static void overrideHttpsProtocolHandler(OktaAwsCliEnvironment environment) {
         try {
+            LOGGER.finest("overrideHttpsProtocolHandler do nothing");
+            /*
             URL.setURLStreamHandlerFactory(protocol -> "https".equals(protocol) ?
                     new LoginPageInterceptingProtocolHandler(environment,
                             SubresourceIntegrityStrippingURLConnection::new) :
                     null
             );
             LOGGER.finest("Successfully registered custom protocol handler");
+             */
         } catch (Exception e) {
             LOGGER.warning(() -> {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
