@@ -43,7 +43,7 @@ public class OktaSaml {
         } else {
             try {
                 return getSamlResponseForAwsRefresh();
-            } catch (PromptForReAuthenticationException | PromptForFactorException e) {
+            } catch (PromptForReAuthenticationException | PromptForFactorException | PromptForCredentialsException e) {
                 String oktaSessionToken = authentication.getOktaSessionToken();
                 return getSamlResponseForAws(oktaSessionToken);
             }
@@ -89,6 +89,12 @@ public class OktaSaml {
 
     public static final class PromptForFactorException extends IllegalStateException {
         public PromptForFactorException(String message) {
+            super(message);
+        }
+    }
+
+    public static final class PromptForCredentialsException extends IllegalStateException {
+        public PromptForCredentialsException(String message) {
             super(message);
         }
     }

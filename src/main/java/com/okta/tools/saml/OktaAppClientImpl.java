@@ -51,6 +51,15 @@ public class OktaAppClientImpl implements OktaAppClient {
                         + oktaAwsAppResponse.getStatusLine().getStatusCode());
             }
 
+            // Fix: previous logic was assuming that always was refreshing a previous session and cookies were
+            // in place.
+            // This condition throws an exception to trigger authentication with user credentials if no
+            // cookies from a previous session was present to avoid crash when the tool is installed fresh
+            // and no previous session cookies are present
+            if(cookieStore.getCookies().isEmpty()) {
+                throw new OktaSaml.PromptForCredentialsException("No cookies found, need to create a new okta session");
+            }
+
             cookieHelper.storeCookies(cookieStore);
 
             return Jsoup.parse(
