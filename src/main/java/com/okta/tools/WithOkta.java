@@ -34,7 +34,14 @@ public class WithOkta {
             awsEnvironment.put("AWS_ACCESS_KEY_ID", runResult.accessKeyId);
             awsEnvironment.put("AWS_SECRET_ACCESS_KEY", runResult.secretAccessKey);
             awsEnvironment.put("AWS_SESSION_TOKEN", runResult.sessionToken);
-            args = removeProfileArguments(args);
+        }
+        // Cleanup command line arguments if present
+        args = removeProfileArguments(args);
+
+        if(args.length == 0) {
+            logger.info("No additional command line arguments provided. Hint: okta-aws <aws cli command>");
+            System.exit(0);
+            return;
         }
         awsProcessBuilder.command(args);
         logger.fine(() -> "AWS CLI command line: " + awsProcessBuilder.command().toString());
