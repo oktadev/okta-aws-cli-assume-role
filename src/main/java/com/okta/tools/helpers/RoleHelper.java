@@ -120,7 +120,7 @@ public class RoleHelper {
     public List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {
         Map<String, String> roles = AwsSamlRoleUtils.getRoles(samlResponse);
         if (roles.size() == 1) {
-            String roleArn = roles.keySet().iterator().next();
+            String roleArn = roles.values().iterator().next();
             return Collections.singletonList(
                     new AccountOption("Account:  (" + roleArn.substring("arn:aws:iam::".length(), "arn:aws:iam::".length() + 12) + ")",
                             Collections.singletonList(
