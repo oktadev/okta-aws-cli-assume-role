@@ -90,7 +90,7 @@ curl -Ls -o "${dest}" "${url}"
 
 jarpath="${PREFIX}/okta-aws-cli.jar"
 echo "Symlinking ${jarpath} → $(basename ${dest})" | sed "s#$HOME#~#g"
-ln -s $(basename ${dest}) "${jarpath}"
+ln -sf $(basename ${dest}) "${jarpath}"
 
 # bash functions
 bash_functions="${PREFIX}/bash_functions"
