@@ -120,7 +120,7 @@ NOTE: **okta-aws** is a function loaded from your shell profile, not a typical p
 The application was built and compiled with [JetBrains' IntelliJ IDEA](https://www.jetbrains.com/idea/). Note that you don't have to compile the application in order to be able to execute it, since the compiled executable (a JAR file) is available [on GitHub](https://github.com/oktadeveloper/okta-aws-cli-assume-role/releases).
 
 ### Prerequisites
-First of all, it goes without saying that you will need to install the [Java SE 8x](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or the [Java JDK 8x](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).
+First of all, it goes without saying that you will need to install the [Java 11](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or later.
 
 Then you will need [Maven 2 or later](https://maven.apache.org/install.html) to run the build.
 
