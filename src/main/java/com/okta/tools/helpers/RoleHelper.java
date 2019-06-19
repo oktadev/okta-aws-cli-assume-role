@@ -77,7 +77,8 @@ public class RoleHelper {
                 for (RoleOption roleOption : accountOption.roleOptions) {
                     roleArns.add(roleOption.roleArn);
                     System.err.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
-                    if (roleOption.roleArn.equals(environment.awsRoleToAssume)) {
+                    if (roleOption.roleArn.equals(environment.awsRoleToAssume) ||
+                        roleOption.roleName.equals(environment.awsRoleToAssume)) {
                         j = i;
                     }
                     i++;
@@ -120,7 +121,7 @@ public class RoleHelper {
     public List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {
         Map<String, String> roles = AwsSamlRoleUtils.getRoles(samlResponse);
         if (roles.size() == 1) {
-            String roleArn = roles.values().iterator().next();
+            String roleArn = roles.keySet().iterator().next();
             return Collections.singletonList(
                     new AccountOption("Account:  (" + roleArn.substring("arn:aws:iam::".length(), "arn:aws:iam::".length() + 12) + ")",
                             Collections.singletonList(
