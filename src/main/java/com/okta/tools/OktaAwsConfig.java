@@ -87,6 +87,8 @@ final class OktaAwsConfig {
         } else if (SystemUtils.IS_OS_UNIX) {
             processBuilder.command("sh", "-c", oktaPasswordCommand);
         }
+        processBuilder.redirectInput(ProcessBuilder.Redirect.INHERIT);
+        processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
         try {
             Process passwordCommandProcess = processBuilder.start();
             String password = getOutput(passwordCommandProcess);
