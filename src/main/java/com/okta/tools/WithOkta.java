@@ -34,9 +34,9 @@ public class WithOkta {
             awsEnvironment.put("AWS_ACCESS_KEY_ID", runResult.accessKeyId);
             awsEnvironment.put("AWS_SECRET_ACCESS_KEY", runResult.secretAccessKey);
             awsEnvironment.put("AWS_SESSION_TOKEN", runResult.sessionToken);
+            // Cleanup command line arguments if present
+            args = removeProfileArguments(args);
         }
-        // Cleanup command line arguments if present
-        args = removeProfileArguments(args);
 
         if(args.length == 0) {
             logger.info("No additional command line arguments provided. Hint: okta-aws <aws cli command>");
@@ -61,6 +61,8 @@ public class WithOkta {
             else if (profileArg) {
                 // skip the profile argument
                 profileArg = false;
+            } else if (arg.startsWith("--profile=")) {
+              // skip the single argument profile flag
             } else {
                 argsList.add(arg);
             }
