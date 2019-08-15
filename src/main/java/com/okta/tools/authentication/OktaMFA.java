@@ -289,9 +289,7 @@ public class OktaMFA {
     }
 
     private static String handlePushPolling(JSONObject profile, JSONObject jsonObjResponse) throws IOException, InterruptedException {
-        JSONObject links = jsonObjResponse.getJSONObject(LINKS);
-        JSONObject pollLink = links.getJSONObject("poll");
-        String pollUrl = pollLink.getString("href");
+        String pollUrl = getPollURL(jsonObjResponse);
 
         JSONObject pollResult = postAndGetJsonResponse(profile, pollUrl);
         String result = pollResult.getString(FACTOR_RESULT);
@@ -299,13 +297,32 @@ public class OktaMFA {
             System.err.println("Waiting for you to approve the Okta push notification on your device...");
             Thread.sleep(500);
             pollResult = postAndGetJsonResponse(profile, pollUrl);
+            String status = pollResult.getString(STATUS);
+            if ("SUCCESS".equals(status)) {
+                return pollResult.getString(SESSION_TOKEN);
+            }
             result = pollResult.getString(FACTOR_RESULT);
         }
-        if ("SUCCESS".equals(result)) {
-            return pollResult.getString(SESSION_TOKEN);
-        } else {
-            return result;
+        return result;
+    }
+
+    private static String getPollURL(JSONObject jsonObjResponse) throws RuntimeException {
+        JSONObject linksObj = jsonObjResponse.getJSONObject(LINKS);
+        JSONArray linkNames = linksObj.names();
+        JSONArray links = linksObj.toJSONArray(linkNames);
+        JSONObject pollLink = null;
+        for (int i = 0; i < links.length(); i++) {
+            JSONObject link = links.getJSONObject(i);
+            String linkName = link.getString("name");
+            if (linkName.equals("poll")) {
+                pollLink = link;
+                break;
+            }
         }
+        if (pollLink == null) {
+            throw new IllegalStateException("Could not determine URL for MFA polling");
+        }
+        return pollLink.getString("href");
     }
 
     private static JSONObject postAndGetJsonResponse(JSONObject profile, String url) throws IOException {

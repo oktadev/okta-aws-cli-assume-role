@@ -15,7 +15,9 @@
  */
 package com.okta.tools.helpers;
 
+import com.amazonaws.RequestConfig;
 import org.apache.http.HttpHost;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
