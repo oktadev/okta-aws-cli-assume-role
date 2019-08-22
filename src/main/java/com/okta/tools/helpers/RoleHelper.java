@@ -77,7 +77,8 @@ public class RoleHelper {
                 for (RoleOption roleOption : accountOption.roleOptions) {
                     roleArns.add(roleOption.roleArn);
                     System.err.println("\t[ " + (i + 1) + " ]: " + roleOption.roleName);
-                    if (roleOption.roleArn.equals(environment.awsRoleToAssume)) {
+                    if (roleOption.roleArn.equals(environment.awsRoleToAssume) ||
+                        roleOption.roleName.equals(environment.awsRoleToAssume)) {
                         j = i;
                     }
                     i++;

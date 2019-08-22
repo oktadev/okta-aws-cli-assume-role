@@ -15,12 +15,14 @@
  */
 package com.okta.tools;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.logging.Logger;
@@ -31,20 +33,23 @@ final class OktaAwsConfig {
     private static final Logger logger = Logger.getLogger(OktaAwsConfig.class.getName());
 
     private static final String CONFIG_FILENAME = "config.properties";
+    private static final String CONFIG_PROFILE_FILENAME_FORMAT = "config.%s.properties";
 
     static OktaAwsCliEnvironment loadEnvironment() {
-        return loadEnvironment(null);
+        return loadEnvironment(System.getenv("OKTA_PROFILE"));
     }
 
     static OktaAwsCliEnvironment loadEnvironment(String profile) {
         Properties properties = new Properties();
-        Optional<Path> path = getConfigFile();
-        if (path.isPresent()) {
-            try (InputStream config = new FileInputStream(path.get().toFile())) {
-                logger.finer(() -> "Reading config settings from file: " + path.get().toAbsolutePath().toString());
-                properties.load(new InputStreamReader(config));
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
+        Optional<ArrayList<Path>> paths = getConfigFile(profile);
+        if (paths.isPresent()) {
+            for (Path path : paths.get()) {
+                try (InputStream config = new FileInputStream(path.toFile())) {
+                    logger.finer(() -> "Reading config settings from file: " + path.toAbsolutePath().toString());
+                    properties.load(new InputStreamReader(config));
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
             }
         } else {
             try (InputStream config = properties.getClass().getResourceAsStream("/config.properties")) {
@@ -87,6 +92,8 @@ final class OktaAwsConfig {
         } else if (SystemUtils.IS_OS_UNIX) {
             processBuilder.command("sh", "-c", oktaPasswordCommand);
         }
+        processBuilder.redirectInput(ProcessBuilder.Redirect.INHERIT);
+        processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
         try {
             Process passwordCommandProcess = processBuilder.start();
             String password = getOutput(passwordCommandProcess);
@@ -106,17 +113,31 @@ final class OktaAwsConfig {
         }
     }
 
-    private static Optional<Path> getConfigFile() {
-        Path configInWorkingDir = Paths.get(CONFIG_FILENAME);
-        if (configInWorkingDir.toFile().isFile()) {
-            return Optional.of(configInWorkingDir);
+    private static Optional<ArrayList<Path>> getConfigFile(String profile) {
+        ArrayList<String> configFiles = new ArrayList<>();
+        configFiles.add(CONFIG_FILENAME);
+        if (StringUtils.isNotBlank(profile)) {
+            configFiles.add(String.format(CONFIG_PROFILE_FILENAME_FORMAT, profile));
         }
-        Path userHome = Paths.get(System.getProperty("user.home"));
-        Path oktaDir = userHome.resolve(".okta");
-        Path configInOktaDir = oktaDir.resolve(CONFIG_FILENAME);
-        if (configInOktaDir.toFile().isFile()) {
-            return Optional.of(configInOktaDir);
+
+        ArrayList<Path> paths = new ArrayList<>();
+        for (String configFile : configFiles) {
+            Path configInWorkingDir = Paths.get(configFile);
+            if (configInWorkingDir.toFile().isFile()) {
+                paths.add(configInWorkingDir);
+            }
+            Path userHome = Paths.get(System.getProperty("user.home"));
+            Path oktaDir = userHome.resolve(".okta");
+            Path configInOktaDir = oktaDir.resolve(configFile);
+            if (configInOktaDir.toFile().isFile()) {
+                paths.add(configInOktaDir);
+            }
         }
+
+        if (!paths.isEmpty()) {
+            return Optional.of(paths);
+        }
+
         return Optional.empty();
     }
 

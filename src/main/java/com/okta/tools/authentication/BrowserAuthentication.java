@@ -80,8 +80,8 @@ public final class BrowserAuthentication extends Application {
         initializeCookies(uri);
 
         SubresourceIntegrityStrippingHack.overrideHttpsProtocolHandler(environment);
-        webEngine.getLoadWorker().stateProperty()
-                .addListener((ov, oldState, newState) -> {
+        webEngine.locationProperty()
+                .addListener((ov, oldLocation, newLocation) -> {
                     if (webEngine.getDocument() != null) {
                         checkForAwsSamlSignon(stage, webEngine);
                         stage.setTitle(webEngine.getLocation());
@@ -128,7 +128,7 @@ public final class BrowserAuthentication extends Application {
                 Node formActionAttribute = formAttributes.getNamedItem("action");
                 if (formActionAttribute != null) {
                     String formAction = formActionAttribute.getTextContent();
-                    if ("https://signin.aws.amazon.com/saml".equals(formAction)) {
+                    if (formAction.endsWith("/saml")) {
                         return form;
                     }
                 }
