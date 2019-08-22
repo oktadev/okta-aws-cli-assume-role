@@ -80,8 +80,8 @@ public final class BrowserAuthentication extends Application {
         initializeCookies(uri);
 
         SubresourceIntegrityStrippingHack.overrideHttpsProtocolHandler(environment);
-        webEngine.getLoadWorker().stateProperty()
-                .addListener((ov, oldState, newState) -> {
+        webEngine.locationProperty()
+                .addListener((ov, oldLocation, newLocation) -> {
                     if (webEngine.getDocument() != null) {
                         checkForAwsSamlSignon(stage, webEngine);
                         stage.setTitle(webEngine.getLocation());
