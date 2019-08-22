@@ -162,7 +162,12 @@ Here is the list of parameters that can be environment variables or settings in 
     - Your link is located under ```EMBED LINK``` 
   - Replace the example values in ```~/.okta/config.properties``` with your values
 
-Note: environment variables take precedence over the config file.
+You can specify configuration overrides for each profile by creating a ```~/.okta/config.{profilename}.properties``` file. The base settings
+will be loaded first and the profile-specific settings will be loaded after, allowing you to only override specific settings that need to be different.
+For example, if you want the ```prod``` profile to connect to a different Okta org, create a ```~/.okta/config.prod.properties```file and set 
+```OKTA_ORG``` to something different.
+
+Note: environment variables take precedence over any config file.
 
 ## Troubleshooting
 
