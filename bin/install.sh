@@ -140,7 +140,11 @@ if [ "$3" == "logout" ]
 then
     command="logout"
 fi
-env OKTA_PROFILE=$profile java \
+if [ -n "$https_proxy" ]; then
+    readonly URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
+    [[ $https_proxy =~ ${URI_REGEX} ]] && PROXY_CONFIG="-Dhttps.proxyHost=${BASH_REMATCH[7]} -Dhttps.proxyPort=${BASH_REMATCH[9]}"
+fi
+env OKTA_PROFILE=$profile java ${PROXY_CONFIG} \
     -Djava.util.logging.config.file=~/.okta/logging.properties \
     -classpath ~/.okta/okta-aws-cli.jar \
     com.okta.tools.WithOkta $command "$@"
