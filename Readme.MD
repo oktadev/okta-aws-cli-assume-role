@@ -111,6 +111,10 @@ okta-aws test sts get-caller-identity
 
 NOTE: **okta-aws** is a function loaded from your shell profile, not a typical program or command stored in a file.
 
+NOTE: On a *nix platform the `withokta` wrapper script will attempt to parse `$https_proxy` as a URI. If successful the host and port values will be passed to the JVM. User credentials in the proxy configuration are not currently used. This allows the `okta-aws` tool to be used in an environment where internet access for the servers is mediate via a proxy, e.g an EC2 instance inside a restricted VPC.
+
+The proxy URI _must_ be of the form `http://host:port/`. Both the host and port are mandatory.
+
 ## Reference
 * [okta-listroles(1)](docs/man/okta-listroles.1.md)
 * [okta-credential_process(1)](docs/man/okta-credential_process.1.md)
