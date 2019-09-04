@@ -130,37 +130,37 @@ EOF
 mkdir -p "${PREFIX}/bin"
 
 # Create withokta command
-cat <<'EOF' >"${PREFIX}/bin/withokta"
+cat <<EOF >"${PREFIX}/bin/withokta"
 #!/bin/bash
-command="$1"
-profile=$2
+command="\$1"
+profile=\$2
 shift;
 shift;
 if [ "$1" == "logout" ]
 then
     command="logout"
 fi
-env OKTA_PROFILE=$profile java \
-    -Djava.util.logging.config.file=~/.okta/logging.properties \
-    -classpath ~/.okta/okta-aws-cli.jar \
-    com.okta.tools.WithOkta $command "$@"
+env OKTA_PROFILE=\$profile java \
+    -Djava.util.logging.config.file=${PREFIX}/logging.properties \
+    -classpath ${PREFIX}/okta-aws-cli.jar \
+    com.okta.tools.WithOkta \$command "\$@"
 EOF
 chmod +x "${PREFIX}/bin/withokta"
 
 # Create okta-credential_process command
-cat <<'EOF' >"${PREFIX}/bin/okta-credential_process"
+cat <<EOF >"${PREFIX}/bin/okta-credential_process"
 #!/bin/bash
-roleARN="$1"
+roleARN="\$1"
 shift;
-env OKTA_AWS_ROLE_TO_ASSUME="$roleARN" \
-    java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.CredentialProcess
+env OKTA_AWS_ROLE_TO_ASSUME="\$roleARN" \
+    java -classpath ${PREFIX}/okta-aws-cli.jar com.okta.tools.CredentialProcess
 EOF
 chmod +x "${PREFIX}/bin/okta-credential_process"
 
 # Create okta-listroles command
 cat <<EOF >"${PREFIX}/bin/okta-listroles"
 #!/bin/bash
-java -classpath ~/.okta/okta-aws-cli.jar com.okta.tools.ListRoles
+java -classpath ${PREFIX}/okta-aws-cli.jar com.okta.tools.ListRoles
 EOF
 chmod +x "${PREFIX}/bin/okta-listroles"
 
@@ -182,7 +182,7 @@ else
 #OktaAWSCLI
 OKTA_ORG=acmecorp.okta.com.changeme.local
 OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com.changeme.local/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
-OKTA_USERNAME=$env:USERNAME
+OKTA_USERNAME=\$env:USERNAME
 OKTA_BROWSER_AUTH=true
 EOF
 fi
