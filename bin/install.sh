@@ -152,15 +152,18 @@ cat <<EOF >"${PREFIX}/bin/okta-credential_process"
 #!/bin/bash
 roleARN="\$1"
 shift;
-env OKTA_AWS_ROLE_TO_ASSUME="\$roleARN" \
-    java -classpath ${PREFIX}/okta-aws-cli.jar com.okta.tools.CredentialProcess
+env OKTA_AWS_ROLE_TO_ASSUME="\$roleARN" java \
+    -Djava.util.logging.config.file=${PREFIX}/logging.properties \
+    -classpath ${PREFIX}/okta-aws-cli.jar \
+    com.okta.tools.CredentialProcess
 EOF
 chmod +x "${PREFIX}/bin/okta-credential_process"
 
 # Create okta-listroles command
 cat <<EOF >"${PREFIX}/bin/okta-listroles"
 #!/bin/bash
-java -classpath ${PREFIX}/okta-aws-cli.jar com.okta.tools.ListRoles
+java -Djava.util.logging.config.file=${PREFIX}/logging.properties \
+  -classpath ${PREFIX}/okta-aws-cli.jar com.okta.tools.ListRoles
 EOF
 chmod +x "${PREFIX}/bin/okta-listroles"
 
