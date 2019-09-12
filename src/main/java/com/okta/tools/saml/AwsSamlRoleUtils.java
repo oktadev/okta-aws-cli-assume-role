@@ -60,8 +60,18 @@ public final class AwsSamlRoleUtils {
         }
     }
 
+    private static String getDestination(String samlResponse) {
+        try {
+            String destination = SamlResponseUtils.getDestination(samlResponse);
+            return destination;
+        } catch (ParserConfigurationException | UnmarshallingException | SAXException | IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     public static Document getSigninPageDocument(String samlResponse) throws IOException {
-        HttpPost httpPost = new HttpPost("https://signin.aws.amazon.com/saml");
+        String destination = getDestination(samlResponse);
+        HttpPost httpPost = new HttpPost(destination);
         UrlEncodedFormEntity samlForm = new UrlEncodedFormEntity(Arrays.asList(
                 new BasicNameValuePair("SAMLResponse", samlResponse),
                 new BasicNameValuePair("RelayState", "")
@@ -72,7 +82,7 @@ public final class AwsSamlRoleUtils {
             return Jsoup.parse(
                     samlSigninResponse.getEntity().getContent(),
                     StandardCharsets.UTF_8.name(),
-                    "https://signin.aws.amazon.com/saml"
+                    destination
             );
         }
     }
