@@ -98,10 +98,10 @@ if ! grep '^#OktaAWSCLI' "${bash_functions}" &>/dev/null; then
     cat <<'EOF' >>"${bash_functions}"
 #OktaAWSCLI
 function okta-aws {
-    withokta "aws --profile $1" "$@"
+    withokta "aws --profile $1" "${@:2}"
 }
 function okta-sls {
-    withokta "sls --stage $1" "$@"
+    withokta "sls --stage $1" "${@:2}"
 }
 EOF
 fi
