@@ -49,6 +49,11 @@ final class SamlResponseUtils {
         return getAssertion(response);
     }
 
+    static String getDestination(String samlResponse) throws ParserConfigurationException, UnmarshallingException, SAXException, IOException {
+        Response response = decodeSamlResponse(samlResponse);
+        return getDestination(response);
+    }
+
     private static Response decodeSamlResponse(String samlResponse) throws IOException, ParserConfigurationException, SAXException, UnmarshallingException {
         byte[] base64DecodedResponse = Base64.getDecoder().decode(samlResponse);
         ByteArrayInputStream is = new ByteArrayInputStream(base64DecodedResponse);
@@ -85,5 +90,11 @@ final class SamlResponseUtils {
             throw new IllegalStateException("More than one assertion in SAML response");
         else
             return response.getAssertions().get(0);
+    }
+
+    private static String getDestination(Response response) {
+        if (response.getDestination() == null)
+            throw new IllegalStateException("No destination in SAML response");
+        return response.getDestination();
     }
 }
