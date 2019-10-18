@@ -136,7 +136,7 @@ command="\$1"
 profile=\$2
 shift;
 shift;
-if [ "\$3" == "logout" ]
+if [ "$1" == "logout" ]
 then
     command="logout"
 fi
