@@ -124,7 +124,7 @@ The proxy URI _must_ be of the form `http://host:port/`. Both the host and port 
 The application was built and compiled with [JetBrains' IntelliJ IDEA](https://www.jetbrains.com/idea/). Note that you don't have to compile the application in order to be able to execute it, since the compiled executable (a JAR file) is available [on GitHub](https://github.com/oktadeveloper/okta-aws-cli-assume-role/releases).
 
 ### Prerequisites
-First of all, it goes without saying that you will need to install the [Java SE 8x](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or the [Java JDK 8x](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).
+First of all, it goes without saying that you will need to install the [Java SE 11x](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or the [Java JDK 11x](https://www.oracle.com/technetwork/java/javase/downloads/jdk11-downloads-5066655.html).
 
 Then you will need [Maven 2 or later](https://maven.apache.org/install.html) to run the build.
 
