@@ -53,7 +53,7 @@ This tool has been verified to work on macOS Sierra, High Sierra, Windows Server
    OKTA_ORG=acmecorp.oktapreview.com
    OKTA_AWS_APP_URL=https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137
    ```
-3. Make sure `/usr/local/bin` (or whatever `$PREFIX/bin` is) is in your way **PATH**
+3. Make sure `/usr/local/bin` (or whatever `$PREFIX/bin` is) is in your **PATH**
 
 ### Docker
 
@@ -91,7 +91,7 @@ Create `~/.okta/logging.properties` with the following content,
 com.amazonaws.auth.profile.internal.BasicProfileConfigLoader = NONE
 ```
 
-Copy scripts from `.okta/bin` to somewhere on your list **PATH**.
+Copy scripts from `.okta/bin` to somewhere on your **PATH**.
 
 ## Usage
 
