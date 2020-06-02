@@ -80,7 +80,7 @@ PREFIX="$(cd -P -- "${PREFIX}" && pwd)"
 echo "Installing into ${PREFIX}" | sed "s#$HOME#~#g"
 
 mkdir -p ${PREFIX}
-releaseUrl=$(curl --head --silent ${repo_url}/releases/latest | grep "Location:" | cut -c11-)
+releaseUrl=$(curl --head --silent ${repo_url}/releases/latest | grep -i "Location:" | cut -c11-)
 releaseTag=$(echo $releaseUrl | awk 'BEGIN{FS="/"}{print $8}' | tr -d '\r')
 url=${repo_url}/releases/download/${releaseTag}/okta-aws-cli-${releaseTag:1}.jar
 dest=${PREFIX}/$(basename ${url})
@@ -136,13 +136,17 @@ command="\$1"
 profile=\$2
 shift;
 shift;
-if [ "\$3" == "logout" ]
+if [ "$1" == "logout" ]
 then
     command="logout"
 fi
-env OKTA_PROFILE=\$profile java \
-    -Djava.util.logging.config.file=${PREFIX}/logging.properties \
-    -classpath ${PREFIX}/okta-aws-cli.jar \
+if [ -n "\$https_proxy" ]; then
+    readonly URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
+    [[ \$https_proxy =~ \${URI_REGEX} ]] && PROXY_CONFIG="-Dhttps.proxyHost=\${BASH_REMATCH[7]} -Dhttps.proxyPort=\${BASH_REMATCH[9]}"
+fi
+env OKTA_PROFILE=\$profile java \${PROXY_CONFIG} \\
+    -Djava.util.logging.config.file=${PREFIX}/logging.properties \\
+    -classpath ${PREFIX}/okta-aws-cli.jar \\
     com.okta.tools.WithOkta \$command "\$@"
 EOF
 chmod +x "${PREFIX}/bin/withokta"
@@ -152,15 +156,23 @@ cat <<EOF >"${PREFIX}/bin/okta-credential_process"
 #!/bin/bash
 roleARN="\$1"
 shift;
-env OKTA_AWS_ROLE_TO_ASSUME="\$roleARN" \
-    java -classpath ${PREFIX}/okta-aws-cli.jar com.okta.tools.CredentialProcess
+if [ -n "\$https_proxy" ]; then
+    readonly URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
+    [[ \$https_proxy =~ \${URI_REGEX} ]] && PROXY_CONFIG="-Dhttps.proxyHost=\${BASH_REMATCH[7]} -Dhttps.proxyPort=\${BASH_REMATCH[9]}"
+fi
+env OKTA_AWS_ROLE_TO_ASSUME="\$roleARN" \\
+    java \${PROXY_CONFIG} -classpath ${PREFIX}/okta-aws-cli.jar com.okta.tools.CredentialProcess
 EOF
 chmod +x "${PREFIX}/bin/okta-credential_process"
 
 # Create okta-listroles command
 cat <<EOF >"${PREFIX}/bin/okta-listroles"
 #!/bin/bash
-java -classpath ${PREFIX}/okta-aws-cli.jar com.okta.tools.ListRoles
+if [ -n "\$https_proxy" ]; then
+    readonly URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
+    [[ \$https_proxy =~ \${URI_REGEX} ]] && PROXY_CONFIG="-Dhttps.proxyHost=\${BASH_REMATCH[7]} -Dhttps.proxyPort=\${BASH_REMATCH[9]}"
+fi
+java \${PROXY_CONFIG} -classpath ${PREFIX}/okta-aws-cli.jar com.okta.tools.ListRoles
 EOF
 chmod +x "${PREFIX}/bin/okta-listroles"
 

@@ -34,6 +34,7 @@ public class WithOkta {
             awsEnvironment.put("AWS_ACCESS_KEY_ID", runResult.accessKeyId);
             awsEnvironment.put("AWS_SECRET_ACCESS_KEY", runResult.secretAccessKey);
             awsEnvironment.put("AWS_SESSION_TOKEN", runResult.sessionToken);
+            awsEnvironment.put("AWS_DEFAULT_REGION", environment.awsRegion);
             // Cleanup command line arguments if present
             args = removeProfileArguments(args);
         }
