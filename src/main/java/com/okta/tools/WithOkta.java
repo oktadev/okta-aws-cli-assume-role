@@ -16,15 +16,13 @@
 package com.okta.tools;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
 public class WithOkta {
     private static final Logger logger = Logger.getLogger(WithOkta.class.getName());
 
-    public static void main(String[] args) throws Exception {
+    public static void main(final String[] args) throws Exception {
         if (LogoutHandler.handleLogout(args)) return;
         OktaAwsCliEnvironment environment = OktaAwsConfig.loadEnvironment();
         OktaAwsCliAssumeRole.RunResult runResult = OktaAwsCliAssumeRole.withEnvironment(environment).run(Instant.now());
@@ -34,9 +32,7 @@ public class WithOkta {
             awsEnvironment.put("AWS_ACCESS_KEY_ID", runResult.accessKeyId);
             awsEnvironment.put("AWS_SECRET_ACCESS_KEY", runResult.secretAccessKey);
             awsEnvironment.put("AWS_SESSION_TOKEN", runResult.sessionToken);
-            awsEnvironment.put("AWS_DEFAULT_REGION", environment.awsRegion);
-            // Cleanup command line arguments if present
-            args = removeProfileArguments(args);
+            awsEnvironment.put("AWS_DEFAULT_REGION", environment.awsRegion.id());
         }
 
         if(args.length == 0) {
@@ -49,25 +45,5 @@ public class WithOkta {
         Process awsSubProcess = awsProcessBuilder.start();
         int exitCode = awsSubProcess.waitFor();
         System.exit(exitCode);
-    }
-
-    private static String[] removeProfileArguments(String[] args) {
-        List<String> argsList = new ArrayList<>(args.length);
-        boolean profileArg = false;
-        for (String arg : args) {
-            if ("--profile".equals(arg)) {
-                // skip the profile flag and note to skip its argument
-                profileArg = true;
-            }
-            else if (profileArg) {
-                // skip the profile argument
-                profileArg = false;
-            } else if (arg.startsWith("--profile=")) {
-              // skip the single argument profile flag
-            } else {
-                argsList.add(arg);
-            }
-        }
-        return argsList.toArray(new String[] {});
     }
 }

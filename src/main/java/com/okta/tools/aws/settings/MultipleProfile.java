@@ -15,6 +15,8 @@
  */
 package com.okta.tools.aws.settings;
 
+import software.amazon.awssdk.regions.Region;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.time.Instant;
@@ -69,10 +71,10 @@ public class MultipleProfile extends Settings {
      * @param awsRegion    Region to use for assumption
      * @param expiry       expiry time of the profile session.
      */
-    public void addOrUpdateProfile(String name, String roleArn, String awsRegion, Instant expiry) {
+    public void addOrUpdateProfile(String name, String roleArn, Region awsRegion, Instant expiry) {
         setProperty(name, SOURCE_PROFILE, name);
         setProperty(name, OKTA_ROLE_ARN, roleArn);
-        setProperty(name, AWS_DEFAULT_REGION, awsRegion);
+        setProperty(name, AWS_DEFAULT_REGION, awsRegion.id());
         setProperty(name, PROFILE_EXPIRY, expiry.toString());
     }
 }
