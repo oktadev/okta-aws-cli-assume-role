@@ -44,7 +44,6 @@ public class RoleHelper {
     public AssumeRoleWithSamlResponse assumeChosenAwsRole(AssumeRoleWithSamlRequest assumeRequest) {
         AwsBasicCredentials nullCredentials = AwsBasicCredentials.create("empty", "empty");
         StaticCredentialsProvider nullCredentialsProvider = StaticCredentialsProvider.create(nullCredentials);
-        System.out.println(environment.awsRegion.id());
         StsClient sts = StsClient.builder()
                 .region(environment.awsRegion)
                 .credentialsProvider(nullCredentialsProvider)

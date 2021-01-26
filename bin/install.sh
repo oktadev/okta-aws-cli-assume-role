@@ -132,12 +132,6 @@ mkdir -p "${PREFIX}/bin"
 # Create withokta command
 cat <<EOF >"${PREFIX}/bin/withokta"
 #!/bin/bash
-shift;
-shift;
-if [ "$1" == "logout" ]
-then
-    command="logout"
-fi
 if [ -n "\$https_proxy" ]; then
     readonly URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
     [[ \$https_proxy =~ \${URI_REGEX} ]] && PROXY_CONFIG="-Dhttps.proxyHost=\${BASH_REMATCH[7]} -Dhttps.proxyPort=\${BASH_REMATCH[9]}"
@@ -145,7 +139,7 @@ fi
 java \${PROXY_CONFIG} \\
     -Djava.util.logging.config.file=${PREFIX}/logging.properties \\
     -classpath ${PREFIX}/okta-aws-cli.jar \\
-    com.okta.tools.WithOkta "\$@"
+    com.okta.tools.WithOkta \$@
 EOF
 chmod +x "${PREFIX}/bin/withokta"
 
