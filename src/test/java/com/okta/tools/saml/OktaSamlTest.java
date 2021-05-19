@@ -34,7 +34,7 @@ class OktaSamlTest {
 
     @Test
     void getSamlResponse() throws IOException, InterruptedException {
-        OktaAwsCliEnvironment environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, "https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137", null, 0, null, null, false);
+        OktaAwsCliEnvironment environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, "https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137", null, 0, null, null, false, null);
         MenuHelper menuHelper = mock(MenuHelper.class);
         when(menuHelper.promptForMenuSelection(anyInt())).thenReturn(0);
         OktaFactorSelector factorSelector = new OktaFactorSelectorImpl(environment, menuHelper);
