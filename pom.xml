@@ -36,7 +36,7 @@
         <aws-java-sdk.version>1.11.515</aws-java-sdk.version>
         <okta.version>1.2.0</okta.version>
         <json.version>20180813</json.version>
-        <commons-configuration2.version>2.4</commons-configuration2.version>
+        <commons-configuration2.version>2.7</commons-configuration2.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <junit.jupiter.version>5.4.0</junit.jupiter.version>
         <ini4j.version>0.5.4</ini4j.version>
