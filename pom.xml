@@ -37,7 +37,7 @@
         <okta.version>1.2.0</okta.version>
         <json.version>20180813</json.version>
         <commons-configuration2.version>2.4</commons-configuration2.version>
-        <httpcomponents-httpclient.version>4.5.5</httpcomponents-httpclient.version>
+        <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <junit.jupiter.version>5.4.0</junit.jupiter.version>
         <ini4j.version>0.5.4</ini4j.version>
         <jsoup.version>1.11.3</jsoup.version>
