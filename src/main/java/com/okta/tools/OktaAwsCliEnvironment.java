@@ -44,7 +44,7 @@ public class OktaAwsCliEnvironment {
     public OktaAwsCliEnvironment(boolean browserAuth, String oktaOrg,
                                  String oktaUsername, InterruptibleSupplier<String> oktaPassword, String oktaCookiesPath,
                                  String oktaProfile, String oktaAwsAppUrl, String awsRoleToAssume,
-                                 int stsDuration, String awsRegion,
+                                 int stsDuration, Region awsRegion,
                                  String oktaMfaChoice, boolean oktaEnvMode, String oktaIgnoreSaml) {
         this.browserAuth = browserAuth;
         this.oktaOrg = oktaOrg;
