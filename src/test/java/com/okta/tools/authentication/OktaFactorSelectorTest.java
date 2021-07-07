@@ -34,7 +34,7 @@ class OktaFactorSelectorTest {
     @BeforeEach
     void setUp() {
         String oktaMfaChoice = "OKTA.push";
-        OktaAwsCliEnvironment environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, null, null, 0, null, oktaMfaChoice, false);
+        OktaAwsCliEnvironment environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, null, null, 0, null, oktaMfaChoice, false, null);
         MenuHelper menuHelper = mock(MenuHelper.class);
         oktaFactorSelector = new OktaFactorSelectorImpl(environment, menuHelper);
         primaryAuthResponse = mock(JSONObject.class);

@@ -76,7 +76,8 @@ final class OktaAwsConfig {
                 getStsDurationOrDefault(getEnvOrConfig(properties, "OKTA_STS_DURATION")),
                 getAwsRegionOrDefault(getEnvOrConfig(properties, "OKTA_AWS_REGION")),
                 getEnvOrConfig(properties, "OKTA_MFA_CHOICE"),
-                Boolean.parseBoolean(getEnvOrConfig(properties, "OKTA_ENV_MODE"))
+                Boolean.parseBoolean(getEnvOrConfig(properties, "OKTA_ENV_MODE")),
+                getEnvOrConfig(properties, "OKTA_IGNORE_SAML_REQ_CONTAIN")
         );
     }
 

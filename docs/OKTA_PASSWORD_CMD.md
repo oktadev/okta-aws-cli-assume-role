@@ -39,6 +39,13 @@ Please contribute additional examples for your favored platform or password mana
    OKTA_PASSWORD_CMD=@echo off & for /f \"usebackq tokens=*\" %a in (`PowerShell -Command \"(New-Object System.Management.Automation.PSCredential ($env:UserName, (Get-Content $env:USERPROFILE\\.okta\\.password | ConvertTo-SecureString))).GetNetworkCredential().Password\"`) do echo %a
    ````
 
+## Example: Plain text
+1. Not recommended but if you're stuck/desperate it works
+2. Add a `echo "XXXX"` to the `~/.okta/config.properties` file for your password
+```bash
+OKTA_PASSWORD_CMD=echo "mypassword"
+```
+
 ## Example: Lastpass
 1. Install LassPass' CLI tool, lpass
 2. Store your password in LassPass, making note of the entries path in your hierarchy

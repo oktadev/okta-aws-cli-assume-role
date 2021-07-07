@@ -52,7 +52,7 @@ class ProfileHelperTest {
     @BeforeEach
     void setUp() {
         credentialsHelper = mock(CredentialsHelper.class);
-        environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, null, null, 0, fakeAwsRegion, null, false);
+        environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, null, null, 0, fakeAwsRegion, null, false, null);
         profileHelper = new ProfileHelper(credentialsHelper, environment);
         Credentials credentials = Credentials.builder()
                 .accessKeyId(fakeAccessKey)

@@ -32,7 +32,7 @@ class RoleHelperTest {
 
     @Test
     void main() throws Exception {
-        OktaAwsCliEnvironment environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, "https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137", null, 0, null, null, false);
+        OktaAwsCliEnvironment environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, "https://acmecorp.oktapreview.com/home/amazon_aws/0oa5zrwfs815KJmVF0h7/137", null, 0, null, null, false, null);
         RoleHelper roleHelper = new RoleHelper(environment);
         List<AccountOption> availableRoles = roleHelper.getAvailableRoles(EXAMPLE_SAML_RESPONSE);
         assertEquals(singletonList(

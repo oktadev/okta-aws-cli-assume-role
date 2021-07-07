@@ -34,16 +34,18 @@ public class OktaAwsCliEnvironment {
     public final String oktaMfaChoice;
     public boolean oktaEnvMode;
 
+    public String oktaIgnoreSaml;
+
     public OktaAwsCliEnvironment()
     {
-        this(false, null, null, null, null, null, null, null, 0, null, null, false);
+        this(false, null, null, null, null, null, null, null, 0, null, null, false, null);
     }
 
     public OktaAwsCliEnvironment(boolean browserAuth, String oktaOrg,
                                  String oktaUsername, InterruptibleSupplier<String> oktaPassword, String oktaCookiesPath,
                                  String oktaProfile, String oktaAwsAppUrl, String awsRoleToAssume,
-                                 int stsDuration, Region awsRegion,
-                                 String oktaMfaChoice, boolean oktaEnvMode) {
+                                 int stsDuration, String awsRegion,
+                                 String oktaMfaChoice, boolean oktaEnvMode, String oktaIgnoreSaml) {
         this.browserAuth = browserAuth;
         this.oktaOrg = oktaOrg;
         this.oktaUsername = oktaUsername;
@@ -56,6 +58,7 @@ public class OktaAwsCliEnvironment {
         this.awsRegion = awsRegion;
         this.oktaMfaChoice = oktaMfaChoice;
         this.oktaEnvMode = oktaEnvMode;
+        this.oktaIgnoreSaml = oktaIgnoreSaml;
     }
 
 }

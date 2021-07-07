@@ -27,8 +27,7 @@ import java.util.Map;
  * Adaptor for {@link com.sun.webkit.network.CookieManager} that stores cookies
  */
 public final class CookieManager extends CookieHandler {
-    // internal class use is intentional: we need RFC6265 cookies which this OpenJFX class handles
-    private final CookieHandler cookieHandler = new com.sun.webkit.network.CookieManager();
+    private final CookieHandler cookieHandler = CookieHandler.getDefault();
     private final CookieHelper cookieHelper;
 
     public CookieManager(CookieHelper cookieHelper) {
