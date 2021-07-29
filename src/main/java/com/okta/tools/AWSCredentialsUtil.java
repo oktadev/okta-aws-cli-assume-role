@@ -18,28 +18,26 @@ package com.okta.tools;
 import java.io.IOException;
 import java.time.Instant;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSSessionCredentials;
-import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
-import com.amazonaws.services.securitytoken.model.Credentials;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.services.sts.model.AssumeRoleWithSamlResponse;
+import software.amazon.awssdk.services.sts.model.Credentials;
 
 public interface AWSCredentialsUtil {
 
-    static AWSCredentials getAWSCredential() throws IOException, InterruptedException {
-        AssumeRoleWithSAMLResult samlResult = OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment()).getAssumeRoleWithSAMLResult(Instant.now());
+    static AwsSessionCredentials getAWSCredential() throws IOException, InterruptedException {
+        AssumeRoleWithSamlResponse samlResult = OktaAwsCliAssumeRole.withEnvironment(OktaAwsConfig.loadEnvironment()).getAssumeRoleWithSAMLResult(Instant.now());
 
-        Credentials credentials = samlResult.getCredentials();
+        Credentials credentials = samlResult.credentials();
 
-        return new BasicSessionCredentials(credentials.getAccessKeyId(), credentials.getSecretAccessKey(), credentials.getSessionToken());
+        return AwsSessionCredentials.create(credentials.accessKeyId(), credentials.secretAccessKey(), credentials.sessionToken());
     }
-    
-    static AWSSessionCredentials getAWSCredential (OktaAwsCliEnvironment environment) throws IOException, InterruptedException {
-        AssumeRoleWithSAMLResult samlResult = OktaAwsCliAssumeRole.withEnvironment(environment).getAssumeRoleWithSAMLResult(Instant.now());
-        
-        Credentials credentials = samlResult.getCredentials();
-        
-        return new BasicSessionCredentials(credentials.getAccessKeyId(), credentials.getSecretAccessKey(), credentials.getSessionToken());
+
+    static AwsSessionCredentials getAWSCredential (OktaAwsCliEnvironment environment) throws IOException, InterruptedException {
+        AssumeRoleWithSamlResponse samlResult = OktaAwsCliAssumeRole.withEnvironment(environment).getAssumeRoleWithSAMLResult(Instant.now());
+
+        Credentials credentials = samlResult.credentials();
+
+        return AwsSessionCredentials.create(credentials.accessKeyId(), credentials.secretAccessKey(), credentials.sessionToken());
     }
 
 }

@@ -16,6 +16,7 @@
 package com.okta.tools.aws.settings;
 
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.regions.Region;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -34,7 +35,7 @@ class CredentialsTest {
     private String roleName = "newrole";
     private String accessKey = "accesskey";
     private String secretKey = "secretkey";
-    private String awsRegion = "region";
+    private Region awsRegion = Region.of("region");
     private String sessionToken = "sessiontoken";
     private String manualRole = "[" + roleName + "]\n"
             + Credentials.ACCESS_KEY_ID + " = " + accessKey + "\n"

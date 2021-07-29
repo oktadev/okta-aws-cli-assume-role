@@ -17,9 +17,9 @@ package com.okta.tools;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
+import software.amazon.awssdk.regions.Region;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -162,7 +162,7 @@ final class OktaAwsConfig {
         return (stsDuration == null) ? 3600 : Integer.parseInt(stsDuration);
     }
 
-    private static String getAwsRegionOrDefault(String region) {
-        return (region == null) ? "us-east-1" : region;
+    private static Region getAwsRegionOrDefault(String region) {
+        return Region.of((region == null) ? "us-east-1" : region);
     }
 }

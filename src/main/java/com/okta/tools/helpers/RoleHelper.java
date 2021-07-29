@@ -15,19 +15,17 @@
  */
 package com.okta.tools.helpers;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
-import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
-import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.OktaAwsCliEnvironment;
 import com.okta.tools.models.AccountOption;
 import com.okta.tools.models.RoleOption;
 import com.okta.tools.saml.AwsSamlRoleUtils;
 import com.okta.tools.saml.AwsSamlSigninParser;
 import org.jsoup.nodes.Document;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.model.AssumeRoleWithSamlRequest;
+import software.amazon.awssdk.services.sts.model.AssumeRoleWithSamlResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,24 +35,23 @@ import java.util.Map;
 
 public class RoleHelper {
 
-    private OktaAwsCliEnvironment environment;
+    final private OktaAwsCliEnvironment environment;
 
     public RoleHelper(OktaAwsCliEnvironment environment) {
         this.environment = environment;
     }
 
-    public AssumeRoleWithSAMLResult assumeChosenAwsRole(AssumeRoleWithSAMLRequest assumeRequest) {
-        BasicAWSCredentials nullCredentials = new BasicAWSCredentials("", "");
-        AWSCredentialsProvider nullCredentialsProvider = new AWSStaticCredentialsProvider(nullCredentials);
-        AWSSecurityTokenService sts = AWSSecurityTokenServiceClientBuilder
-                .standard()
-                .withRegion(environment.awsRegion)
-                .withCredentials(nullCredentialsProvider)
+    public AssumeRoleWithSamlResponse assumeChosenAwsRole(AssumeRoleWithSamlRequest assumeRequest) {
+        AwsBasicCredentials nullCredentials = AwsBasicCredentials.create("empty", "empty");
+        StaticCredentialsProvider nullCredentialsProvider = StaticCredentialsProvider.create(nullCredentials);
+        StsClient sts = StsClient.builder()
+                .region(environment.awsRegion)
+                .credentialsProvider(nullCredentialsProvider)
                 .build();
         return sts.assumeRoleWithSAML(assumeRequest);
     }
 
-    public AssumeRoleWithSAMLRequest chooseAwsRoleToAssume(String samlResponse) throws IOException {
+    public AssumeRoleWithSamlRequest chooseAwsRoleToAssume(String samlResponse) throws IOException {
         Map<String, String> roleIdpPairs = AwsSamlRoleUtils.getRoles(samlResponse);
         List<String> roleArns = new ArrayList<>();
 
@@ -111,11 +108,12 @@ public class RoleHelper {
 
         int stsDuration = environment.stsDuration;
 
-        return new AssumeRoleWithSAMLRequest()
-                .withPrincipalArn(principalArn)
-                .withRoleArn(roleArn)
-                .withSAMLAssertion(samlResponse)
-                .withDurationSeconds(stsDuration);
+        return AssumeRoleWithSamlRequest.builder()
+                .principalArn(principalArn)
+                .roleArn(roleArn)
+                .samlAssertion(samlResponse)
+                .durationSeconds(stsDuration)
+                .build();
     }
 
     public List<AccountOption> getAvailableRoles(String samlResponse) throws IOException {

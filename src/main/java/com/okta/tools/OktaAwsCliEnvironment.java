@@ -15,6 +15,8 @@
  */
 package com.okta.tools;
 
+import software.amazon.awssdk.regions.Region;
+
 public class OktaAwsCliEnvironment {
     public final boolean browserAuth;
     public final String oktaOrg;
@@ -28,7 +30,7 @@ public class OktaAwsCliEnvironment {
     public String awsRoleToAssume;
 
     public int stsDuration;
-    public final String awsRegion;
+    public final Region awsRegion;
     public final String oktaMfaChoice;
     public boolean oktaEnvMode;
 
@@ -42,7 +44,7 @@ public class OktaAwsCliEnvironment {
     public OktaAwsCliEnvironment(boolean browserAuth, String oktaOrg,
                                  String oktaUsername, InterruptibleSupplier<String> oktaPassword, String oktaCookiesPath,
                                  String oktaProfile, String oktaAwsAppUrl, String awsRoleToAssume,
-                                 int stsDuration, String awsRegion,
+                                 int stsDuration, Region awsRegion,
                                  String oktaMfaChoice, boolean oktaEnvMode, String oktaIgnoreSaml) {
         this.browserAuth = browserAuth;
         this.oktaOrg = oktaOrg;

@@ -15,10 +15,11 @@
  */
 package com.okta.tools.helpers;
 
-import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
 import com.okta.tools.OktaAwsCliEnvironment;
 import org.apache.commons.lang.StringUtils;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sts.model.AssumeRoleWithSamlResponse;
 
 import java.io.IOException;
 import java.util.regex.Matcher;
@@ -29,36 +30,36 @@ public class ProfileHelper {
     private final CredentialsHelper credentialsHelper;
     private OktaAwsCliEnvironment environment;
     private final Pattern assumedRoleUserPattern = Pattern.compile(
-            "^arn:aws:sts::(?<account>\\d{12}):assumed-role/(?<roleName>[^/]*)/(?<userName>.*$)");
+            "^arn:aws(|-gov):sts::(?<account>\\d{12}):assumed-role/(?<roleName>[^/]*)/(?<userName>.*$)");
 
     public ProfileHelper(CredentialsHelper credentialsHelper, OktaAwsCliEnvironment environment) {
         this.credentialsHelper = credentialsHelper;
         this.environment = environment;
     }
 
-    public void createAwsProfile(AssumeRoleWithSAMLResult assumeResult, String credentialsProfileName) throws IOException {
-        BasicSessionCredentials temporaryCredentials =
-                new BasicSessionCredentials(
-                        assumeResult.getCredentials().getAccessKeyId(),
-                        assumeResult.getCredentials().getSecretAccessKey(),
-                        assumeResult.getCredentials().getSessionToken());
+    public void createAwsProfile(AssumeRoleWithSamlResponse assumeResult, String credentialsProfileName) throws IOException {
+        AwsSessionCredentials temporaryCredentials =
+                AwsSessionCredentials.create(
+                        assumeResult.credentials().accessKeyId(),
+                        assumeResult.credentials().secretAccessKey(),
+                        assumeResult.credentials().sessionToken());
 
-        String awsAccessKey = temporaryCredentials.getAWSAccessKeyId();
-        String awsSecretKey = temporaryCredentials.getAWSSecretKey();
-        String awsSessionToken = temporaryCredentials.getSessionToken();
+        String awsAccessKey = temporaryCredentials.accessKeyId();
+        String awsSecretKey = temporaryCredentials.secretAccessKey();
+        String awsSessionToken = temporaryCredentials.sessionToken();
 
-        String awsRegion = environment.awsRegion;
-        
+        Region awsRegion = environment.awsRegion;
+
         credentialsHelper.updateCredentialsFile(credentialsProfileName, awsAccessKey, awsSecretKey, awsRegion,
                 awsSessionToken);
     }
 
-    public String getProfileName(AssumeRoleWithSAMLResult assumeResult) {
+    public String getProfileName(AssumeRoleWithSamlResponse assumeResult) {
         if (StringUtils.isNotBlank(environment.oktaProfile)) {
             return environment.oktaProfile;
         }
 
-        String credentialsProfileName = assumeResult.getAssumedRoleUser().getArn();
+        String credentialsProfileName = assumeResult.assumedRoleUser().arn();
         Matcher matcher = assumedRoleUserPattern.matcher(credentialsProfileName);
         if (matcher.matches()) {
             return matcher.group("roleName") + "_" + matcher.group("account");

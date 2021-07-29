@@ -15,6 +15,8 @@
  */
 package com.okta.tools.aws.settings;
 
+import software.amazon.awssdk.regions.Region;
+
 import java.io.IOException;
 import java.io.Reader;
 
@@ -51,10 +53,10 @@ public class Credentials extends Settings {
      * @param awsRegion       The region to use for the profile.
      * @param awsSessionToken The session token to use for the profile.
      */
-    public void addOrUpdateProfile(String name, String awsAccessKey, String awsSecretKey, String awsRegion, String awsSessionToken) {
+    public void addOrUpdateProfile(String name, String awsAccessKey, String awsSecretKey, Region awsRegion, String awsSessionToken) {
         setProperty(name, ACCESS_KEY_ID, awsAccessKey);
         setProperty(name, SECRET_ACCESS_KEY, awsSecretKey);
-        setProperty(name, AWS_DEFAULT_REGION, awsRegion);
+        setProperty(name, AWS_DEFAULT_REGION, awsRegion.id());
         setProperty(name, SESSION_TOKEN, awsSessionToken);
     }
 

@@ -20,21 +20,21 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
-import com.amazonaws.services.securitytoken.model.Credentials;
 import com.okta.tools.authentication.*;
 import com.okta.tools.helpers.*;
 import com.okta.tools.saml.OktaAppClient;
 import com.okta.tools.saml.OktaAppClientImpl;
 import org.apache.commons.lang.StringUtils;
 
-import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLRequest;
-import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
+import software.amazon.awssdk.services.sts.model.AssumeRoleWithSamlRequest;
+import software.amazon.awssdk.services.sts.model.AssumeRoleWithSamlResponse;
 import com.okta.tools.models.Profile;
 import com.okta.tools.models.Session;
 import com.okta.tools.saml.OktaSaml;
+import software.amazon.awssdk.services.sts.model.Credentials;
 
 final class OktaAwsCliAssumeRole {
-    private OktaAwsCliEnvironment environment;
+    final private OktaAwsCliEnvironment environment;
 
     private SessionHelper sessionHelper;
     private RoleHelper roleHelper;
@@ -103,10 +103,10 @@ final class OktaAwsCliAssumeRole {
 
         RunResult runResult = new RunResult();
         runResult.profileName = profileSAMLResult.profileName;
-        Credentials credentials = profileSAMLResult.assumeRoleWithSAMLResult.getCredentials();
-        runResult.accessKeyId = credentials.getAccessKeyId();
-        runResult.secretAccessKey = credentials.getSecretAccessKey();
-        runResult.sessionToken = credentials.getSessionToken();
+        Credentials credentials = profileSAMLResult.assumeRoleWithSAMLResult.credentials();
+        runResult.accessKeyId = credentials.accessKeyId();
+        runResult.secretAccessKey = credentials.secretAccessKey();
+        runResult.sessionToken = credentials.sessionToken();
 
         return runResult;
     }
@@ -118,7 +118,7 @@ final class OktaAwsCliAssumeRole {
         String sessionToken;
     }
 
-    AssumeRoleWithSAMLResult getAssumeRoleWithSAMLResult(Instant startInstant) throws IOException, InterruptedException {
+    AssumeRoleWithSamlResponse getAssumeRoleWithSAMLResult(Instant startInstant) throws IOException, InterruptedException {
         init();
 
         environment.awsRoleToAssume = currentProfile.map(profile1 -> profile1.roleArn).orElse(environment.awsRoleToAssume);
@@ -130,9 +130,9 @@ final class OktaAwsCliAssumeRole {
 
     private ProfileSAMLResult doRequest(Instant startInstant) throws IOException, InterruptedException {
         String samlResponse = oktaSaml.getSamlResponse();
-        AssumeRoleWithSAMLRequest assumeRequest = roleHelper.chooseAwsRoleToAssume(samlResponse);
-        Instant sessionExpiry = startInstant.plus((long) assumeRequest.getDurationSeconds() - (long) 30, ChronoUnit.SECONDS);
-        AssumeRoleWithSAMLResult assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
+        AssumeRoleWithSamlRequest assumeRequest = roleHelper.chooseAwsRoleToAssume(samlResponse);
+        Instant sessionExpiry = startInstant.plus((long) assumeRequest.durationSeconds() - (long) 30, ChronoUnit.SECONDS);
+        AssumeRoleWithSamlResponse assumeResult = roleHelper.assumeChosenAwsRole(assumeRequest);
 
         String profileName = profileHelper.getProfileName(assumeResult);
         if (!environment.oktaEnvMode) {
@@ -143,19 +143,19 @@ final class OktaAwsCliAssumeRole {
         return new ProfileSAMLResult(assumeResult, profileName);
     }
 
-    private void updateConfig(AssumeRoleWithSAMLRequest assumeRequest, Instant sessionExpiry, String profileName) throws IOException {
+    private void updateConfig(AssumeRoleWithSamlRequest assumeRequest, Instant sessionExpiry, String profileName) throws IOException {
         environment.oktaProfile = profileName;
-        environment.awsRoleToAssume = assumeRequest.getRoleArn();
+        environment.awsRoleToAssume = assumeRequest.roleArn();
         sessionHelper.addOrUpdateProfile(sessionExpiry);
         sessionHelper.updateCurrentSession(sessionExpiry, profileName);
     }
 
     // Holds the values for the profile name and SAML result shared by CLI and SDK implementations
-    private class ProfileSAMLResult {
+    static private class ProfileSAMLResult {
         String profileName;
-        AssumeRoleWithSAMLResult assumeRoleWithSAMLResult;
+        AssumeRoleWithSamlResponse assumeRoleWithSAMLResult;
 
-        ProfileSAMLResult(AssumeRoleWithSAMLResult pAssumeRoleWithSAMLResult, String pProfileName) {
+        ProfileSAMLResult(AssumeRoleWithSamlResponse pAssumeRoleWithSAMLResult, String pProfileName) {
             assumeRoleWithSAMLResult = pAssumeRoleWithSAMLResult;
             profileName = pProfileName;
         }

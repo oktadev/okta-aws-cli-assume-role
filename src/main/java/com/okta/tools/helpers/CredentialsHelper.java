@@ -16,6 +16,7 @@
 package com.okta.tools.helpers;
 
 import com.okta.tools.aws.settings.Credentials;
+import software.amazon.awssdk.regions.Region;
 
 import java.io.IOException;
 
@@ -31,7 +32,7 @@ public class CredentialsHelper {
      * @param awsSessionToken The session token to use
      * @throws IOException    if a file system or permissions error occurs
      */
-    void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, String awsRegion, String awsSessionToken)
+    void updateCredentialsFile(String profileName, String awsAccessKey, String awsSecretKey, Region awsRegion, String awsSessionToken)
             throws IOException {
         FileHelper.usingPath(FileHelper.getAwsDirectory().resolve("credentials"), reader -> {
             Credentials credentials = new Credentials(reader);

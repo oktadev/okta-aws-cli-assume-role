@@ -15,16 +15,16 @@
  */
 package com.okta.tools.helpers;
 
-import com.amazonaws.services.securitytoken.model.AssumeRoleWithSAMLResult;
-import com.amazonaws.services.securitytoken.model.AssumedRoleUser;
-import com.amazonaws.services.securitytoken.model.Credentials;
 import com.okta.tools.OktaAwsCliEnvironment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sts.model.AssumeRoleWithSamlResponse;
+import software.amazon.awssdk.services.sts.model.AssumedRoleUser;
+import software.amazon.awssdk.services.sts.model.Credentials;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -34,18 +34,19 @@ class ProfileHelperTest {
 
     private static final String fakeAccessKey = "Fake-access-key";
     private static final String fakeSecretKey = "Fake-secret-key";
-    private static final String fakeAwsRegion = "Fake-region";
+    private static final Region fakeAwsRegion = Region.of("Fake-region");
     private static final String fakeSessionToken = "Fake-session-token";
     private static final String fakeCredentialsProfileName = "arn:aws:sts::123456789012:assumed-role/FakeRole/fakey.mcfakerson@fake.example.com";
+    private static final String fakeGovCloudCredentialsProfileName = "arn:aws-gov:sts::123456789012:assumed-role/FakeRole/fakey.mcfakerson@fake.example.com";
     private static final String fakeAssumeRoleUserArn = "arn:aws:sts::123456789012:assumed-role/FakeRole/fakey.mcfakerson@fake.example.com";
     private static final String expectedGeneratedProfileName = "FakeRole_123456789012";
-    private static final Date fakeExpiryDate = Date.from(Instant.EPOCH);
+    private static final Instant fakeExpiryDate = Instant.EPOCH;
     private static final String specifiedOktaProfile = "test";
     private static final String tempProfileNameFallback = "temp";
 
     private ProfileHelper profileHelper;
     private CredentialsHelper credentialsHelper;
-    private AssumeRoleWithSAMLResult assumeRoleWithSAMLResult;
+    private AssumeRoleWithSamlResponse assumeRoleWithSamlResult;
     private OktaAwsCliEnvironment environment;
 
     @BeforeEach
@@ -53,24 +54,29 @@ class ProfileHelperTest {
         credentialsHelper = mock(CredentialsHelper.class);
         environment = new OktaAwsCliEnvironment(false, null, null, null, null, null, null, null, 0, fakeAwsRegion, null, false, null);
         profileHelper = new ProfileHelper(credentialsHelper, environment);
-        assumeRoleWithSAMLResult = new AssumeRoleWithSAMLResult();
-        Credentials credentials = new Credentials(fakeAccessKey, fakeSecretKey, fakeSessionToken, fakeExpiryDate);
-        assumeRoleWithSAMLResult.setCredentials(credentials);
-        AssumedRoleUser assumedRoleUser = new AssumedRoleUser();
-        assumedRoleUser.setArn(fakeAssumeRoleUserArn);
-        assumeRoleWithSAMLResult.setAssumedRoleUser(assumedRoleUser);
+        Credentials credentials = Credentials.builder()
+                .accessKeyId(fakeAccessKey)
+                .secretAccessKey(fakeSecretKey)
+                .sessionToken(fakeSessionToken)
+                .expiration(fakeExpiryDate)
+                .build();
+        AssumedRoleUser assumedRoleUser = AssumedRoleUser.builder().arn(fakeAssumeRoleUserArn).build();
+        assumeRoleWithSamlResult = AssumeRoleWithSamlResponse.builder()
+                .credentials(credentials)
+                .assumedRoleUser(assumedRoleUser)
+                .build();
     }
 
     @Test
     void createAwsProfile() throws IOException {
-        profileHelper.createAwsProfile(assumeRoleWithSAMLResult, fakeCredentialsProfileName);
+        profileHelper.createAwsProfile(assumeRoleWithSamlResult, fakeCredentialsProfileName);
 
         verify(credentialsHelper).updateCredentialsFile(fakeCredentialsProfileName, fakeAccessKey, fakeSecretKey, fakeAwsRegion, fakeSessionToken);
     }
 
     @Test
     void getProfileName() {
-        String profileName = profileHelper.getProfileName(assumeRoleWithSAMLResult);
+        String profileName = profileHelper.getProfileName(assumeRoleWithSamlResult);
 
         assertEquals(expectedGeneratedProfileName, profileName);
     }
@@ -79,17 +85,32 @@ class ProfileHelperTest {
     void getProfileNameWithSpecifiedOktaProfile() {
         environment.oktaProfile = specifiedOktaProfile;
 
-        String profileName = profileHelper.getProfileName(assumeRoleWithSAMLResult);
+        String profileName = profileHelper.getProfileName(assumeRoleWithSamlResult);
 
         assertEquals(specifiedOktaProfile, profileName);
     }
 
     @Test
     void getProfileNameWithBrokenAssumedUserArnUsesTemp() {
-        assumeRoleWithSAMLResult.getAssumedRoleUser().setArn("brokenARN");
+        AssumedRoleUser assumedRoleUser = AssumedRoleUser.builder().arn("brokenARN").build();
+        AssumeRoleWithSamlResponse newResult = assumeRoleWithSamlResult.toBuilder()
+                .assumedRoleUser(assumedRoleUser)
+                .build();
 
-        String profileName = profileHelper.getProfileName(assumeRoleWithSAMLResult);
+        String profileName = profileHelper.getProfileName(newResult);
 
         assertEquals(tempProfileNameFallback, profileName);
+    }
+
+    @Test
+    void getProfileNameWithGovCloudAssumedUserArn() {
+        AssumedRoleUser assumedRoleUser = AssumedRoleUser.builder().arn(fakeGovCloudCredentialsProfileName).build();
+        AssumeRoleWithSamlResponse newResult = assumeRoleWithSamlResult.toBuilder()
+                .assumedRoleUser(assumedRoleUser)
+                .build();
+
+        String profileName = profileHelper.getProfileName(newResult);
+
+        assertEquals(expectedGeneratedProfileName, profileName);
     }
 }
