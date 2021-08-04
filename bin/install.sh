@@ -80,7 +80,7 @@ PREFIX="$(cd -P -- "${PREFIX}" && pwd)"
 echo "Installing into ${PREFIX}" | sed "s#$HOME#~#g"
 
 mkdir -p ${PREFIX}
-releaseUrl=$(curl -sLI ${repo_url}/releases/latest | grep -e "location:.*tag" | cut -c11-)
+releaseUrl=$(curl -sLI ${repo_url}/releases/latest | grep -ie "location:.*tag" | cut -c11-)
 releaseTag=$(echo $releaseUrl | awk 'BEGIN{FS="/"}{print $8}' | tr -d '\r')
 url=${repo_url}/releases/download/${releaseTag}/okta-aws-cli-${releaseTag:1}.jar
 dest=${PREFIX}/$(basename ${url})
