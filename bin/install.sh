@@ -112,13 +112,13 @@ mkdir -p "${fishFunctionsDir}"
 cat <<'EOF' >"${fishFunctionsDir}/okta-aws.fish"
 function okta-aws
     set -lx OKTA_PROFILE "$argv[1]"
-    OKTA_PROFILE="$1" withokta "aws --profile $argv[1]" $argv[2..-1]
+    withokta "aws --profile $argv[1]" $argv[2..-1]
 end
 EOF
 cat <<'EOF' >"${fishFunctionsDir}/okta-sls.fish"
 function okta-sls
     set -lx OKTA_PROFILE "$argv[1]"
-    OKTA_PROFILE="$1" withokta "sls --stage $argv[1]" $argv[2..-1]
+    withokta "sls --stage $argv[1]" $argv[2..-1]
 end
 EOF
 
