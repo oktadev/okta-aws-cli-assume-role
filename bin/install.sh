@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-repo_url="https://github.com/oktadeveloper/okta-aws-cli-assume-role"
+repo_url="https://github.com/oktadev/okta-aws-cli-assume-role"
 dotokta="${HOME}/.okta"
 
 printusage() {
