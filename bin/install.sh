@@ -98,10 +98,10 @@ if ! grep '^#OktaAWSCLI' "${bash_functions}" &>/dev/null; then
     cat <<'EOF' >>"${bash_functions}"
 #OktaAWSCLI
 function okta-aws {
-    withokta "aws --profile $1" "$@"
+    OKTA_PROFILE="$1" withokta "aws --profile $1" "$@"
 }
 function okta-sls {
-    withokta "sls --stage $1" "$@"
+    OKTA_PROFILE="$1" withokta "sls --stage $1" "$@"
 }
 EOF
 fi
@@ -111,12 +111,14 @@ fishFunctionsDir="${PREFIX}/fish_functions"
 mkdir -p "${fishFunctionsDir}"
 cat <<'EOF' >"${fishFunctionsDir}/okta-aws.fish"
 function okta-aws
-    withokta "aws --profile $argv[1]" $argv
+    set -lx OKTA_PROFILE "$argv[1]"
+    OKTA_PROFILE="$1" withokta "aws --profile $argv[1]" $argv
 end
 EOF
 cat <<'EOF' >"${fishFunctionsDir}/okta-sls.fish"
 function okta-sls
-    withokta "sls --stage $argv[1]" $argv
+    set -lx OKTA_PROFILE "$argv[1]"
+    OKTA_PROFILE="$1" withokta "sls --stage $argv[1]" $argv
 end
 EOF
 
