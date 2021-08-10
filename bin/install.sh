@@ -80,7 +80,7 @@ PREFIX="$(cd -P -- "${PREFIX}" && pwd)"
 echo "Installing into ${PREFIX}" | sed "s#$HOME#~#g"
 
 mkdir -p ${PREFIX}
-releaseUrl=$(curl -sLI ${repo_url}/releases/latest | grep -e "location:.*tag" | cut -c11-)
+releaseUrl=$(curl -sLI ${repo_url}/releases/latest | grep -ie "location:.*tag" | cut -c11-)
 releaseTag=$(echo $releaseUrl | awk 'BEGIN{FS="/"}{print $8}' | tr -d '\r')
 url=${repo_url}/releases/download/${releaseTag}/okta-aws-cli-${releaseTag:1}.jar
 dest=${PREFIX}/$(basename ${url})
@@ -98,10 +98,10 @@ if ! grep '^#OktaAWSCLI' "${bash_functions}" &>/dev/null; then
     cat <<'EOF' >>"${bash_functions}"
 #OktaAWSCLI
 function okta-aws {
-    withokta "aws --profile $1" "$@"
+    OKTA_PROFILE="$1" withokta "aws --profile $1" "${@:2}"
 }
 function okta-sls {
-    withokta "sls --stage $1" "$@"
+    OKTA_PROFILE="$1" withokta "sls --stage $1" "${@:2}"
 }
 EOF
 fi
@@ -111,12 +111,14 @@ fishFunctionsDir="${PREFIX}/fish_functions"
 mkdir -p "${fishFunctionsDir}"
 cat <<'EOF' >"${fishFunctionsDir}/okta-aws.fish"
 function okta-aws
-    withokta "aws --profile $argv[1]" $argv
+    set -lx OKTA_PROFILE "$argv[1]"
+    withokta "aws --profile $argv[1]" $argv[2..-1]
 end
 EOF
 cat <<'EOF' >"${fishFunctionsDir}/okta-sls.fish"
 function okta-sls
-    withokta "sls --stage $argv[1]" $argv
+    set -lx OKTA_PROFILE "$argv[1]"
+    withokta "sls --stage $argv[1]" $argv[2..-1]
 end
 EOF
 
