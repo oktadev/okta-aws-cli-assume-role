@@ -284,7 +284,10 @@ public class OktaMFA {
         if (factorType.equals(FACTOR_TYPE_PUSH) && verifyResponse.has(LINKS)) {
             return handlePushPolling(profile, verifyResponse);
         } else {
-            return verifyResponse.getString(SESSION_TOKEN);
+            if (verifyResponse.has(SESSION_TOKEN)) {
+                return verifyResponse.getString(SESSION_TOKEN);
+            }
+            return "";
         }
     }
 
