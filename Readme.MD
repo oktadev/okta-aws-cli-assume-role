@@ -158,7 +158,7 @@ Here is the list of parameters that can be environment variables or settings in 
   - ```OKTA_AWS_ROLE_TO_ASSUME``` is the IAM Role ARN to use. If present will try to match okta account's retrieved role list and use it. Will still prompt if no match found. (ex: **arn:aws:iam::123456789012:role/EC2-Admins**)
   - ```OKTA_STS_DURATION``` is the duration the role will be assumed, in seconds. The maximum session duration allowed by AWS is 12 hours and this needs to be set on the role as well.  Defaults to 1hr.
   - ```OKTA_MFA_CHOICE``` is the provider and factor type to use if prompted for MFA.  Example: ```OKTA.push```. See [Factors documentation](https://developer.okta.com/docs/api/resources/factors#factor-type) for values. (default: use single factor or prompt user to select from usable factors).
-  - ```OKTA_IGNORE_SAML_REQ_CONTAIN``` is an optional parameter that allow users to ignore pasring SAML requests, where the URL contains a specific string . This is relevant when using the custom IdP factor, which adds addtional SAML requests to users authentication flow. See [Custom IdP Factor Authentication
+  - ```OKTA_IGNORE_SAML_REQ_CONTAIN``` is an optional parameter that allow users to ignore parsing SAML requests, where the URL contains a specific string . This is relevant when using the custom IdP factor, which adds additional SAML requests to users authentication flow. See [Custom IdP Factor Authentication
 ](https://help.okta.com/en/prod/Content/Topics/Security/MFA_Custom_Factor.htm) for more details. Defaults to an empty string.
   
   - **Obtaining the AWS app url**
