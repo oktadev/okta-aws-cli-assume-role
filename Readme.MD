@@ -141,7 +141,9 @@ cp target/okta-aws-cli-*.jar ~/.okta/okta-aws-cli.jar
 
 ## Configuring AWS in Okta
 
-[Integrating the Amazon Web Services Command Line Interface Using Okta](https://support.okta.com/help/Documentation/Knowledge_Article/Integrating-the-Amazon-Web-Services-Command-Line-Interface-Using-Okta). 
+See for details on setting up [Amazon Web Services Account Federation](https://help.okta.com/en/prod/Content/Topics/DeploymentGuides/AWS/aws-deployment.htm) to allow logging into AWS through Okta and this tool.
+
+An alternative integration can be found in [Integrating the Amazon Web Services Command Line Interface Using Okta](https://support.okta.com/help/Documentation/Knowledge_Article/Integrating-the-Amazon-Web-Services-Command-Line-Interface-Using-Okta), which allows logging into AWS / Okta through the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html). The okta-aws-cli is _not_ compatible with this integration.
 
 ## Configuring the application
 Here is the list of parameters that can be environment variables or settings in the ```~/.okta/config.properties``` file:
