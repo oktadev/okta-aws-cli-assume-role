@@ -29,9 +29,11 @@ import java.util.Map;
 public final class CookieManager extends CookieHandler {
     private final CookieHandler cookieHandler = CookieHandler.getDefault();
     private final CookieHelper cookieHelper;
+    private final String targetDomain;
 
-    public CookieManager(CookieHelper cookieHelper) {
+    public CookieManager(CookieHelper cookieHelper, URI targetUri) {
         this.cookieHelper = cookieHelper;
+        this.targetDomain = targetUri.getHost();
     }
 
     @Override
@@ -42,7 +44,9 @@ public final class CookieManager extends CookieHandler {
 
     @Override
     public void put(URI uri, Map<String,List<String>> responseHeaders) throws IOException {
-        cookieHelper.storeCookies(responseHeaders);
+        if (uri.getAuthority().equals(targetDomain)) {
+            cookieHelper.storeCookies(responseHeaders);
+        }
         cookieHandler.put(uri, responseHeaders);
     }
 }
