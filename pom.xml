@@ -23,14 +23,6 @@
     <version>3.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <repositories>
-        <repository>
-            <id>shibboleth-nexus-releases</id>
-            <name>Shibboleth Nexux Releases</name>
-            <url>https://build.shibboleth.net/nexus/content/repositories/releases/</url>
-        </repository>
-    </repositories>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <aws-java-sdk.version>2.15.69</aws-java-sdk.version>
