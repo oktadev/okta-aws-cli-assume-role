@@ -103,7 +103,7 @@ public final class BrowserAuthentication extends Application {
 
     private void initializeCookies(URI uri) throws IOException {
         Map<String, List<String>> headers = cookieHelper.loadCookieHeaders();
-        java.net.CookieHandler.setDefault(new CookieManager(cookieHelper));
+        java.net.CookieHandler.setDefault(new CookieManager(cookieHelper, uri));
         java.net.CookieHandler.getDefault().put(uri, headers);
     }
 

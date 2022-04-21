@@ -15,6 +15,7 @@
  */
 package com.okta.tools.helpers;
 
+import com.google.common.collect.Iterables;
 import com.okta.tools.OktaAwsCliEnvironment;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
@@ -127,7 +128,10 @@ public final class CookieHelper {
     }
 
     public void storeCookies(Map<String, List<String>> responseHeaders) throws IOException {
-        responseHeaders.getOrDefault(SET_COOKIE_HEADER_NAME, Collections.emptyList()).forEach(cookie ->
+        Iterables.concat(
+                responseHeaders.getOrDefault(SET_COOKIE_HEADER_NAME.toLowerCase(), Collections.emptyList()),
+                responseHeaders.getOrDefault(SET_COOKIE_HEADER_NAME, Collections.emptyList()))
+                .forEach(cookie ->
                 cookieHeaders.put(cookie.substring(0, cookie.indexOf('=')), cookie)
         );
         Files.write(
