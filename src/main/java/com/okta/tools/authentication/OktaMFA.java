@@ -16,6 +16,9 @@
 package com.okta.tools.authentication;
 
 import com.okta.tools.helpers.HttpHelper;
+import edu.monash.u2fhost4j.U2FHost;
+import edu.monash.u2fhost4j.U2FException;
+import edu.monash.u2fhost4j.u2fexception.*;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -45,6 +48,7 @@ public class OktaMFA {
     private static final String CONTENT_TYPE_APPLICATION_JSON = "application/json";
     private static final String LINKS = "_links";
     private static final String ERROR_OBTAINING_TOKEN = "ERROR_OBTAINING_TOKEN";
+    private static final String FACTOR_TYPE_U2F = "u2f";
 
     private final OktaFactorSelector factorSelector;
 
@@ -101,9 +105,52 @@ public class OktaMFA {
                 return totpFactor(factor, stateToken);
             case FACTOR_TYPE_PUSH:
                 return pushFactor(factor, stateToken);
+            case FACTOR_TYPE_U2F:
+                return u2fFactor(factor, stateToken);
             default:
                 throw new IllegalArgumentException("Unsupported factor type " + factorType);
         }
+    }
+
+    private String u2fFactor(JSONObject factor, String stateToken) throws IOException {
+        System.err.println("\nU2F Factor Authentication");
+
+        String verifyEndpoint = factor.getJSONObject("_links").getJSONObject("verify").getString("href");
+
+        JSONObject requestJson = new JSONObject().put("stateToken", stateToken);
+        JSONObject requestChallenge = postAndGetJsonResponse(requestJson, verifyEndpoint);
+        JSONObject factorChallenge = requestChallenge.getJSONObject("_embedded").getJSONObject("factor");
+
+        String origin = factorChallenge.getJSONObject("profile").getString("appId");
+        String challenge = factorChallenge.getJSONObject("_embedded").getJSONObject("challenge").getString("nonce");
+        String keyHandle = factorChallenge.getJSONObject("profile").getString("credentialId");
+        String version = factorChallenge.getJSONObject("profile").getString("version");
+        String authResponse;
+        System.err.println("Please press your U2F key.");
+        try {
+            authResponse = U2FHost.getInstance().authenticate(origin, challenge, version, keyHandle, origin);
+        } catch (TimeoutError e) {
+            System.err.println("U2F request timed out.");
+            return "";
+        } catch (AuthenticatorError e) {
+            System.err.println("Error encountered with U2F device.");
+            return "";
+        } catch (NoDeviceError e) {
+            System.err.println("No U2F devices found.");
+            return "";
+        } catch (U2FException e) {
+            System.err.println("Unrecoverable error with U2F occurred.");
+            return "";
+        }
+        System.err.println("Key response received.");
+        JSONObject authResponseObject = new JSONObject(authResponse);
+
+        JSONObject tokenRequestJson = new JSONObject().put("stateToken", stateToken)
+                .put("clientData", authResponseObject.getString("clientData"))
+                .put("signatureData", authResponseObject.getString("signatureData"));
+        JSONObject finalTokenResponse = postAndGetJsonResponse(tokenRequestJson, verifyEndpoint);
+
+        return finalTokenResponse.getString("sessionToken");
     }
 
     /**
