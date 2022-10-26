@@ -16,6 +16,8 @@
 package com.okta.tools.helpers;
 
 import org.apache.http.HttpHost;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
@@ -45,12 +47,18 @@ public final class HttpHelper {
         return httpClientBuilder
                 .useSystemProperties()
                 .setConnectionManager(cm)
-                .build();
+                .setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build())
+                .build()
+                ;
     }
 
     public static CloseableHttpClient createClient()
     {
-        return createClient(HttpClients.custom());
+        return createClient(
+            HttpClients
+                .custom()
+                .setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build())
+        );
     }
 
     private enum ProxySelectorPlainConnectionSocketFactory implements ConnectionSocketFactory {
