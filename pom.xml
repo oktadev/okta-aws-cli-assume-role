@@ -26,7 +26,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <aws-java-sdk.version>2.15.69</aws-java-sdk.version>
-        <json.version>20200518</json.version>
+        <json.version>20230227</json.version>
         <commons-configuration2.version>2.7</commons-configuration2.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <junit.jupiter.version>5.4.0</junit.jupiter.version>
