@@ -300,6 +300,7 @@ public class OktaMFA {
             System.err.println("Waiting for you to approve the Okta push notification on your device...");
             Thread.sleep(500);
             pollResult = postAndGetJsonResponse(profile, pollUrl);
+            validateStatus(pollResult);
             String status = pollResult.getString(STATUS);
             if ("SUCCESS".equals(status)) {
                 return pollResult.getString(SESSION_TOKEN);
